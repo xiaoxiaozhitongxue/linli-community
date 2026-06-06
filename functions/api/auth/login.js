@@ -7,7 +7,7 @@ import {
   validateRequired,
   validatePhone,
   createToken
-} from '../../../lib/index.js'
+} from '../../lib/index.js'
 
 const VERIFICATION_CODE = '123456'
 

@@ -6,6 +6,7 @@ import {
   now
 } from '../../../lib/index.js'
 
+
 export async function onRequestDelete(context) {
   try {
     const authError = await requireAuth(context)
