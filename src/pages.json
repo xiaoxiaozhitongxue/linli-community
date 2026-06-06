@@ -1,0 +1,152 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "首页",
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/neighborhood/index",
+      "style": {
+        "navigationBarTitleText": "邻里空间",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/activities/create",
+      "style": {
+        "navigationBarTitleText": "发布活动",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/activities/detail",
+      "style": {
+        "navigationBarTitleText": "活动详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/ai-helper/index",
+      "style": {
+        "navigationBarTitleText": "AI互助",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/ai-helper/detail",
+      "style": {
+        "navigationBarTitleText": "任务详情",
+        "navigationBarBackgroundColor": "#FFFFFF"
+      }
+    },
+    {
+      "path": "pages/business/index",
+      "style": {
+        "navigationBarTitleText": "社区创业",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/elderly/index",
+      "style": {
+        "navigationBarTitleText": "老人关怀",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/edit",
+      "style": {
+        "navigationBarTitleText": "编辑资料",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/my-posts",
+      "style": {
+        "navigationBarTitleText": "我的动态",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/my-activities",
+      "style": {
+        "navigationBarTitleText": "我的活动",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/my-favorites",
+      "style": {
+        "navigationBarTitleText": "我的收藏",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/settings",
+      "style": {
+        "navigationBarTitleText": "设置",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/post/create",
+      "style": {
+        "navigationBarTitleText": "发布动态",
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#FF8C42",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/neighborhood/index",
+        "text": "邻里"
+      },
+      {
+        "pagePath": "pages/ai-helper/index",
+        "text": "互助"
+      },
+      {
+        "pagePath": "pages/elderly/index",
+        "text": "关怀"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "邻里社区",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F5F0"
+  },
+  "uniIdRouter": {}
+}

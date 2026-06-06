@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "routes": [
+    { "pattern": "/api/*", "zone_name": "linli.community", "distribution": "" },
+    { "pattern": "*", "zone_name": "linli.community" }
+  ]
+}
