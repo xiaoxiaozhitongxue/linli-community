@@ -1,23 +1,36 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import Toast from './components/Toast.vue'
 import BottomTabBar from './components/BottomTabBar.vue'
 
 const route = useRoute()
+const router = useRouter()
+
+// 被屏蔽的页面路径
+const blockedPages = [
+  '/pages/index/index',
+  '/pages/neighborhood/index',
+  '/pages/business/index'
+]
 
 // 判断是否显示底部导航栏的页面
 const showTabBar = computed(() => {
   const path = route.path
   const tabPages = [
-    '/pages/index/index',
-    '/pages/neighborhood/index',
     '/pages/ai-helper/index',
-    '/pages/business/index',
+    '/pages/message/index',
     '/pages/profile/index'
   ]
   return tabPages.some(tabPath => path.startsWith(tabPath))
 })
+
+// 路由守卫：检查是否访问被屏蔽的页面
+watch(() => route.path, (newPath) => {
+  if (blockedPages.includes(newPath)) {
+    router.replace('/pages/ai-helper/index')
+  }
+}, { immediate: true })
 
 onMounted(() => {
   console.log('App Launch')

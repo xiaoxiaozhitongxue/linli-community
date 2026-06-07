@@ -1,5 +1,13 @@
 <template>
-  <div class="page">
+  <!-- 功能暂未开放提示 -->
+  <div class="blocked-overlay" v-if="isBlocked">
+    <div class="blocked-content">
+      <span class="blocked-icon">🔒</span>
+      <span class="blocked-text">此功能暂未开放，敬请期待</span>
+    </div>
+  </div>
+
+  <div class="page" v-else>
     <!-- 顶部导航 -->
     <div class="nav-header">
       <div class="nav-content">
@@ -188,6 +196,9 @@ import { useRouter } from 'vue-router'
 import { neighborhoodApi } from '../../utils/api'
 import { toastSuccess, toastError } from '../../utils/toast'
 
+// 该页面已被屏蔽
+const isBlocked = true
+
 const router = useRouter()
 
 const currentTab = ref('lounge')
@@ -306,6 +317,36 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 屏蔽提示样式 */
+.blocked-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #F5F5F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.blocked-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.blocked-icon {
+  font-size: 64px;
+}
+
+.blocked-text {
+  font-size: 16px;
+  color: #666;
+}
+
 .page {
   min-height: 100vh;
   background: #F5F5F0;

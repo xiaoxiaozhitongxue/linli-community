@@ -44,6 +44,13 @@
       }
     },
     {
+      "path": "pages/ai-helper/publish",
+      "style": {
+        "navigationBarTitleText": "发布任务",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/business/index",
       "style": {
         "navigationBarTitleText": "社区创业",
@@ -100,6 +107,34 @@
       }
     },
     {
+      "path": "pages/profile/notifications",
+      "style": {
+        "navigationBarTitleText": "消息通知",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/privacy",
+      "style": {
+        "navigationBarTitleText": "隐私设置",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/about",
+      "style": {
+        "navigationBarTitleText": "关于我们",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/my-tasks",
+      "style": {
+        "navigationBarTitleText": "我的任务",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/login/index",
       "style": {
         "navigationBarTitleText": "登录",
@@ -110,6 +145,27 @@
       "path": "pages/post/create",
       "style": {
         "navigationBarTitleText": "发布动态",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/messages/index",
+      "style": {
+        "navigationBarTitleText": "消息",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/messages/chat",
+      "style": {
+        "navigationBarTitleText": "私信",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/messages/group",
+      "style": {
+        "navigationBarTitleText": "群聊",
         "navigationStyle": "custom"
       }
     }

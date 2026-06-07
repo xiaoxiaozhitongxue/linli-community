@@ -26,24 +26,14 @@ const currentPath = computed(() => route.path)
 
 const tabs = [
   {
-    name: '首页',
-    icon: '🏠',
-    path: '/pages/index/index'
-  },
-  {
-    name: '邻里',
-    icon: '👥',
-    path: '/pages/neighborhood/index'
-  },
-  {
     name: 'AI互助',
-    icon: '🤝',
+    icon: '🤖',
     path: '/pages/ai-helper/index'
   },
   {
-    name: '创业',
-    icon: '💼',
-    path: '/pages/business/index'
+    name: '消息',
+    icon: '💬',
+    path: '/pages/message/index'
   },
   {
     name: '我的',

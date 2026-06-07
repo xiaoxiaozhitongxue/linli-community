@@ -1,5 +1,13 @@
 <template>
-  <div class="page">
+  <!-- 功能暂未开放提示 -->
+  <div class="blocked-overlay" v-if="isBlocked">
+    <div class="blocked-content">
+      <span class="blocked-icon">🔒</span>
+      <span class="blocked-text">此功能暂未开放，敬请期待</span>
+    </div>
+  </div>
+
+  <div class="page" v-else>
     <div class="status-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
       <div class="status-content">
         <div class="location" @click="chooseLocation">
@@ -254,6 +262,9 @@ import { postsApi, type Post, type Comment } from '../../utils/api'
 import { useAuth } from '../../store'
 import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
+
+// 该页面已被屏蔽
+const isBlocked = true
 
 const { initAuth, isLoggedIn } = useAuth()
 
@@ -605,6 +616,36 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 屏蔽提示样式 */
+.blocked-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.blocked-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.blocked-icon {
+  font-size: 64px;
+}
+
+.blocked-text {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
 .page {
   min-height: 100vh;
   background-color: var(--bg-color);

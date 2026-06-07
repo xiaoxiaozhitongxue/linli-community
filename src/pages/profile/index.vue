@@ -35,69 +35,116 @@
 
         <!-- 数据统计 -->
         <div class="stats-row" v-if="isLoggedIn">
-          <div class="stat-item" @click="goToMyPosts">
-            <span class="stat-value">{{ stats.posts }}</span>
-            <span class="stat-label">动态</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item" @click="goToMyActivities">
-            <span class="stat-value">{{ stats.activities }}</span>
-            <span class="stat-label">活动</span>
-          </div>
-          <div class="stat-divider"></div>
           <div class="stat-item" @click="goToMyCredits">
             <span class="stat-value">{{ user?.credit_score || 0 }}</span>
             <span class="stat-label">信用分</span>
           </div>
           <div class="stat-divider"></div>
-          <div class="stat-item" @click="goToMyFavorites">
-            <span class="stat-value">{{ stats.favorites }}</span>
-            <span class="stat-label">收藏</span>
+          <div class="stat-item" @click="goToPublishedTasks">
+            <span class="stat-value">{{ taskStats.published.all }}</span>
+            <span class="stat-label">我发布的</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item" @click="goToAcceptedTasks">
+            <span class="stat-value">{{ taskStats.accepted.all }}</span>
+            <span class="stat-label">我接受的</span>
           </div>
         </div>
       </div>
     </div>
 
     <div class="content" scroll-y v-if="isLoggedIn">
-      <!-- 我的服务 -->
+      <!-- AI互助任务模块 -->
       <div class="menu-section">
-        <div class="menu-title">我的服务</div>
-        <div class="menu-grid">
-          <div class="menu-item" @click="goToMyPosts">
-            <div class="menu-icon" style="background: #E8F5E9;">
-              <span>📝</span>
-            </div>
-            <span class="menu-text">我的动态</span>
+        <div class="menu-title">AI互助任务</div>
+        
+        <!-- 任务状态统计 -->
+        <div class="task-stats-card">
+          <div class="task-stats-header">
+            <span class="task-stats-title">任务概览</span>
           </div>
-          <div class="menu-item" @click="goToMyActivities">
-            <div class="menu-icon" style="background: #E3F2FD;">
-              <span>🎯</span>
+          <div class="task-stats-grid">
+            <div class="task-stat-item">
+              <span class="task-stat-value pending">{{ taskStats.published.pending }}</span>
+              <span class="task-stat-label">待接单</span>
             </div>
-            <span class="menu-text">我的活动</span>
+            <div class="task-stat-item">
+              <span class="task-stat-value in-progress">{{ taskStats.published.in_progress }}</span>
+              <span class="task-stat-label">进行中</span>
+            </div>
+            <div class="task-stat-item">
+              <span class="task-stat-value completed">{{ taskStats.published.completed }}</span>
+              <span class="task-stat-label">已完成</span>
+            </div>
           </div>
-          <div class="menu-item" @click="goToMyFavorites">
-            <div class="menu-icon" style="background: #FFF3E0;">
-              <span>⭐</span>
-            </div>
-            <span class="menu-text">我的收藏</span>
+        </div>
+
+        <!-- 快捷操作 -->
+        <div class="task-quick-actions">
+          <div class="task-action-btn publish" @click="goToPublishTask">
+            <span class="action-icon">📝</span>
+            <span class="action-text">发布任务</span>
           </div>
-          <div class="menu-item" @click="goToEditProfile">
-            <div class="menu-icon" style="background: #FCE4EC;">
-              <span>👤</span>
-            </div>
-            <span class="menu-text">资料编辑</span>
+          <div class="task-action-btn browse" @click="goToBrowseTasks">
+            <span class="action-icon">🔍</span>
+            <span class="action-text">浏览任务</span>
           </div>
         </div>
       </div>
 
-      <!-- 功能列表 -->
+      <!-- 个人设置 -->
       <div class="menu-section">
-        <div class="menu-title">常用功能</div>
+        <div class="menu-title">个人设置</div>
         <div class="menu-list">
-          <div class="menu-list-item" v-for="item in menuItems" :key="item.id" @click="goToMenu(item)">
+          <div class="menu-list-item" @click="goToNotifications">
             <div class="menu-list-left">
-              <span class="menu-list-icon">{{ item.icon }}</span>
-              <span class="menu-list-text">{{ item.name }}</span>
+              <span class="menu-list-icon">🔔</span>
+              <span class="menu-list-text">消息通知</span>
+            </div>
+            <div class="menu-list-right">
+              <span class="menu-list-badge" v-if="hasUnreadNotification">有未读</span>
+              <span class="menu-list-arrow">›</span>
+            </div>
+          </div>
+          <div class="menu-list-item" @click="goToPrivacy">
+            <div class="menu-list-left">
+              <span class="menu-list-icon">🔒</span>
+              <span class="menu-list-text">隐私设置</span>
+            </div>
+            <span class="menu-list-arrow">›</span>
+          </div>
+          <div class="menu-list-item" @click="goToAddress">
+            <div class="menu-list-left">
+              <span class="menu-list-icon">📍</span>
+              <span class="menu-list-text">收货地址</span>
+            </div>
+            <span class="menu-list-arrow">›</span>
+          </div>
+          <div class="menu-list-item" @click="goToAbout">
+            <div class="menu-list-left">
+              <span class="menu-list-icon">ℹ️</span>
+              <span class="menu-list-text">关于我们</span>
+            </div>
+            <span class="menu-list-arrow">›</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 帮助与反馈 -->
+      <div class="menu-section">
+        <div class="menu-title">帮助与支持</div>
+        <div class="menu-list">
+          <div class="menu-list-item" @click="goToHelp">
+            <div class="menu-list-left">
+              <span class="menu-list-icon">❓</span>
+              <span class="menu-list-text">帮助中心</span>
+            </div>
+            <span class="menu-list-arrow">›</span>
+          </div>
+          <div class="menu-list-item" @click="goToFeedback">
+            <div class="menu-list-left">
+              <span class="menu-list-icon">💬</span>
+              <span class="menu-list-text">意见反馈</span>
             </div>
             <span class="menu-list-arrow">›</span>
           </div>
@@ -126,9 +173,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuth } from '../../store/index'
-import { userApi } from '../../utils/api'
+import { userApi, tasksApi } from '../../utils/api'
 import { navigateTo } from '../../utils/router'
 import { toastInfo } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
@@ -136,20 +183,22 @@ import { showModal } from '../../utils/ui'
 const { user, logout: authLogout, isLoggedIn, initAuth, updateUser } = useAuth()
 const statusBarHeight = ref(20)
 const loading = ref(false)
+const hasUnreadNotification = ref(true)
 
-const stats = ref({
-  posts: 0,
-  activities: 0,
-  favorites: 0
+const taskStats = ref({
+  published: {
+    all: 0,
+    pending: 0,
+    in_progress: 0,
+    completed: 0
+  },
+  accepted: {
+    all: 0,
+    pending: 0,
+    in_progress: 0,
+    completed: 0
+  }
 })
-
-const menuItems = ref([
-  { id: '1', name: '消息通知', icon: '🔔' },
-  { id: '2', name: '收货地址', icon: '📍' },
-  { id: '3', name: '帮助中心', icon: '❓' },
-  { id: '4', name: '关于我们', icon: 'ℹ️' },
-  { id: '5', name: '设置', icon: '⚙️' }
-])
 
 const getRoleName = (role: string) => {
   const map: Record<string, string> = {
@@ -167,7 +216,7 @@ const loadUserProfile = async () => {
     loading.value = true
     const profile = await userApi.getProfile()
     updateUser(profile)
-    await loadStats()
+    await loadTaskStats()
   } catch (error) {
     console.error('加载用户信息失败:', error)
   } finally {
@@ -175,20 +224,15 @@ const loadUserProfile = async () => {
   }
 }
 
-const loadStats = async () => {
+const loadTaskStats = async () => {
   try {
-    const [postsRes, activitiesRes, favoritesRes] = await Promise.all([
-      userApi.getMyPosts({ limit: 1 }),
-      userApi.getMyActivities({ limit: 1 }),
-      userApi.getMyFavorites({ limit: 1 })
-    ])
-    stats.value = {
-      posts: postsRes.total,
-      activities: activitiesRes.total,
-      favorites: favoritesRes.total
+    const res = await tasksApi.getMyTasks({ limit: 1 }) as any
+    taskStats.value = {
+      published: res.stats?.published || { all: 0, pending: 0, in_progress: 0, completed: 0 },
+      accepted: res.stats?.accepted || { all: 0, pending: 0, in_progress: 0, completed: 0 }
     }
   } catch (error) {
-    console.error('加载统计数据失败:', error)
+    console.error('加载任务统计失败:', error)
   }
 }
 
@@ -196,28 +240,48 @@ const goToEditProfile = () => {
   navigateTo('/pages/profile/edit')
 }
 
-const goToMyPosts = () => {
-  navigateTo('/pages/profile/my-posts')
-}
-
-const goToMyActivities = () => {
-  navigateTo('/pages/profile/my-activities')
-}
-
-const goToMyFavorites = () => {
-  navigateTo('/pages/profile/my-favorites')
-}
-
 const goToMyCredits = () => {
   toastInfo('信用分详情即将上线')
 }
 
-const goToMenu = (item: any) => {
-  if (item.id === '5') {
-    navigateTo('/pages/profile/settings')
-  } else {
-    toastInfo('功能即将上线')
-  }
+const goToPublishedTasks = () => {
+  navigateTo('/pages/profile/my-tasks?type=published')
+}
+
+const goToAcceptedTasks = () => {
+  navigateTo('/pages/profile/my-tasks?type=accepted')
+}
+
+const goToPublishTask = () => {
+  navigateTo('/pages/ai-helper/publish')
+}
+
+const goToBrowseTasks = () => {
+  navigateTo('/pages/ai-helper/index')
+}
+
+const goToNotifications = () => {
+  navigateTo('/pages/profile/notifications')
+}
+
+const goToPrivacy = () => {
+  navigateTo('/pages/profile/privacy')
+}
+
+const goToAddress = () => {
+  toastInfo('收货地址功能即将上线')
+}
+
+const goToAbout = () => {
+  navigateTo('/pages/profile/about')
+}
+
+const goToHelp = () => {
+  toastInfo('帮助中心即将上线')
+}
+
+const goToFeedback = () => {
+  toastInfo('意见反馈即将上线')
 }
 
 const goToLogin = () => {
@@ -228,7 +292,7 @@ const logout = () => {
   showModal({
     title: '提示',
     content: '确定要退出登录吗？',
-    success: (res) => {
+    success: (res: any) => {
       if (res.confirm) {
         authLogout()
       }
@@ -260,7 +324,7 @@ onMounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 200px;
+  height: 180px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
 }
 
@@ -277,13 +341,13 @@ onMounted(() => {
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-md);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
   cursor: pointer;
 }
 
 .profile-avatar {
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   margin-right: var(--spacing-md);
   border: 3px solid white;
@@ -357,17 +421,18 @@ onMounted(() => {
   justify-content: space-around;
   background: var(--card-bg);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
   box-shadow: var(--shadow-sm);
 }
 
 .stat-item {
   text-align: center;
   cursor: pointer;
+  flex: 1;
 }
 
 .stat-value {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--primary-color);
   display: block;
@@ -382,10 +447,11 @@ onMounted(() => {
 .stat-divider {
   width: 1px;
   background: var(--border-color);
+  margin: 0 var(--spacing-sm);
 }
 
 .content {
-  min-height: calc(100vh - 220px);
+  min-height: calc(100vh - 200px);
 }
 
 /* 空状态 */
@@ -421,7 +487,7 @@ onMounted(() => {
 
 /* 菜单区块 */
 .menu-section {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
 .menu-title {
@@ -431,37 +497,99 @@ onMounted(() => {
   margin-bottom: var(--spacing-md);
 }
 
-.menu-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-md);
+/* 任务统计卡片 */
+.task-stats-card {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-md);
 }
 
-.menu-item {
+.task-stats-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  cursor: pointer;
+  margin-bottom: var(--spacing-md);
 }
 
-.menu-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+.task-stats-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.task-stats-grid {
+  display: flex;
+  justify-content: space-around;
+}
+
+.task-stat-item {
+  text-align: center;
+}
+
+.task-stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.task-stat-value.pending {
+  color: #FF9800;
+}
+
+.task-stat-value.in-progress {
+  color: #2196F3;
+}
+
+.task-stat-value.completed {
+  color: #4CAF50;
+}
+
+.task-stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 快捷操作按钮 */
+.task-quick-actions {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.task-action-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  margin-bottom: var(--spacing-xs);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
-.menu-text {
-  font-size: 12px;
-  color: var(--text-secondary);
+.task-action-btn:active {
+  opacity: 0.8;
+}
+
+.task-action-btn.publish {
+  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+}
+
+.task-action-btn.browse {
+  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+}
+
+.action-icon {
+  font-size: 18px;
+  margin-right: var(--spacing-xs);
+}
+
+.action-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 /* 菜单列表 */
@@ -476,9 +604,14 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.menu-list-item:active {
+  background-color: var(--bg-color);
 }
 
 .menu-list-item:last-child {
@@ -500,6 +633,20 @@ onMounted(() => {
   color: var(--text-primary);
 }
 
+.menu-list-right {
+  display: flex;
+  align-items: center;
+}
+
+.menu-list-badge {
+  font-size: 11px;
+  color: white;
+  background: #F44336;
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-right: var(--spacing-sm);
+}
+
 .menu-list-arrow {
   font-size: 14px;
   color: var(--text-muted);
@@ -515,5 +662,10 @@ onMounted(() => {
   text-align: center;
   font-size: 15px;
   cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.logout-btn:active {
+  opacity: 0.8;
 }
 </style>

@@ -4,21 +4,46 @@ import App from './App.vue'
 import './styles/base.css'
 import { setRouterInstance } from './utils/router'
 
+// 被屏蔽的页面路径
+const blockedPages = [
+  '/pages/index/index',
+  '/pages/neighborhood/index',
+  '/pages/business/index'
+]
+
 // 路由配置
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: '/',
-      redirect: '/pages/index/index'
+      redirect: '/pages/ai-helper/index'
+    },
+    {
+      path: '/pages/ai-helper/index',
+      component: () => import('./pages/ai-helper/index.vue')
     },
     {
       path: '/pages/index/index',
-      component: () => import('./pages/index/index.vue')
+      component: () => import('./pages/index/index.vue'),
+      beforeEnter: (to, from, next) => {
+        // 直接访问时重定向到AI助手页面
+        next('/pages/ai-helper/index')
+      }
     },
     {
       path: '/pages/neighborhood/index',
-      component: () => import('./pages/neighborhood/index.vue')
+      component: () => import('./pages/neighborhood/index.vue'),
+      beforeEnter: (to, from, next) => {
+        next('/pages/ai-helper/index')
+      }
+    },
+    {
+      path: '/pages/business/index',
+      component: () => import('./pages/business/index.vue'),
+      beforeEnter: (to, from, next) => {
+        next('/pages/ai-helper/index')
+      }
     },
     {
       path: '/pages/ai-helper/index',
@@ -27,6 +52,10 @@ const router = createRouter({
     {
       path: '/pages/ai-helper/detail',
       component: () => import('./pages/ai-helper/detail.vue')
+    },
+    {
+      path: '/pages/message/index',
+      component: () => import('./pages/message/index.vue')
     },
     {
       path: '/pages/business/index',
