@@ -1,14 +1,16 @@
 <template>
   <div class="bottom-tab-bar">
-    <div
-      v-for="tab in tabs"
-      :key="tab.path"
-      class="tab-item"
-      :class="{ active: currentPath === tab.path || currentPath.startsWith(tab.path + '/') }"
-      @click="switchTab(tab.path)"
-    >
-      <span class="tab-icon">{{ tab.icon }}</span>
-      <span class="tab-label">{{ tab.name }}</span>
+    <div class="tab-bar-inner">
+      <div
+        v-for="tab in tabs"
+        :key="tab.path"
+        class="tab-item"
+        :class="{ active: currentPath === tab.path || currentPath.startsWith(tab.path + '/') }"
+        @click="switchTab(tab.path)"
+      >
+        <span class="tab-icon">{{ tab.icon }}</span>
+        <span class="tab-label">{{ tab.name }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -61,15 +63,21 @@ const switchTab = (path: string) => {
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 100;
+  background: white;
+  border-top: 1px solid #eee;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-bar-inner {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  background: white;
   padding: 8px 0;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom));
-  border-top: 1px solid #eee;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-  z-index: 100;
+  max-width: 1024px;
+  margin: 0 auto;
 }
 
 .tab-item {
@@ -79,6 +87,7 @@ const switchTab = (path: string) => {
   padding: 4px 16px;
   cursor: pointer;
   transition: all 0.2s;
+  flex: 1;
 }
 
 .tab-icon {
@@ -103,5 +112,20 @@ const switchTab = (path: string) => {
 .tab-item.active .tab-label {
   color: #0066CC;
   font-weight: 600;
+}
+
+/* 响应式：大屏时底部导航栏居中 */
+@media (min-width: 768px) {
+  .bottom-tab-bar {
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .bottom-tab-bar {
+    max-width: 1024px;
+  }
 }
 </style>

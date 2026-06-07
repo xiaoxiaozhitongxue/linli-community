@@ -1,95 +1,96 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部导航 -->
-    <view class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="navbar-content">
-        <view class="back-btn" @click="goBack">
-          <text>←</text>
-        </view>
-        <text class="navbar-title">我的活动</text>
-        <view class="placeholder"></view>
-      </view>
-    </view>
+    <div class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <div class="navbar-content">
+        <div class="back-btn" @click="goBack">
+          <span>←</span>
+        </div>
+        <span class="navbar-title">我的活动</span>
+        <div class="placeholder"></div>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y @scrolltolower="loadMore" refresher-enabled @refresherrefresh="onRefresh">
+    <div class="scroll-content" ref="scrollRef" @scroll="onScroll">
       <!-- 空状态 -->
-      <view v-if="!loading && activities.length === 0" class="empty-state">
-        <text class="empty-icon">🎯</text>
-        <text class="empty-text">暂无活动</text>
-      </view>
+      <div v-if="!loading && activities.length === 0" class="empty-state">
+        <span class="empty-icon">🎯</span>
+        <span class="empty-text">暂无活动</span>
+      </div>
 
       <!-- 活动列表 -->
-      <view v-else class="activity-list">
-        <view class="activity-card" v-for="activity in activities" :key="activity.id">
-          <view class="activity-cover">
-            <image 
-              v-if="activity.images && activity.images.length > 0" 
-              class="cover-image" 
-              :src="activity.images[0]" 
-              mode="aspectFill"
+      <div v-else class="activity-list">
+        <div class="activity-card" v-for="activity in activities" :key="activity.id">
+          <div class="activity-cover">
+            <img
+              v-if="activity.images && activity.images.length > 0"
+              class="cover-image"
+              :src="activity.images[0]"
+              alt="活动封面"
             />
-            <view v-else class="cover-placeholder">
-              <text class="cover-icon">{{ getCategoryIcon(activity.category) }}</text>
-            </view>
-            <view class="activity-status" :class="activity.status">
+            <div v-else class="cover-placeholder">
+              <span class="cover-icon">{{ getCategoryIcon(activity.category) }}</span>
+            </div>
+            <div class="activity-status" :class="activity.status">
               {{ getStatusText(activity.status) }}
-            </view>
-          </view>
+            </div>
+          </div>
 
-          <view class="activity-info">
-            <view class="activity-header">
-              <text class="activity-title">{{ activity.title }}</text>
-            </view>
+          <div class="activity-info">
+            <div class="activity-header">
+              <span class="activity-title">{{ activity.title }}</span>
+            </div>
 
-            <view class="activity-meta">
-              <view class="meta-item">
-                <text class="meta-icon">📅</text>
-                <text class="meta-text">{{ formatDate(activity.start_time) }}</text>
-              </view>
-              <view class="meta-item">
-                <text class="meta-icon">📍</text>
-                <text class="meta-text">{{ activity.location }}</text>
-              </view>
-              <view class="meta-item">
-                <text class="meta-icon">👥</text>
-                <text class="meta-text">{{ activity.current_participants }}/{{ activity.max_participants || '不限' }}</text>
-              </view>
-            </view>
+            <div class="activity-meta">
+              <div class="meta-item">
+                <span class="meta-icon">📅</span>
+                <span class="meta-text">{{ formatDate(activity.start_time) }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-icon">📍</span>
+                <span class="meta-text">{{ activity.location }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-icon">👥</span>
+                <span class="meta-text">{{ activity.current_participants }}/{{ activity.max_participants || '不限' }}</span>
+              </div>
+            </div>
 
-            <view class="activity-desc">
-              <text class="desc-text">{{ activity.description }}</text>
-            </view>
+            <div class="activity-desc">
+              <span class="desc-text">{{ activity.description }}</span>
+            </div>
 
-            <view class="activity-footer">
-              <view class="creator-info">
-                <image class="creator-avatar" :src="activity.user.avatar || 'https://i.pravatar.cc/100?img=10'" mode="aspectFill" />
-                <text class="creator-name">{{ activity.user.nickname }}</text>
-              </view>
-              <view class="activity-actions">
-                <view class="action-tag" :class="activity.category">{{ getCategoryText(activity.category) }}</view>
-              </view>
-            </view>
-          </view>
-        </view>
+            <div class="activity-footer">
+              <div class="creator-info">
+                <img class="creator-avatar" :src="activity.user?.avatar || 'https://i.pravatar.cc/100?img=10'" alt="头像" />
+                <span class="creator-name">{{ activity.user?.nickname }}</span>
+              </div>
+              <div class="activity-actions">
+                <div class="action-tag" :class="activity.category">{{ getCategoryText(activity.category) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- 加载更多 -->
-        <view v-if="loading" class="loading-more">
-          <text>加载中...</text>
-        </view>
+        <div v-if="loading" class="loading-more">
+          <span>加载中...</span>
+        </div>
 
-        <view v-if="!hasMore && activities.length > 0" class="no-more">
-          <text>没有更多了</text>
-        </view>
-      </view>
+        <div v-if="!hasMore && activities.length > 0" class="no-more">
+          <span>没有更多了</span>
+        </div>
+      </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
-  </view>
+      <div class="safe-area-bottom"></div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { userApi } from '../../utils/api'
+import { navigateBack } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
@@ -97,15 +98,55 @@ const activities = ref<any[]>([])
 const page = ref(1)
 const limit = ref(10)
 const hasMore = ref(true)
+const scrollRef = ref<HTMLElement | null>(null)
+
+// 模拟数据
+const mockActivities = ref([
+  {
+    id: '1',
+    title: '周末亲子烘焙活动',
+    description: '邀请社区的家长和小朋友一起参加亲子烘焙，制作美味蛋糕！',
+    category: 'other',
+    location: '阳光社区活动中心',
+    start_time: Math.floor(Date.now() / 1000) + 86400 * 2,
+    max_participants: 20,
+    current_participants: 15,
+    status: 'upcoming',
+    user: { nickname: '热心肠王阿姨', avatar: 'https://i.pravatar.cc/100?img=20' }
+  },
+  {
+    id: '2',
+    title: '社区足球友谊赛',
+    description: '每周日上午9点在社区运动场举行足球友谊赛，欢迎足球爱好者报名参加！',
+    category: 'sports',
+    location: '阳光社区运动场',
+    start_time: Math.floor(Date.now() / 1000) + 86400 * 3,
+    max_participants: 22,
+    current_participants: 18,
+    status: 'upcoming',
+    user: { nickname: '阳光社区小李', avatar: 'https://i.pravatar.cc/100?img=10' }
+  },
+  {
+    id: '3',
+    title: '社区花园维护',
+    description: '一起为社区花园除草、浇水，让我们的小区更美丽！',
+    category: 'charity',
+    location: '社区花园',
+    start_time: Math.floor(Date.now() / 1000) - 86400,
+    max_participants: 30,
+    current_participants: 25,
+    status: 'completed',
+    user: { nickname: '志愿者小刘', avatar: 'https://i.pravatar.cc/100?img=30' }
+  }
+])
 
 onMounted(() => {
-  const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 20
+  statusBarHeight.value = 20
   loadActivities()
 })
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBack()
 }
 
 const loadActivities = async (isRefresh = false) => {
@@ -133,18 +174,22 @@ const loadActivities = async (isRefresh = false) => {
     hasMore.value = page.value < res.total_pages
     page.value++
   } catch (error) {
-    console.error('加载失败:', error)
+    console.error('加载失败，使用模拟数据:', error)
+    if (isRefresh || activities.value.length === 0) {
+      activities.value = mockActivities.value
+      hasMore.value = false
+    }
   } finally {
     loading.value = false
   }
 }
 
-const onRefresh = async () => {
-  await loadActivities(true)
-}
-
-const loadMore = () => {
-  loadActivities()
+const onScroll = () => {
+  if (!scrollRef.value) return
+  const el = scrollRef.value
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 100) {
+    loadActivities()
+  }
 }
 
 const formatDate = (timestamp: number) => {
@@ -219,6 +264,7 @@ const getStatusText = (status: string) => {
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  cursor: pointer;
 }
 
 .navbar-title {
@@ -231,7 +277,8 @@ const getStatusText = (status: string) => {
   width: 44px;
 }
 
-.content {
+.scroll-content {
+  overflow-y: auto;
   height: calc(100vh - 60px);
 }
 
@@ -276,6 +323,7 @@ const getStatusText = (status: string) => {
 .cover-image {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
 .cover-placeholder {
@@ -386,6 +434,7 @@ const getStatusText = (status: string) => {
   height: 24px;
   border-radius: 50%;
   margin-right: 8px;
+  object-fit: cover;
 }
 
 .creator-name {

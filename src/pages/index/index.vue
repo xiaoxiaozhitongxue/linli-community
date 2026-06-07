@@ -14,31 +14,52 @@
       </div>
     </div>
 
-    <div 
-      class="content" 
+    <!-- 下拉刷新指示器 -->
+    <div v-if="showRefreshIndicator" class="refresh-indicator" :style="{ top: (statusBarHeight + 60) + 'px' }">
+      <div class="refresh-content">
+        <div class="loading-spinner" :class="{ spinning: refreshing }"></div>
+        <span>{{ refreshing ? '正在刷新...' : '下拉刷新' }}</span>
+      </div>
+    </div>
+
+    <div
+      class="content"
       :style="{ paddingTop: (statusBarHeight + 60) + 'px' }"
+      @touchstart="onTouchStart"
+      @touchmove="onTouchMove"
+      @touchend="onTouchEnd"
     >
       <div class="banner-section">
-        <div class="banner-swiper">
-          <div 
-            class="banner-item" 
-            v-for="(banner, index) in banners" 
+        <div class="banner-swiper" @touchstart="onBannerTouchStart" @touchmove="onBannerTouchMove" @touchend="onBannerTouchEnd">
+          <div
+            class="banner-item"
+            v-for="(banner, index) in banners"
             :key="index"
-            :class="{ active: currentBanner === index }"
-            :style="{ background: banner.bgColor }"
+            :class="{ active: currentBanner === index, prev: currentBanner === (index + 1) % banners.length, next: currentBanner === (index - 1 + banners.length) % banners.length }"
+            :style="{ background: banner.bgColor, transform: getBannerTransform(index) }"
           >
             <div class="banner-content">
               <span class="banner-title">{{ banner.title }}</span>
               <span class="banner-desc">{{ banner.desc }}</span>
             </div>
           </div>
+          <!-- 轮播指示器 -->
+          <div class="banner-dots">
+            <div
+              v-for="(banner, index) in banners"
+              :key="index"
+              class="banner-dot"
+              :class="{ active: currentBanner === index }"
+              @click.stop="goToBanner(index)"
+            ></div>
+          </div>
         </div>
       </div>
 
       <div class="quick-actions">
-        <div 
-          class="quick-item" 
-          v-for="action in quickActions" 
+        <div
+          class="quick-item"
+          v-for="action in quickActions"
           :key="action.id"
           @click="handleQuickAction(action)"
         >
@@ -55,9 +76,9 @@
           <span class="section-more" @click="goToActivities">查看更多 ›</span>
         </div>
         <div class="activity-scroll">
-          <div 
-            class="activity-card" 
-            v-for="activity in hotActivities" 
+          <div
+            class="activity-card"
+            v-for="activity in hotActivities"
             :key="activity.id"
             @click="goToActivityDetail(activity.id)"
           >
@@ -81,8 +102,17 @@
         </div>
 
         <div v-if="loading && feedList.length === 0" class="loading-container">
-          <div class="loading-spinner"></div>
-          <span class="loading-text">加载中...</span>
+          <div class="skeleton-card" v-for="i in 3" :key="i">
+            <div class="skeleton-header">
+              <div class="skeleton-avatar"></div>
+              <div class="skeleton-lines">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line tiny"></div>
+              </div>
+            </div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line medium"></div>
+          </div>
         </div>
 
         <div v-else-if="error && feedList.length === 0" class="error-container">
@@ -94,16 +124,16 @@
         </div>
 
         <div v-else class="feed-list">
-          <div 
-            class="feed-card animate-fadeIn" 
-            v-for="(post, index) in feedList" 
+          <div
+            class="feed-card animate-fadeIn"
+            v-for="(post, index) in feedList"
             :key="post.id"
             :style="{ animationDelay: (index * 0.1) + 's' }"
           >
             <div class="feed-header">
-              <img 
-                class="feed-avatar" 
-                :src="post.user?.avatar || 'https://via.placeholder.com/40'" 
+              <img
+                class="feed-avatar"
+                :src="post.user?.avatar || 'https://via.placeholder.com/40'"
               />
               <div class="feed-user-info">
                 <span class="feed-username">{{ post.user?.nickname || '邻居' }}</span>
@@ -117,23 +147,23 @@
             <div class="feed-content">
               <span class="feed-text">{{ post.content }}</span>
               <div v-if="post.images && post.images.length > 0" class="feed-images" :class="'images-' + post.images.length">
-                <img 
-                  class="feed-image" 
-                  v-for="(img, imgIndex) in post.images" 
+                <img
+                  class="feed-image"
+                  v-for="(img, imgIndex) in post.images"
                   :key="imgIndex"
-                  :src="img" 
+                  :src="img"
                   @click="previewImage(post.images, imgIndex)"
                 />
               </div>
             </div>
 
             <div class="feed-actions">
-              <div 
-                class="feed-action" 
+              <div
+                class="feed-action"
                 :class="{ liked: post.is_liked }"
-                @click="likePost(post)"
+                @click="likePost(post, $event)"
               >
-                <span class="action-icon">{{ post.is_liked ? '❤️' : '🤍' }}</span>
+                <span class="action-icon" :class="{ 'heart-beat': post.is_liked }">{{ post.is_liked ? '❤️' : '🤍' }}</span>
                 <span class="action-count">{{ post.like_count || 0 }}</span>
               </div>
               <div class="feed-action" @click="showComments(post)">
@@ -157,7 +187,7 @@
         </div>
 
         <div v-if="!hasMore && feedList.length > 0" class="no-more">
-          <span>没有更多了</span>
+          <span>— 没有更多了 —</span>
         </div>
 
         <div class="safe-area-bottom"></div>
@@ -185,9 +215,9 @@
             <span class="empty-text">暂无评论，快来抢沙发吧！</span>
           </div>
           <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
-            <img 
-              class="comment-avatar" 
-              :src="comment.user?.avatar || 'https://via.placeholder.com/32'" 
+            <img
+              class="comment-avatar"
+              :src="comment.user?.avatar || 'https://via.placeholder.com/32'"
             />
             <div class="comment-content">
               <span class="comment-user">{{ comment.user?.nickname || '邻居' }}</span>
@@ -198,14 +228,15 @@
         </div>
 
         <div class="comment-input-wrapper">
-          <input 
-            class="comment-input" 
-            v-model="commentText" 
+          <input
+            class="comment-input"
+            v-model="commentText"
             placeholder="说点什么..."
             :disabled="!isLoggedIn"
+            @keyup.enter="submitComment"
           />
-          <div 
-            class="comment-submit" 
+          <div
+            class="comment-submit"
             :class="{ disabled: !commentText.trim() || !isLoggedIn }"
             @click="submitComment"
           >
@@ -236,20 +267,30 @@ const hasMore = ref(true)
 const currentPage = ref(1)
 const currentBanner = ref(0)
 let bannerTimer: any = null
+const showRefreshIndicator = ref(false)
+
+// 下拉刷新相关
+let touchStartY = 0
+let touchMoveY = 0
+let pullDistance = 0
+
+// 轮播图滑动相关
+let bannerTouchStartX = 0
+let bannerTouchMoveX = 0
 
 const banners = ref([
-  { 
-    title: '周末邻里集市', 
+  {
+    title: '周末邻里集市',
     desc: '欢迎来摆摊、淘宝、串门',
     bgColor: 'linear-gradient(135deg, #FF8C42, #FFB380)'
   },
-  { 
-    title: '老人关怀计划', 
+  {
+    title: '老人关怀计划',
     desc: '志愿者招募中，邀请您加入',
     bgColor: 'linear-gradient(135deg, #4CAF50, #81C784)'
   },
-  { 
-    title: '社区创业沙龙', 
+  {
+    title: '社区创业沙龙',
     desc: '把兴趣变成生意，邻居先成为客户',
     bgColor: 'linear-gradient(135deg, #2196F3, #64B5F6)'
   }
@@ -277,20 +318,83 @@ const comments = ref<Comment[]>([])
 const commentText = ref('')
 const commentLoading = ref(false)
 
+// 轮播图变换
+function getBannerTransform(index: number) {
+  const diff = index - currentBanner.value
+  return `translateX(${diff * 100}%)`
+}
+
+function goToBanner(index: number) {
+  stopBannerAutoPlay()
+  currentBanner.value = index
+  startBannerAutoPlay()
+}
+
+function onBannerTouchStart(e: TouchEvent) {
+  bannerTouchStartX = e.touches[0].clientX
+  stopBannerAutoPlay()
+}
+
+function onBannerTouchMove(e: TouchEvent) {
+  bannerTouchMoveX = e.touches[0].clientX
+}
+
+function onBannerTouchEnd() {
+  const diff = bannerTouchStartX - bannerTouchMoveX
+  if (Math.abs(diff) > 50) {
+    if (diff > 0) {
+      // 左滑 - 下一张
+      currentBanner.value = (currentBanner.value + 1) % banners.value.length
+    } else {
+      // 右滑 - 上一张
+      currentBanner.value = (currentBanner.value - 1 + banners.value.length) % banners.value.length
+    }
+  }
+  startBannerAutoPlay()
+}
+
+// 下拉刷新触摸事件
+function onTouchStart(e: TouchEvent) {
+  touchStartY = e.touches[0].clientY
+  touchMoveY = touchStartY
+}
+
+function onTouchMove(e: TouchEvent) {
+  touchMoveY = e.touches[0].clientY
+  pullDistance = touchMoveY - touchStartY
+
+  // 只有顶部区域下拉才显示刷新指示器
+  if (pullDistance > 30 && !refreshing.value) {
+    showRefreshIndicator.value = true
+  }
+}
+
+function onTouchEnd() {
+  if (pullDistance > 80 && !refreshing.value) {
+    onRefresh()
+  }
+  pullDistance = 0
+  setTimeout(() => {
+    if (!refreshing.value) {
+      showRefreshIndicator.value = false
+    }
+  }, 300)
+}
+
 async function fetchPosts(page: number = 1, isRefresh: boolean = false) {
   if (isRefresh) {
     error.value = ''
   }
-  
+
   try {
     const response = await postsApi.getPosts({ page, limit: 10 })
-    
+
     if (isRefresh) {
       feedList.value = response.items
     } else {
       feedList.value = [...feedList.value, ...response.items]
     }
-    
+
     currentPage.value = page
     hasMore.value = page < response.total_pages
   } catch (err) {
@@ -302,11 +406,13 @@ async function fetchPosts(page: number = 1, isRefresh: boolean = false) {
     loading.value = false
     loadingMore.value = false
     refreshing.value = false
+    showRefreshIndicator.value = false
   }
 }
 
 async function onRefresh() {
   refreshing.value = true
+  showRefreshIndicator.value = true
   currentPage.value = 1
   hasMore.value = true
   await fetchPosts(1, true)
@@ -314,31 +420,33 @@ async function onRefresh() {
 
 async function loadMorePosts() {
   if (loadingMore.value || !hasMore.value) return
-  
+
   loadingMore.value = true
   await fetchPosts(currentPage.value + 1)
 }
 
-async function likePost(post: Post) {
+async function likePost(post: Post, event?: MouseEvent) {
   if (!isLoggedIn.value) {
     toastError('请先登录')
     return
   }
-  
+
   const index = feedList.value.findIndex(p => p.id === post.id)
   if (index === -1) return
-  
+
   const originalLiked = post.is_liked
   const originalCount = post.like_count
-  
+
+  // 乐观更新
   feedList.value[index].is_liked = !originalLiked
   feedList.value[index].like_count = originalCount + (!originalLiked ? 1 : -1)
-  
+
   try {
     const response = await postsApi.likePost(post.id)
     feedList.value[index].is_liked = response.liked
     feedList.value[index].like_count = response.like_count
   } catch (err) {
+    // 回滚
     feedList.value[index].is_liked = originalLiked
     feedList.value[index].like_count = originalCount
     toastError('操作失败')
@@ -374,24 +482,24 @@ async function loadComments(postId: string) {
 
 async function submitComment() {
   if (!commentText.value.trim() || !isLoggedIn.value || !currentPost.value) return
-  
+
   if (!isLoggedIn.value) {
     toastError('请先登录')
     return
   }
-  
+
   try {
     const newComment = await postsApi.createComment(currentPost.value.id, {
       content: commentText.value.trim()
     })
-    
+
     comments.value = [newComment, ...comments.value]
-    
+
     const postIndex = feedList.value.findIndex(p => p.id === currentPost.value!.id)
     if (postIndex !== -1) {
       feedList.value[postIndex].comment_count = (feedList.value[postIndex].comment_count || 0) + 1
     }
-    
+
     commentText.value = ''
     toastSuccess('评论成功')
   } catch (err) {
@@ -403,13 +511,13 @@ function formatTime(timestamp: number | string): string {
   const now = Date.now()
   const date = typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime()
   const diff = now - date
-  
+
   const minute = 60 * 1000
   const hour = 60 * minute
   const day = 24 * hour
   const week = 7 * day
   const month = 30 * day
-  
+
   if (diff < minute) {
     return '刚刚'
   } else if (diff < hour) {
@@ -446,8 +554,6 @@ function goToActivities() {
 }
 
 function sharePost(post: Post) {
-  // 在实际项目中可能会调用原生的分享 API
-  // 这里我们模拟一个简单的分享功能
   if (navigator.share) {
     navigator.share({
       title: '邻里社区',
@@ -455,7 +561,6 @@ function sharePost(post: Post) {
       url: window.location.href
     }).catch(console.error)
   } else {
-    // 复制链接到剪贴板
     navigator.clipboard.writeText(window.location.href).then(() => {
       toastSuccess('链接已复制到剪贴板')
     }).catch(() => {
@@ -473,6 +578,7 @@ function goToCreate() {
 }
 
 function startBannerAutoPlay() {
+  stopBannerAutoPlay()
   bannerTimer = setInterval(() => {
     currentBanner.value = (currentBanner.value + 1) % banners.value.length
   }, 4000)
@@ -522,6 +628,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   margin-bottom: var(--spacing-sm);
+  cursor: pointer;
 }
 
 .location-icon {
@@ -547,6 +654,7 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 20px;
   padding: 10px 16px;
+  cursor: pointer;
 }
 
 .search-icon {
@@ -557,6 +665,56 @@ onUnmounted(() => {
 .search-placeholder {
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
+}
+
+/* 下拉刷新指示器 */
+.refresh-indicator {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+  animation: pullDown 0.3s ease-out;
+}
+
+@keyframes pullDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.refresh-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+}
+
+.loading-spinner.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .content {
@@ -585,12 +743,7 @@ onUnmounted(() => {
   padding: var(--spacing-xl);
   display: flex;
   align-items: center;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-
-.banner-item.active {
-  opacity: 1;
+  transition: transform 0.4s ease;
 }
 
 .banner-content {
@@ -610,6 +763,32 @@ onUnmounted(() => {
   font-size: 13px;
 }
 
+/* 轮播指示器 */
+.banner-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.banner-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.banner-dot.active {
+  width: 18px;
+  border-radius: 3px;
+  background: white;
+}
+
 .quick-actions {
   display: flex;
   justify-content: space-around;
@@ -624,6 +803,12 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.quick-item:active {
+  transform: scale(0.95);
 }
 
 .quick-icon {
@@ -664,12 +849,18 @@ onUnmounted(() => {
 .section-more {
   font-size: 14px;
   color: #0066CC;
+  cursor: pointer;
 }
 
 .activity-scroll {
   overflow-x: auto;
   white-space: nowrap;
   padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.activity-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .activity-card {
@@ -680,6 +871,12 @@ onUnmounted(() => {
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.activity-card:active {
+  transform: scale(0.97);
 }
 
 .activity-cover {
@@ -719,6 +916,62 @@ onUnmounted(() => {
   font-size: 11px;
   color: #0066CC;
   font-weight: 500;
+}
+
+/* 骨架屏加载 */
+.skeleton-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.skeleton-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  margin-right: var(--spacing-md);
+}
+
+.skeleton-lines {
+  flex: 1;
+}
+
+.skeleton-line {
+  height: 14px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-line.short {
+  width: 40%;
+}
+
+.skeleton-line.medium {
+  width: 60%;
+}
+
+.skeleton-line.tiny {
+  width: 30%;
+  height: 10px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .feed-list {
@@ -821,6 +1074,7 @@ onUnmounted(() => {
   border-radius: var(--radius-md);
   background: #f0f0f0;
   object-fit: cover;
+  cursor: pointer;
 }
 
 .feed-actions {
@@ -836,6 +1090,12 @@ onUnmounted(() => {
   justify-content: center;
   gap: 6px;
   padding: 6px 0;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.feed-action:active {
+  transform: scale(0.95);
 }
 
 .feed-action.liked .action-icon {
@@ -844,6 +1104,18 @@ onUnmounted(() => {
 
 .action-icon {
   font-size: 18px;
+  transition: transform 0.3s;
+}
+
+.action-icon.heart-beat {
+  animation: heartBeat 0.4s ease;
+}
+
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.3); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
 }
 
 .action-count {
@@ -876,17 +1148,6 @@ onUnmounted(() => {
   height: 24px;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.loading-text {
-  font-size: 14px;
-  color: var(--text-muted);
-}
-
 .error-icon {
   font-size: 40px;
   margin-bottom: var(--spacing-md);
@@ -905,6 +1166,7 @@ onUnmounted(() => {
   border-radius: var(--radius-lg);
   font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
 }
 
 .load-more,
@@ -913,6 +1175,12 @@ onUnmounted(() => {
   padding: var(--spacing-lg);
   color: var(--text-muted);
   font-size: 14px;
+}
+
+.load-more span {
+  cursor: pointer;
+  color: #0066CC;
+  font-weight: 500;
 }
 
 .loading-more {
@@ -961,6 +1229,7 @@ onUnmounted(() => {
   font-size: 20px;
   color: var(--text-muted);
   padding: 4px;
+  cursor: pointer;
 }
 
 .comment-list {
@@ -1062,10 +1331,17 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.comment-submit:active {
+  transform: scale(0.95);
 }
 
 .comment-submit.disabled {
   background: #B0C4DE;
+  cursor: not-allowed;
 }
 
 .animate-fadeIn {
@@ -1097,6 +1373,11 @@ onUnmounted(() => {
   border-radius: 28px;
   box-shadow: 0 4px 16px rgba(255, 140, 66, 0.4);
   transition: all 0.2s;
+  cursor: pointer;
+}
+
+.fab-btn:active {
+  transform: scale(0.95);
 }
 
 .fab-icon {

@@ -1,143 +1,167 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部导航 -->
-    <view class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="navbar-content">
-        <view class="back-btn" @click="goBack">
-          <text>←</text>
-        </view>
-        <text class="navbar-title">设置</text>
-        <view class="placeholder"></view>
-      </view>
-    </view>
+    <div class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <div class="navbar-content">
+        <div class="back-btn" @click="goBack">
+          <span>←</span>
+        </div>
+        <span class="navbar-title">设置</span>
+        <div class="placeholder"></div>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y>
+    <div class="scroll-content">
       <!-- 账户设置 -->
-      <view class="section">
-        <view class="section-title">账户</view>
-        <view class="menu-list">
-          <view class="menu-item" @click="goEditProfile">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">👤</text>
-              <text class="menu-item-text">编辑资料</text>
-            </view>
-            <text class="menu-item-arrow">></text>
-          </view>
-          <view class="menu-item" @click="showPrivacy">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">🔒</text>
-              <text class="menu-item-text">隐私设置</text>
-            </view>
-            <text class="menu-item-arrow">></text>
-          </view>
-          <view class="menu-item" @click="showSecurity">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">🛡️</text>
-              <text class="menu-item-text">安全设置</text>
-            </view>
-            <text class="menu-item-arrow">></text>
-          </view>
-        </view>
-      </view>
+      <div class="section">
+        <div class="section-title">账户</div>
+        <div class="menu-list">
+          <div class="menu-item" @click="goEditProfile">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">👤</span>
+              <span class="menu-item-text">编辑资料</span>
+            </div>
+            <span class="menu-item-arrow">›</span>
+          </div>
+          <div class="menu-item" @click="showPrivacy">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">🔒</span>
+              <span class="menu-item-text">隐私设置</span>
+            </div>
+            <span class="menu-item-arrow">›</span>
+          </div>
+          <div class="menu-item" @click="showSecurity">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">🛡️</span>
+              <span class="menu-item-text">安全设置</span>
+            </div>
+            <span class="menu-item-arrow">›</span>
+          </div>
+        </div>
+      </div>
 
       <!-- 通知设置 -->
-      <view class="section">
-        <view class="section-title">通知</view>
-        <view class="menu-list">
-          <view class="menu-item">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">🔔</text>
-              <text class="menu-item-text">推送通知</text>
-            </view>
-            <switch :checked="notifications.push" @change="togglePush" color="var(--primary-color)" />
-          </view>
-          <view class="menu-item">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">💬</text>
-              <text class="menu-item-text">消息通知</text>
-            </view>
-            <switch :checked="notifications.message" @change="toggleMessage" color="var(--primary-color)" />
-          </view>
-          <view class="menu-item">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">❤️</text>
-              <text class="menu-item-text">互动通知</text>
-            </view>
-            <switch :checked="notifications.interaction" @change="toggleInteraction" color="var(--primary-color)" />
-          </view>
-        </view>
-      </view>
+      <div class="section">
+        <div class="section-title">通知</div>
+        <div class="menu-list">
+          <div class="menu-item">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">🔔</span>
+              <span class="menu-item-text">推送通知</span>
+            </div>
+            <div class="toggle-switch" :class="{ active: notifications.push }" @click="togglePush">
+              <div class="toggle-thumb"></div>
+            </div>
+          </div>
+          <div class="menu-item">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">💬</span>
+              <span class="menu-item-text">消息通知</span>
+            </div>
+            <div class="toggle-switch" :class="{ active: notifications.message }" @click="toggleMessage">
+              <div class="toggle-thumb"></div>
+            </div>
+          </div>
+          <div class="menu-item">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">❤️</span>
+              <span class="menu-item-text">互动通知</span>
+            </div>
+            <div class="toggle-switch" :class="{ active: notifications.interaction }" @click="toggleInteraction">
+              <div class="toggle-thumb"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 通用设置 -->
-      <view class="section">
-        <view class="section-title">通用</view>
-        <view class="menu-list">
-          <view class="menu-item" @click="showTheme">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">🎨</text>
-              <text class="menu-item-text">主题设置</text>
-            </view>
-            <view class="menu-item-right">
-              <text class="menu-item-value">{{ themeText }}</text>
-              <text class="menu-item-arrow">></text>
-            </view>
-          </view>
-          <view class="menu-item" @click="clearCache">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">🗑️</text>
-              <text class="menu-item-text">清除缓存</text>
-            </view>
-            <view class="menu-item-right">
-              <text class="menu-item-value">{{ cacheSize }}</text>
-              <text class="menu-item-arrow">></text>
-            </view>
-          </view>
-        </view>
-      </view>
+      <div class="section">
+        <div class="section-title">通用</div>
+        <div class="menu-list">
+          <div class="menu-item" @click="showThemeSelector">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">🎨</span>
+              <span class="menu-item-text">主题设置</span>
+            </div>
+            <div class="menu-item-right">
+              <span class="menu-item-value">{{ themeText }}</span>
+              <span class="menu-item-arrow">›</span>
+            </div>
+          </div>
+          <div class="menu-item" @click="clearCache">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">🗑️</span>
+              <span class="menu-item-text">清除缓存</span>
+            </div>
+            <div class="menu-item-right">
+              <span class="menu-item-value">{{ cacheSize }}</span>
+              <span class="menu-item-arrow">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 关于 -->
-      <view class="section">
-        <view class="section-title">关于</view>
-        <view class="menu-list">
-          <view class="menu-item" @click="showAbout">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">ℹ️</text>
-              <text class="menu-item-text">关于我们</text>
-            </view>
-            <text class="menu-item-arrow">></text>
-          </view>
-          <view class="menu-item" @click="showFeedback">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">💡</text>
-              <text class="menu-item-text">意见反馈</text>
-            </view>
-            <text class="menu-item-arrow">></text>
-          </view>
-          <view class="menu-item">
-            <view class="menu-item-left">
-              <text class="menu-item-icon">📱</text>
-              <text class="menu-item-text">版本信息</text>
-            </view>
-            <text class="menu-item-value">v1.0.0</text>
-          </view>
-        </view>
-      </view>
+      <div class="section">
+        <div class="section-title">关于</div>
+        <div class="menu-list">
+          <div class="menu-item" @click="showAbout">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">ℹ️</span>
+              <span class="menu-item-text">关于我们</span>
+            </div>
+            <span class="menu-item-arrow">›</span>
+          </div>
+          <div class="menu-item" @click="showFeedback">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">💡</span>
+              <span class="menu-item-text">意见反馈</span>
+            </div>
+            <span class="menu-item-arrow">›</span>
+          </div>
+          <div class="menu-item">
+            <div class="menu-item-left">
+              <span class="menu-item-icon">📱</span>
+              <span class="menu-item-text">版本信息</span>
+            </div>
+            <span class="menu-item-value">v1.0.0</span>
+          </div>
+        </div>
+      </div>
 
       <!-- 退出登录 -->
-      <view class="logout-section" v-if="isLoggedIn">
-        <view class="logout-btn" @click="logout">
+      <div class="logout-section" v-if="isLoggedIn">
+        <div class="logout-btn" @click="logout">
           退出登录
-        </view>
-      </view>
+        </div>
+      </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
-  </view>
+      <!-- 主题选择弹窗 -->
+      <div v-if="showThemeModal" class="modal-mask" @click="showThemeModal = false">
+        <div class="modal-content" @click.stop>
+          <div class="modal-title">选择主题</div>
+          <div class="theme-option" :class="{ active: theme === 'light' }" @click="setTheme('light')">
+            浅色模式
+          </div>
+          <div class="theme-option" :class="{ active: theme === 'dark' }" @click="setTheme('dark')">
+            深色模式
+          </div>
+          <div class="modal-cancel" @click="showThemeModal = false">取消</div>
+        </div>
+      </div>
+
+      <div class="safe-area-bottom"></div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuth } from '../../store/index'
+import { navigateBack } from '../../utils/router'
+import { navigateTo } from '../../utils/router'
+import { toastInfo, toastSuccess } from '../../utils/toast'
+import { showModal } from '../../utils/ui'
 
 const { user, logout: authLogout, isLoggedIn } = useAuth()
 const statusBarHeight = ref(20)
@@ -149,6 +173,7 @@ const notifications = ref({
 })
 
 const theme = ref('light')
+const showThemeModal = ref(false)
 const cacheSize = ref('0MB')
 
 const themeText = computed(() => {
@@ -156,31 +181,30 @@ const themeText = computed(() => {
 })
 
 onMounted(() => {
-  const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 20
+  statusBarHeight.value = 20
   loadSettings()
 })
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBack()
 }
 
 const goEditProfile = () => {
-  uni.navigateTo({ url: '/pages/profile/edit' })
+  navigateTo('/pages/profile/edit')
 }
 
 const loadSettings = () => {
   try {
-    const savedNotifications = uni.getStorageSync('notifications')
-    const savedTheme = uni.getStorageSync('theme')
-    
+    const savedNotifications = localStorage.getItem('notifications')
+    const savedTheme = localStorage.getItem('theme')
+
     if (savedNotifications) {
       notifications.value = JSON.parse(savedNotifications)
     }
     if (savedTheme) {
       theme.value = savedTheme
     }
-    
+
     cacheSize.value = '12.5MB'
   } catch (error) {
     console.error('加载设置失败:', error)
@@ -189,76 +213,76 @@ const loadSettings = () => {
 
 const saveSettings = () => {
   try {
-    uni.setStorageSync('notifications', JSON.stringify(notifications.value))
-    uni.setStorageSync('theme', theme.value)
+    localStorage.setItem('notifications', JSON.stringify(notifications.value))
+    localStorage.setItem('theme', theme.value)
   } catch (error) {
     console.error('保存设置失败:', error)
   }
 }
 
-const togglePush = (e: any) => {
-  notifications.value.push = e.detail.value
+const togglePush = () => {
+  notifications.value.push = !notifications.value.push
   saveSettings()
 }
 
-const toggleMessage = (e: any) => {
-  notifications.value.message = e.detail.value
+const toggleMessage = () => {
+  notifications.value.message = !notifications.value.message
   saveSettings()
 }
 
-const toggleInteraction = (e: any) => {
-  notifications.value.interaction = e.detail.value
+const toggleInteraction = () => {
+  notifications.value.interaction = !notifications.value.interaction
   saveSettings()
 }
 
 const showPrivacy = () => {
-  uni.showToast({ title: '隐私设置即将上线', icon: 'none' })
+  toastInfo('隐私设置即将上线')
 }
 
 const showSecurity = () => {
-  uni.showToast({ title: '安全设置即将上线', icon: 'none' })
+  toastInfo('安全设置即将上线')
 }
 
-const showTheme = () => {
-  uni.showActionSheet({
-    itemList: ['浅色模式', '深色模式'],
-    success: (res) => {
-      theme.value = res.tapIndex === 0 ? 'light' : 'dark'
-      saveSettings()
-      uni.showToast({ title: '设置成功', icon: 'success' })
-    }
-  })
+const showThemeSelector = () => {
+  showThemeModal.value = true
+}
+
+const setTheme = (value: 'light' | 'dark') => {
+  theme.value = value
+  showThemeModal.value = false
+  saveSettings()
+  toastSuccess('设置成功')
 }
 
 const clearCache = () => {
-  uni.showModal({
+  showModal({
     title: '清除缓存',
     content: '确定要清除所有缓存吗？',
-    success: (res) => {
+    success: (res: any) => {
       if (res.confirm) {
         cacheSize.value = '0MB'
-        uni.showToast({ title: '清除成功', icon: 'success' })
+        toastSuccess('清除成功')
       }
     }
   })
 }
 
 const showAbout = () => {
-  uni.showToast({ title: '关于我们即将上线', icon: 'none' })
+  toastInfo('关于我们即将上线')
 }
 
 const showFeedback = () => {
-  uni.showToast({ title: '意见反馈即将上线', icon: 'none' })
+  toastInfo('意见反馈即将上线')
 }
 
 const logout = () => {
-  uni.showModal({
+  showModal({
     title: '退出登录',
     content: '确定要退出当前账户吗？',
-    success: (res) => {
+    success: (res: any) => {
       if (res.confirm) {
         authLogout()
-        uni.navigateBack()
+        navigateBack()
       }
     }
   })
@@ -295,6 +319,7 @@ const logout = () => {
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  cursor: pointer;
 }
 
 .navbar-title {
@@ -307,7 +332,8 @@ const logout = () => {
   width: 44px;
 }
 
-.content {
+.scroll-content {
+  overflow-y: auto;
   height: calc(100vh - 60px);
 }
 
@@ -338,6 +364,7 @@ const logout = () => {
   justify-content: space-between;
   padding: 14px 16px;
   border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
 }
 
 .menu-item:last-child {
@@ -376,6 +403,37 @@ const logout = () => {
   color: var(--text-muted);
 }
 
+/* 自定义开关 */
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: #e0e0e0;
+  border-radius: 13px;
+  transition: background 0.3s;
+  cursor: pointer;
+}
+
+.toggle-switch.active {
+  background: var(--primary-color);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.active .toggle-thumb {
+  transform: translateX(22px);
+}
+
 /* 退出登录 */
 .logout-section {
   padding: 24px 12px;
@@ -389,5 +447,60 @@ const logout = () => {
   text-align: center;
   font-size: 15px;
   font-weight: 500;
+  cursor: pointer;
+}
+
+/* 主题选择弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 500px;
+  padding: 20px 16px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.theme-option {
+  padding: 16px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.theme-option.active {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.modal-cancel {
+  padding: 16px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-top: 8px;
 }
 </style>

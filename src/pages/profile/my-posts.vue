@@ -1,108 +1,153 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部导航 -->
-    <view class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="navbar-content">
-        <view class="back-btn" @click="goBack">
-          <text>←</text>
-        </view>
-        <text class="navbar-title">我的动态</text>
-        <view class="publish-btn" @click="goPublish">
+    <div class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <div class="navbar-content">
+        <div class="back-btn" @click="goBack">
+          <span>←</span>
+        </div>
+        <span class="navbar-title">我的动态</span>
+        <div class="publish-btn" @click="goPublish">
           发布
-        </view>
-      </view>
-    </view>
+        </div>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y @scrolltolower="loadMore" refresher-enabled @refresherrefresh="onRefresh">
+    <div class="scroll-content" ref="scrollRef" @scroll="onScroll">
       <!-- 空状态 -->
-      <view v-if="!loading && posts.length === 0" class="empty-state">
-        <text class="empty-icon">📝</text>
-        <text class="empty-text">暂无动态</text>
-        <view class="btn btn-primary" style="margin-top: 24px;" @click="goPublish">
+      <div v-if="!loading && posts.length === 0" class="empty-state">
+        <span class="empty-icon">📝</span>
+        <span class="empty-text">暂无动态</span>
+        <div class="btn btn-primary" style="margin-top: 24px;" @click="goPublish">
           发布第一条动态
-        </view>
-      </view>
+        </div>
+      </div>
 
       <!-- 动态列表 -->
-      <view v-else class="post-list">
-        <view class="post-card" v-for="post in posts" :key="post.id">
-          <view class="post-header">
-            <image class="post-avatar" :src="post.user.avatar || 'https://i.pravatar.cc/100?img=10'" mode="aspectFill" />
-            <view class="post-user-info">
-              <text class="post-username">{{ post.user.nickname }}</text>
-              <text class="post-time">{{ formatTime(post.created_at) }}</text>
-            </view>
-          </view>
+      <div v-else class="post-list">
+        <div class="post-card" v-for="post in posts" :key="post.id">
+          <div class="post-header">
+            <img class="post-avatar" :src="post.user?.avatar || 'https://i.pravatar.cc/100?img=10'" alt="头像" />
+            <div class="post-user-info">
+              <span class="post-username">{{ post.user?.nickname }}</span>
+              <span class="post-time">{{ formatTime(post.created_at) }}</span>
+            </div>
+          </div>
 
-          <view class="post-content">
-            <text class="post-text">{{ post.content }}</text>
-          </view>
+          <div class="post-content">
+            <span class="post-text">{{ post.content }}</span>
+          </div>
 
-          <view v-if="post.images && post.images.length > 0" class="post-images">
-            <image 
-              v-for="(img, index) in post.images.slice(0, 9)" 
+          <div v-if="post.images && post.images.length > 0" class="post-images">
+            <img
+              v-for="(img, index) in post.images.slice(0, 9)"
               :key="index"
               class="post-image"
               :src="img"
-              mode="aspectFill"
+              alt="图片"
               :class="{ 'single-image': post.images.length === 1 }"
             />
-          </view>
+          </div>
 
-          <view class="post-footer">
-            <view class="post-action">
-              <text class="action-icon">❤️</text>
-              <text class="action-text">{{ post.like_count }}</text>
-            </view>
-            <view class="post-action">
-              <text class="action-icon">💬</text>
-              <text class="action-text">{{ post.comment_count }}</text>
-            </view>
-            <view class="post-action">
-              <text class="action-icon">📅</text>
-              <text class="action-text">{{ getVisibilityText(post.visibility) }}</text>
-            </view>
-          </view>
-        </view>
+          <div class="post-footer">
+            <div class="post-action">
+              <span class="action-icon">❤️</span>
+              <span class="action-text">{{ post.like_count }}</span>
+            </div>
+            <div class="post-action">
+              <span class="action-icon">💬</span>
+              <span class="action-text">{{ post.comment_count }}</span>
+            </div>
+            <div class="post-action">
+              <span class="action-icon">📅</span>
+              <span class="action-text">{{ getVisibilityText(post.visibility) }}</span>
+            </div>
+          </div>
+        </div>
 
         <!-- 加载更多 -->
-        <view v-if="loading" class="loading-more">
-          <text>加载中...</text>
-        </view>
+        <div v-if="loading" class="loading-more">
+          <span>加载中...</span>
+        </div>
 
-        <view v-if="!hasMore && posts.length > 0" class="no-more">
-          <text>没有更多了</text>
-        </view>
-      </view>
+        <div v-if="!hasMore && posts.length > 0" class="no-more">
+          <span>没有更多了</span>
+        </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
-  </view>
+        <!-- 下拉刷新提示 -->
+        <div v-if="refreshing" class="refresh-indicator">
+          <div class="loading-spinner small"></div>
+          <span>刷新中...</span>
+        </div>
+      </div>
+
+      <div class="safe-area-bottom"></div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { userApi } from '../../utils/api'
+import { navigateBack } from '../../utils/router'
+import { navigateTo } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
+const refreshing = ref(false)
 const posts = ref<any[]>([])
 const page = ref(1)
 const limit = ref(10)
 const hasMore = ref(true)
+const scrollRef = ref<HTMLElement | null>(null)
+
+// 模拟数据（当API不可用时使用）
+const mockPosts = ref([
+  {
+    id: '1',
+    user: { nickname: '阳光社区小李', avatar: 'https://i.pravatar.cc/100?img=10' },
+    content: '今天天气真好，带孩子在社区花园散步，发现花园里的花都开了！大家有空也出来晒晒太阳呀～',
+    images: ['https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400&h=400&fit=crop'],
+    like_count: 42,
+    comment_count: 8,
+    visibility: 'public',
+    created_at: Math.floor(Date.now() / 1000) - 3600
+  },
+  {
+    id: '2',
+    user: { nickname: '热心肠王阿姨', avatar: 'https://i.pravatar.cc/100?img=20' },
+    content: '本周六上午9点在社区活动中心将举行老年人健康义诊活动，欢迎各位邻居参加！',
+    like_count: 67,
+    comment_count: 15,
+    visibility: 'community',
+    created_at: Math.floor(Date.now() / 1000) - 86400
+  },
+  {
+    id: '3',
+    user: { nickname: '创业者张先生', avatar: 'https://i.pravatar.cc/100?img=30' },
+    content: '我的社区咖啡店新品试营业啦！本周六周日全场8折，欢迎邻居们来品尝！',
+    images: [
+      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=400&fit=crop'
+    ],
+    like_count: 89,
+    comment_count: 23,
+    visibility: 'public',
+    created_at: Math.floor(Date.now() / 1000) - 86400 * 2
+  }
+])
 
 onMounted(() => {
-  const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 20
+  statusBarHeight.value = 20
   loadPosts()
 })
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBack()
 }
 
 const goPublish = () => {
-  uni.navigateTo({ url: '/pages/post/create' })
+  navigateTo('/pages/post/create')
 }
 
 const loadPosts = async (isRefresh = false) => {
@@ -112,6 +157,7 @@ const loadPosts = async (isRefresh = false) => {
   try {
     loading.value = true
     if (isRefresh) {
+      refreshing.value = true
       page.value = 1
       hasMore.value = true
     }
@@ -130,18 +176,33 @@ const loadPosts = async (isRefresh = false) => {
     hasMore.value = page.value < res.total_pages
     page.value++
   } catch (error) {
-    console.error('加载失败:', error)
+    console.error('加载失败，使用模拟数据:', error)
+    if (isRefresh || posts.value.length === 0) {
+      posts.value = mockPosts.value
+      hasMore.value = false
+    }
   } finally {
     loading.value = false
+    refreshing.value = false
   }
 }
 
 const onRefresh = async () => {
   await loadPosts(true)
+  scrollRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-const loadMore = () => {
-  loadPosts()
+const onScroll = () => {
+  if (!scrollRef.value) return
+  const el = scrollRef.value
+  // 下拉刷新检测
+  if (el.scrollTop <= -60 && !refreshing.value) {
+    onRefresh()
+  }
+  // 上拉加载更多检测
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 100) {
+    loadPosts()
+  }
 }
 
 const formatTime = (timestamp: number) => {
@@ -152,7 +213,7 @@ const formatTime = (timestamp: number) => {
   if (diff < 3600) return Math.floor(diff / 60) + '分钟前'
   if (diff < 86400) return Math.floor(diff / 3600) + '小时前'
   if (diff < 2592000) return Math.floor(diff / 86400) + '天前'
-  
+
   const date = new Date(timestamp * 1000)
   return `${date.getMonth() + 1}月${date.getDate()}日`
 }
@@ -197,6 +258,7 @@ const getVisibilityText = (visibility: string) => {
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  cursor: pointer;
 }
 
 .navbar-title {
@@ -212,9 +274,11 @@ const getVisibilityText = (visibility: string) => {
   border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
 }
 
-.content {
+.scroll-content {
+  overflow-y: auto;
   height: calc(100vh - 60px);
 }
 
@@ -235,6 +299,48 @@ const getVisibilityText = (visibility: string) => {
 .empty-text {
   font-size: 16px;
   color: var(--text-muted);
+}
+
+.btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* 下拉刷新 */
+.refresh-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-spinner.small {
+  width: 20px;
+  height: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* 动态列表 */
@@ -261,6 +367,7 @@ const getVisibilityText = (visibility: string) => {
   height: 40px;
   border-radius: 50%;
   margin-right: 12px;
+  object-fit: cover;
 }
 
 .post-user-info {
@@ -303,6 +410,7 @@ const getVisibilityText = (visibility: string) => {
   aspect-ratio: 1;
   border-radius: 8px;
   background: var(--border-color);
+  object-fit: cover;
 }
 
 .post-image.single-image {

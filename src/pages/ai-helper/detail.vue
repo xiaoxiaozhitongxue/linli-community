@@ -1,101 +1,117 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部区域 -->
-    <view class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="header-nav">
-        <text class="back-btn" @click="goBack">←</text>
-        <text class="header-title">任务详情</text>
-        <text class="more-btn">⋮</text>
-      </view>
-    </view>
+    <div class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <div class="header-nav">
+        <span class="back-btn" @click="goBack">←</span>
+        <span class="header-title">任务详情</span>
+        <span class="more-btn">⋮</span>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y>
+    <div class="content" style="overflow-y: auto; padding-bottom: 80px;">
       <!-- 任务信息 -->
-      <view class="task-card">
-        <view class="task-type-tag" :class="'type-' + task.type">
+      <div class="task-card">
+        <div class="task-type-tag" :class="'type-' + task.type">
           {{ getTypeName(task.type) }}
-        </view>
-        <text class="task-title">{{ task.title }}</text>
-        <text class="task-desc">{{ task.description }}</text>
-        
-        <view class="task-reward">
-          <text class="reward-label">悬赏金额</text>
-          <text class="reward-value">¥{{ task.reward }}</text>
-        </view>
-      </view>
+        </div>
+        <span class="task-title">{{ task.title }}</span>
+        <span class="task-desc">{{ task.description }}</span>
+
+        <div class="task-reward">
+          <span class="reward-label">悬赏金额</span>
+          <span class="reward-value">¥{{ task.reward }}</span>
+        </div>
+      </div>
 
       <!-- 发布者信息 -->
-      <view class="section">
-        <view class="section-title">发布者</view>
-        <view class="creator-card">
-          <image class="creator-avatar" :src="task.creatorAvatar" mode="aspectFill" />
-          <view class="creator-info">
-            <text class="creator-name">{{ task.creatorName }}</text>
-            <view class="creator-stats">
-              <text>⭐ {{ task.creatorRating }}</text>
-              <text>✅ {{ task.creatorTasks }}单完成</text>
-            </view>
-          </view>
-        </view>
-      </view>
+      <div class="section">
+        <div class="section-title">发布者</div>
+        <div class="creator-card">
+          <img class="creator-avatar" :src="task.creatorAvatar" />
+          <div class="creator-info">
+            <span class="creator-name">{{ task.creatorName }}</span>
+            <div class="creator-stats">
+              <span>⭐ {{ task.creatorRating }}</span>
+              <span>✅ {{ task.creatorTasks }}单完成</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 任务信息 -->
-      <view class="section">
-        <view class="section-title">任务信息</view>
-        <view class="info-list">
-          <view class="info-item">
-            <text class="info-label">发布时间</text>
-            <text class="info-value">{{ task.createTime }}</text>
-          </view>
-          <view class="info-item">
-            <text class="info-label">任务地点</text>
-            <text class="info-value">📍 {{ task.location }}</text>
-          </view>
-          <view class="info-item">
-            <text class="info-label">距离您</text>
-            <text class="info-value">{{ task.distance }}米</text>
-          </view>
-          <view class="info-item">
-            <text class="info-label">响应人数</text>
-            <text class="info-value">{{ task.responses }}人</text>
-          </view>
-        </view>
-      </view>
+      <div class="section">
+        <div class="section-title">任务信息</div>
+        <div class="info-list">
+          <div class="info-item">
+            <span class="info-label">发布时间</span>
+            <span class="info-value">{{ task.createTime }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">任务地点</span>
+            <span class="info-value">📍 {{ task.location }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">距离您</span>
+            <span class="info-value">{{ task.distance }}米</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">响应人数</span>
+            <span class="info-value">{{ task.responses }}人</span>
+          </div>
+          <div class="info-item" v-if="task.status">
+            <span class="info-label">任务状态</span>
+            <span class="info-value status-badge" :class="'status-' + task.status">
+              {{ getStatusName(task.status) }}
+            </span>
+          </div>
+        </div>
+      </div>
 
       <!-- 已响应的人 -->
-      <view class="section" v-if="task.responses > 0">
-        <view class="section-title">已响应 ({{ task.responses }})</view>
-        <view class="responders-list">
-          <view class="responder-item" v-for="responder in responders" :key="responder.id">
-            <image class="responder-avatar" :src="responder.avatar" mode="aspectFill" />
-            <view class="responder-info">
-              <text class="responder-name">{{ responder.name }}</text>
-              <text class="responder-stats">⭐ {{ responder.rating }} · {{ responder.completedTasks }}单</text>
-            </view>
-            <view class="select-btn" @click="selectResponder(responder)">选择</view>
-          </view>
-        </view>
-      </view>
+      <div class="section" v-if="task.responses > 0">
+        <div class="section-title">已响应 ({{ task.responses }})</div>
+        <div class="responders-list">
+          <div class="responder-item" v-for="responder in responders" :key="responder.id">
+            <img class="responder-avatar" :src="responder.avatar" />
+            <div class="responder-info">
+              <span class="responder-name">{{ responder.name }}</span>
+              <span class="responder-stats">⭐ {{ responder.rating }} · {{ responder.completedTasks }}单</span>
+            </div>
+            <div class="select-btn" @click="selectResponder(responder)">选择</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-      <!-- 底部操作 -->
-      <view class="bottom-action">
-        <view class="action-buttons">
-          <view class="contact-btn" @click="contactCreator">
-            <text>💬</text>
-            <text>联系发布者</text>
-          </view>
-          <view class="accept-btn" @click="acceptTask">
-            <text>接单</text>
-          </view>
-        </view>
-      </view>
-    </scroll-view>
-  </view>
+    <!-- 底部操作 -->
+    <div class="bottom-action">
+      <div class="action-buttons">
+        <div class="contact-btn" @click="contactCreator">
+          <span>💬</span>
+          <span>联系发布者</span>
+        </div>
+        <div
+          class="accept-btn"
+          :class="{ completed: task.status === 'completed' }"
+          @click="handleAction"
+        >
+          <span>{{ actionButtonText }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { navigateBack } from '../../utils/router'
+import { toastSuccess, toastInfo } from '../../utils/toast'
 
+const STORAGE_KEY = 'ai_helper_tasks'
+
+const route = useRoute()
 const statusBarHeight = ref(20)
 
 const task = ref({
@@ -111,7 +127,8 @@ const task = ref({
   creatorName: '小红',
   creatorAvatar: 'https://i.pravatar.cc/100?img=4',
   creatorRating: 4.8,
-  creatorTasks: 23
+  creatorTasks: 23,
+  status: 'open'
 })
 
 const responders = ref([
@@ -131,18 +148,49 @@ const responders = ref([
   }
 ])
 
-onMounted(() => {
-  const pages = getCurrentPages()
-  if (pages.length > 0) {
-    const currentPage = pages[pages.length - 1]
-    if (currentPage.options && currentPage.options.id) {
-      task.value.id = currentPage.options.id
+// 是否已接单
+const isAccepted = ref(false)
+
+const actionButtonText = computed(() => {
+  if (task.value.status === 'completed') return '任务已完成'
+  if (isAccepted.value) return '完成任务'
+  return '接单'
+})
+
+function loadTasks(): any[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      return JSON.parse(stored)
     }
+  } catch (e) {
+    console.error('加载任务数据失败:', e)
+  }
+  return []
+}
+
+function saveTasks(tasks: any[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
+  } catch (e) {
+    console.error('保存任务数据失败:', e)
+  }
+}
+
+onMounted(() => {
+  // 从 URL 参数获取任务 ID
+  const taskId = (route.query.id as string) || '1'
+
+  // 从 localStorage 加载任务数据
+  const tasks = loadTasks()
+  const found = tasks.find(t => t.id === taskId)
+  if (found) {
+    task.value = { ...task.value, ...found }
   }
 })
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBack()
 }
 
 const getTypeName = (type: string) => {
@@ -155,35 +203,69 @@ const getTypeName = (type: string) => {
   return map[type] || type
 }
 
+const getStatusName = (status: string) => {
+  const map: Record<string, string> = {
+    open: '待接单',
+    ongoing: '进行中',
+    completed: '已完成'
+  }
+  return map[status] || status
+}
+
 const contactCreator = () => {
-  uni.showToast({ title: '联系功能开发中', icon: 'none' })
+  toastInfo('联系功能开发中')
 }
 
 const selectResponder = (responder: any) => {
-  uni.showModal({
-    title: '确认选择',
-    content: `确定选择 ${responder.name} 来完成此任务吗？`,
-    success: (res) => {
-      if (res.confirm) {
-        uni.showToast({ title: '已选择', icon: 'success' })
-      }
-    }
-  })
+  if (window.confirm(`确定选择 ${responder.name} 来完成此任务吗？`)) {
+    toastSuccess('已选择')
+  }
 }
 
-const acceptTask = () => {
-  uni.showModal({
-    title: '确认接单',
-    content: '确定要接下这个任务吗？',
-    success: (res) => {
-      if (res.confirm) {
-        uni.showToast({ title: '接单成功', icon: 'success' })
-        setTimeout(() => {
-          uni.navigateBack()
-        }, 1500)
+const handleAction = () => {
+  if (task.value.status === 'completed') {
+    toastInfo('该任务已完成')
+    return
+  }
+
+  if (isAccepted.value) {
+    // 完成任务
+    if (window.confirm('确定标记此任务为已完成吗？')) {
+      task.value.status = 'completed'
+      isAccepted.value = false
+
+      // 更新 localStorage 中的任务状态
+      const tasks = loadTasks()
+      const index = tasks.findIndex(t => t.id === task.value.id)
+      if (index !== -1) {
+        tasks[index].status = 'completed'
+        saveTasks(tasks)
       }
+
+      toastSuccess('任务已完成')
+      setTimeout(() => {
+        navigateBack()
+      }, 1500)
     }
-  })
+  } else {
+    // 接单
+    if (window.confirm('确定要接下这个任务吗？')) {
+      isAccepted.value = true
+      task.value.status = 'ongoing'
+      task.value.responses++
+
+      // 更新 localStorage 中的任务状态
+      const tasks = loadTasks()
+      const index = tasks.findIndex(t => t.id === task.value.id)
+      if (index !== -1) {
+        tasks[index].status = 'ongoing'
+        tasks[index].responses = task.value.responses
+        saveTasks(tasks)
+      }
+
+      toastSuccess('接单成功')
+    }
+  }
 }
 </script>
 
@@ -209,6 +291,7 @@ const acceptTask = () => {
 
 .back-btn {
   font-size: 20px;
+  cursor: pointer;
 }
 
 .header-title {
@@ -218,11 +301,12 @@ const acceptTask = () => {
 
 .more-btn {
   font-size: 18px;
+  cursor: pointer;
 }
 
 .content {
   height: calc(100vh);
-  padding-bottom: 80px;
+  overflow-y: auto;
 }
 
 .task-card {
@@ -302,6 +386,7 @@ const acceptTask = () => {
   height: 48px;
   border-radius: 50%;
   margin-right: var(--spacing-md);
+  object-fit: cover;
 }
 
 .creator-info {
@@ -324,7 +409,6 @@ const acceptTask = () => {
 }
 
 .info-list {
-  
 }
 
 .info-item {
@@ -348,6 +432,18 @@ const acceptTask = () => {
   color: var(--text-primary);
 }
 
+.status-badge.status-open {
+  color: #2196F3;
+}
+
+.status-badge.status-ongoing {
+  color: #FF9800;
+}
+
+.status-badge.status-completed {
+  color: #4CAF50;
+}
+
 .responders-list {
   display: flex;
   flex-direction: column;
@@ -367,6 +463,7 @@ const acceptTask = () => {
   height: 40px;
   border-radius: 50%;
   margin-right: var(--spacing-md);
+  object-fit: cover;
 }
 
 .responder-info {
@@ -392,6 +489,7 @@ const acceptTask = () => {
   color: white;
   border-radius: 20px;
   font-size: 13px;
+  cursor: pointer;
 }
 
 .bottom-action {
@@ -402,6 +500,8 @@ const acceptTask = () => {
   background: var(--card-bg);
   padding: var(--spacing-md) var(--spacing-lg);
   box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+  padding-bottom: calc(var(--spacing-md) + constant(safe-area-inset-bottom));
+  padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
 }
 
 .action-buttons {
@@ -420,6 +520,7 @@ const acceptTask = () => {
   border-radius: var(--radius-md);
   font-size: 15px;
   color: var(--text-primary);
+  cursor: pointer;
 }
 
 .accept-btn {
@@ -433,5 +534,11 @@ const acceptTask = () => {
   border-radius: var(--radius-md);
   font-size: 15px;
   font-weight: 500;
+  cursor: pointer;
+}
+
+.accept-btn.completed {
+  background: var(--text-muted);
+  cursor: default;
 }
 </style>

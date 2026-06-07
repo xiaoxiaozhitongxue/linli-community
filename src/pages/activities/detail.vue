@@ -1,116 +1,148 @@
 <template>
-  <view class="page">
-    <view class="nav-header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="nav-content">
-        <view class="nav-back" @click="goBack">
-          <text class="nav-back-icon">←</text>
-        </view>
-        <text class="nav-title">活动详情</text>
-        <view class="nav-action" @click="shareActivity">
-          <text class="nav-action-icon">⋮</text>
-        </view>
-      </view>
-    </view>
+  <div class="page">
+    <div class="nav-header">
+      <div class="nav-content">
+        <div class="nav-back" @click="goBack">
+          <span class="nav-back-icon">←</span>
+        </div>
+        <span class="nav-title">活动详情</span>
+        <div class="nav-action" @click="shareActivity">
+          <span class="nav-action-icon">⋮</span>
+        </div>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y :style="{ paddingTop: (statusBarHeight + 56) + 'px' }">
-      <view v-if="activity" class="detail-content">
-        <!-- 活动图片 -->
-        <view v-if="activity.images && activity.images.length > 0" class="image-section">
-          <swiper class="image-swiper" :indicator-dots="true" :autoplay="false" :interval="3000" :duration="500">
-            <swiper-item v-for="(img, index) in activity.images" :key="index">
-              <image class="activity-image" :src="img" mode="aspectFill" @click="previewImage(index)" />
-            </swiper-item>
-          </swiper>
-        </view>
+    <div class="content">
+      <div v-if="activity" class="detail-content">
+        <!-- 活动图片轮播 -->
+        <div v-if="activity.images && activity.images.length > 0" class="image-section">
+          <div class="image-carousel">
+            <div
+              class="carousel-track"
+              :style="{ transform: `translateX(-${currentImageIndex * 100}%)` }"
+            >
+              <div
+                v-for="(img, index) in activity.images"
+                :key="index"
+                class="carousel-slide"
+              >
+                <img class="activity-image" :src="img" :alt="activity.title" />
+              </div>
+            </div>
+            <div v-if="activity.images.length > 1" class="carousel-indicators">
+              <span
+                v-for="(img, index) in activity.images"
+                :key="index"
+                class="indicator-dot"
+                :class="{ active: currentImageIndex === index }"
+                @click="currentImageIndex = index"
+              ></span>
+            </div>
+            <div
+              v-if="currentImageIndex > 0"
+              class="carousel-btn carousel-prev"
+              @click="currentImageIndex--"
+            >
+              <span>‹</span>
+            </div>
+            <div
+              v-if="currentImageIndex < activity.images.length - 1"
+              class="carousel-btn carousel-next"
+              @click="currentImageIndex++"
+            >
+              <span>›</span>
+            </div>
+          </div>
+        </div>
 
         <!-- 活动信息 -->
-        <view class="info-section">
-          <view class="activity-top">
-            <view class="activity-category" :class="'cat-' + activity.category">
+        <div class="info-section">
+          <div class="activity-top">
+            <div class="activity-category" :class="'cat-' + activity.category">
               {{ getCategoryLabel(activity.category) }}
-            </view>
-            <text class="activity-status" :class="'status-' + activity.status">
+            </div>
+            <span class="activity-status" :class="'status-' + activity.status">
               {{ getStatusText(activity.status) }}
-            </text>
-          </view>
+            </span>
+          </div>
 
-          <text class="activity-title">{{ activity.title }}</text>
+          <span class="activity-title">{{ activity.title }}</span>
 
-          <view class="activity-info-grid">
-            <view class="info-item">
-              <text class="info-icon">📍</text>
-              <text class="info-text">{{ activity.location }}</text>
-            </view>
-            <view class="info-item">
-              <text class="info-icon">📅</text>
-              <text class="info-text">{{ formatFullDate(activity.start_time) }}</text>
-            </view>
-            <view class="info-item">
-              <text class="info-icon">🕐</text>
-              <text class="info-text">{{ formatTime(activity.start_time) }} - {{ formatTime(activity.end_time || activity.start_time) }}</text>
-            </view>
-            <view class="info-item">
-              <text class="info-icon">👥</text>
-              <text class="info-text">{{ activity.current_participants }}人已报名{{ activity.max_participants ? ' / 限' + activity.max_participants + '人' : '' }}</text>
-            </view>
-          </view>
-        </view>
+          <div class="activity-info-grid">
+            <div class="info-item">
+              <span class="info-icon">📍</span>
+              <span class="info-text">{{ activity.location }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-icon">📅</span>
+              <span class="info-text">{{ formatFullDate(activity.start_time) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-icon">🕐</span>
+              <span class="info-text">{{ formatTime(activity.start_time) }} - {{ formatTime(activity.end_time || activity.start_time) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-icon">👥</span>
+              <span class="info-text">{{ activity.current_participants }}人已报名{{ activity.max_participants ? ' / 限' + activity.max_participants + '人' : '' }}</span>
+            </div>
+          </div>
+        </div>
 
         <!-- 活动描述 -->
-        <view class="desc-section">
-          <view class="section-title">活动介绍</view>
-          <text class="activity-desc">{{ activity.description }}</text>
-        </view>
+        <div class="desc-section">
+          <div class="section-title">活动介绍</div>
+          <span class="activity-desc">{{ activity.description }}</span>
+        </div>
 
         <!-- 发布者信息 -->
-        <view class="creator-section">
-          <view class="section-title">发布者</view>
-          <view class="creator-info" @click="viewCreator">
-            <image class="creator-avatar" :src="activity.user?.avatar || '/static/default-avatar.png'" mode="aspectFill" />
-            <view class="creator-detail">
-              <text class="creator-name">{{ activity.user?.nickname }}</text>
-              <text class="creator-time">发布于 {{ formatDate(activity.created_at) }}</text>
-            </view>
-            <text class="creator-arrow">›</text>
-          </view>
-        </view>
+        <div class="creator-section">
+          <div class="section-title">发布者</div>
+          <div class="creator-info" @click="viewCreator">
+            <img class="creator-avatar" :src="activity.user?.avatar || '/static/default-avatar.png'" alt="avatar" />
+            <div class="creator-detail">
+              <span class="creator-name">{{ activity.user?.nickname }}</span>
+              <span class="creator-time">发布于 {{ formatDate(activity.created_at) }}</span>
+            </div>
+            <span class="creator-arrow">›</span>
+          </div>
+        </div>
 
         <!-- 参与者列表 -->
-        <view class="participants-section" v-if="participants.length > 0">
-          <view class="section-title">
-            <text>已报名邻居</text>
-            <text class="section-count">{{ participants.length }}人</text>
-          </view>
-          <scroll-view class="participants-scroll" scroll-x show-scrollbar="false">
-            <view class="participant-item" v-for="p in participants" :key="p.id">
-              <image class="participant-avatar" :src="p.avatar || '/static/default-avatar.png'" mode="aspectFill" />
-              <text class="participant-name">{{ p.nickname }}</text>
-            </view>
-          </scroll-view>
-        </view>
+        <div class="participants-section" v-if="participants.length > 0">
+          <div class="section-title">
+            <span>已报名邻居</span>
+            <span class="section-count">{{ participants.length }}人</span>
+          </div>
+          <div class="participants-list">
+            <div class="participant-item" v-for="p in participants" :key="p.id">
+              <img class="participant-avatar" :src="p.avatar || '/static/default-avatar.png'" alt="avatar" />
+              <span class="participant-name">{{ p.nickname }}</span>
+            </div>
+          </div>
+        </div>
 
-        <view class="safe-area-bottom"></view>
-      </view>
+        <div class="safe-area-bottom"></div>
+      </div>
 
       <!-- 空状态 -->
-      <view v-else-if="!loading" class="empty-state">
-        <text class="empty-emoji">😅</text>
-        <text class="empty-text">活动不存在</text>
-      </view>
-    </scroll-view>
+      <div v-else-if="!loading" class="empty-state">
+        <span class="empty-emoji">😅</span>
+        <span class="empty-text">活动不存在</span>
+      </div>
+    </div>
 
     <!-- 底部操作栏 -->
-    <view v-if="activity" class="bottom-bar" :style="{ paddingBottom: safeAreaBottom + 'px' }">
-      <view class="bar-left">
-        <view class="bar-btn" @click="toggleFavorite">
-          <text class="bar-icon">{{ isFavorited ? '❤️' : '🤍' }}</text>
-        </view>
-        <view class="bar-btn" @click="shareActivity">
-          <text class="bar-icon">🔗</text>
-        </view>
-      </view>
-      <view class="bar-right">
-        <view 
+    <div v-if="activity" class="bottom-bar">
+      <div class="bar-left">
+        <div class="bar-btn" @click="toggleFavorite">
+          <span class="bar-icon">{{ isFavorited ? '❤️' : '🤍' }}</span>
+        </div>
+        <div class="bar-btn" @click="shareActivity">
+          <span class="bar-icon">🔗</span>
+        </div>
+      </div>
+      <div class="bar-right">
+        <div 
           class="join-btn"
           :class="{ 
             joined: activity.is_participant, 
@@ -120,24 +152,28 @@
           @click="toggleJoin"
         >
           {{ getButtonText() }}
-        </view>
-      </view>
-    </view>
+        </div>
+      </div>
+    </div>
 
     <!-- 加载中 -->
-    <view v-if="loading" class="loading-overlay">
-      <view class="loading-spinner"></view>
-      <text class="loading-text">加载中...</text>
-    </view>
-  </view>
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span class="loading-text">加载中...</span>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { activitiesApi, userApi } from '../../utils/api'
+import { navigateBack } from '../../utils/router'
+import { toastSuccess, showToast } from '../../utils/toast'
 
-const statusBarHeight = ref(20)
-const safeAreaBottom = ref(0)
+const route = useRoute()
+
+const currentImageIndex = ref(0)
 
 const activityId = ref('')
 const activity = ref<any>(null)
@@ -209,7 +245,6 @@ const loadActivity = async () => {
     const data = await activitiesApi.getActivity(activityId.value)
     activity.value = data
     
-    // 模拟参与者数据
     participants.value = [
       { id: '1', nickname: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=1' },
       { id: '2', nickname: '小李', avatar: 'https://i.pravatar.cc/100?img=2' },
@@ -218,7 +253,6 @@ const loadActivity = async () => {
       { id: '5', nickname: '老张', avatar: 'https://i.pravatar.cc/100?img=5' }
     ]
   } catch (error) {
-    // 模拟数据
     activity.value = {
       id: activityId.value,
       user_id: '1',
@@ -248,15 +282,6 @@ const loadActivity = async () => {
   }
 }
 
-const previewImage = (index: number) => {
-  if (activity.value.images) {
-    uni.previewImage({
-      urls: activity.value.images,
-      current: index
-    })
-  }
-}
-
 const toggleJoin = async () => {
   if (activity.value.status === 'completed' || activity.value.status === 'cancelled') {
     return
@@ -267,15 +292,15 @@ const toggleJoin = async () => {
       await activitiesApi.leaveActivity(activity.value.id)
       activity.value.is_participant = false
       activity.value.current_participants = Math.max(0, activity.value.current_participants - 1)
-      uni.showToast({ title: '已取消报名', icon: 'success' })
+      toastSuccess('已取消报名')
     } catch (error) {
       activity.value.is_participant = false
       activity.value.current_participants = Math.max(0, activity.value.current_participants - 1)
-      uni.showToast({ title: '已取消报名', icon: 'success' })
+      toastSuccess('已取消报名')
     }
   } else {
     if (activity.value.max_participants && activity.value.current_participants >= activity.value.max_participants) {
-      uni.showToast({ title: '名额已满', icon: 'none' })
+      showToast('名额已满', 'info')
       return
     }
     
@@ -283,11 +308,11 @@ const toggleJoin = async () => {
       await activitiesApi.joinActivity(activity.value.id)
       activity.value.is_participant = true
       activity.value.current_participants += 1
-      uni.showToast({ title: '报名成功', icon: 'success' })
+      toastSuccess('报名成功')
     } catch (error) {
       activity.value.is_participant = true
       activity.value.current_participants += 1
-      uni.showToast({ title: '报名成功', icon: 'success' })
+      toastSuccess('报名成功')
     }
   }
 }
@@ -296,21 +321,15 @@ const toggleFavorite = async () => {
   try {
     await userApi.toggleFavorite('activity', activity.value.id)
     isFavorited.value = !isFavorited.value
-    uni.showToast({ 
-      title: isFavorited.value ? '已收藏' : '已取消收藏', 
-      icon: 'success' 
-    })
+    toastSuccess(isFavorited.value ? '已收藏' : '已取消收藏')
   } catch (error) {
     isFavorited.value = !isFavorited.value
-    uni.showToast({ 
-      title: isFavorited.value ? '已收藏' : '已取消收藏', 
-      icon: 'success' 
-    })
+    toastSuccess(isFavorited.value ? '已收藏' : '已取消收藏')
   }
 }
 
 const shareActivity = () => {
-  uni.showShareMenu()
+  showToast('分享功能开发中', 'info')
 }
 
 const viewCreator = () => {
@@ -318,15 +337,11 @@ const viewCreator = () => {
 }
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBack()
 }
 
 onMounted(() => {
-  const pages = getCurrentPages()
-  const currentPage = pages[pages.length - 1]
-  const options = (currentPage as any).options || {}
-  activityId.value = options.id || ''
-  
+  activityId.value = (route.query.id as string) || ''
   if (activityId.value) {
     loadActivity()
   }
@@ -354,6 +369,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
+  padding-top: max(12px, env(safe-area-inset-top));
 }
 
 .nav-back, .nav-action {
@@ -362,6 +378,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .nav-back-icon, .nav-action-icon {
@@ -377,8 +394,10 @@ onMounted(() => {
 }
 
 .content {
-  height: 100vh;
+  padding-top: 56px;
+  padding-top: calc(56px + env(safe-area-inset-top));
   padding-bottom: 80px;
+  min-height: 100vh;
 }
 
 .detail-content {
@@ -389,14 +408,83 @@ onMounted(() => {
   width: 100%;
 }
 
-.image-swiper {
+.image-carousel {
+  position: relative;
   width: 100%;
   height: 280px;
+  overflow: hidden;
+  background: #E8E8E0;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.4s ease;
+  height: 100%;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  height: 100%;
 }
 
 .activity-image {
   width: 100%;
   height: 100%;
+  object-fit: cover;
+}
+
+.carousel-indicators {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.indicator-dot.active {
+  background: #FFFFFF;
+  width: 18px;
+  border-radius: 3px;
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #FFFFFF;
+  font-size: 24px;
+  line-height: 1;
+  transition: background 0.2s;
+}
+
+.carousel-btn:hover {
+  background: rgba(0,0,0,0.5);
+}
+
+.carousel-prev {
+  left: 10px;
+}
+
+.carousel-next {
+  right: 10px;
 }
 
 .info-section {
@@ -490,6 +578,7 @@ onMounted(() => {
 
 .info-icon {
   font-size: 16px;
+  flex-shrink: 0;
 }
 
 .info-text {
@@ -497,6 +586,7 @@ onMounted(() => {
   font-size: 14px;
   color: #4A4A3A;
   line-height: 1.4;
+  word-break: break-all;
 }
 
 .desc-section,
@@ -527,6 +617,8 @@ onMounted(() => {
   font-size: 15px;
   color: #4A4A3A;
   line-height: 1.7;
+  display: block;
+  word-break: break-all;
 }
 
 .creator-info {
@@ -534,12 +626,14 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 4px 0;
+  cursor: pointer;
 }
 
 .creator-avatar {
   width: 44px;
   height: 44px;
   border-radius: 50%;
+  object-fit: cover;
 }
 
 .creator-detail {
@@ -565,15 +659,22 @@ onMounted(() => {
   color: #C8C8B8;
 }
 
-.participants-scroll {
-  white-space: nowrap;
+.participants-list {
+  display: flex;
+  overflow-x: auto;
+  gap: 16px;
+  padding-bottom: 4px;
+}
+
+.participants-list::-webkit-scrollbar {
+  display: none;
 }
 
 .participant-item {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   align-items: center;
-  margin-right: 16px;
+  flex-shrink: 0;
 }
 
 .participant-avatar {
@@ -583,6 +684,7 @@ onMounted(() => {
   margin-bottom: 6px;
   border: 2px solid #FFFFFF;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  object-fit: cover;
 }
 
 .participant-name {
@@ -602,10 +704,12 @@ onMounted(() => {
   background: #FFFFFF;
   border-top: 1px solid #F0F0E8;
   padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  z-index: 50;
 }
 
 .bar-left {
@@ -622,6 +726,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .bar-icon {
@@ -641,6 +746,12 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 600;
   color: #FFFFFF;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.join-btn:hover {
+  opacity: 0.9;
 }
 
 .join-btn.joined {
@@ -652,6 +763,7 @@ onMounted(() => {
 .join-btn.ended {
   background: #E8E8E0;
   color: #9A9A8A;
+  cursor: default;
 }
 
 .empty-state {

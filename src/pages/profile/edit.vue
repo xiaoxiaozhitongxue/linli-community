@@ -1,112 +1,113 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部导航 -->
-    <view class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="navbar-content">
-        <view class="back-btn" @click="goBack">
-          <text>←</text>
-        </view>
-        <text class="navbar-title">编辑资料</text>
-        <view class="save-btn" @click="saveProfile">
+    <div class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <div class="navbar-content">
+        <div class="back-btn" @click="goBack">
+          <span>←</span>
+        </div>
+        <span class="navbar-title">编辑资料</span>
+        <div class="save-btn" @click="saveProfile">
           保存
-        </view>
-      </view>
-    </view>
+        </div>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y>
+    <div class="scroll-content">
       <!-- 头像区域 -->
-      <view class="avatar-section">
-        <view class="avatar-wrapper" @click="chooseAvatar">
-          <image class="avatar" :src="form.avatar || 'https://i.pravatar.cc/100?img=10'" mode="aspectFill" />
-          <view class="avatar-overlay">
-            <text class="camera-icon">📷</text>
-          </view>
-        </view>
-        <text class="avatar-tip">点击更换头像</text>
-      </view>
+      <div class="avatar-section">
+        <div class="avatar-wrapper" @click="chooseAvatar">
+          <img class="avatar" :src="form.avatar || 'https://i.pravatar.cc/100?img=10'" alt="头像" />
+          <div class="avatar-overlay">
+            <span class="camera-icon">📷</span>
+          </div>
+        </div>
+        <span class="avatar-tip">点击更换头像</span>
+        <input ref="avatarInput" type="file" accept="image/*" style="display:none" @change="onAvatarChange" />
+      </div>
 
       <!-- 表单区域 -->
-      <view class="form-section">
-        <view class="form-item">
-          <text class="form-label">昵称</text>
+      <div class="form-section">
+        <div class="form-item">
+          <span class="form-label">昵称</span>
           <input class="form-input" v-model="form.nickname" placeholder="请输入昵称" />
-        </view>
+        </div>
 
-        <view class="form-item">
-          <text class="form-label">性别</text>
-          <view class="gender-picker">
-            <view class="gender-option" :class="{ active: form.gender === 'male' }" @click="selectGender('male')">
+        <div class="form-item">
+          <span class="form-label">性别</span>
+          <div class="gender-picker">
+            <div class="gender-option" :class="{ active: form.gender === 'male' }" @click="selectGender('male')">
               男
-            </view>
-            <view class="gender-option" :class="{ active: form.gender === 'female' }" @click="selectGender('female')">
+            </div>
+            <div class="gender-option" :class="{ active: form.gender === 'female' }" @click="selectGender('female')">
               女
-            </view>
-            <view class="gender-option" :class="{ active: form.gender === 'other' }" @click="selectGender('other')">
+            </div>
+            <div class="gender-option" :class="{ active: form.gender === 'other' }" @click="selectGender('other')">
               保密
-            </view>
-          </view>
-        </view>
+            </div>
+          </div>
+        </div>
 
-        <view class="form-item">
-          <text class="form-label">生日</text>
-          <picker mode="date" :value="form.birthday" @change="onBirthdayChange">
-            <view class="picker-value">
-              {{ form.birthday || '请选择生日' }}
-            </view>
-          </picker>
-        </view>
+        <div class="form-item">
+          <span class="form-label">生日</span>
+          <input type="date" class="form-input" v-model="form.birthday" />
+        </div>
 
-        <view class="form-item">
-          <text class="form-label">社区</text>
+        <div class="form-item">
+          <span class="form-label">社区</span>
           <input class="form-input" v-model="form.community" placeholder="请输入社区名称" />
-        </view>
+        </div>
 
-        <view class="form-item">
-          <text class="form-label">地址</text>
+        <div class="form-item">
+          <span class="form-label">地址</span>
           <input class="form-input" v-model="form.address" placeholder="请输入详细地址" />
-        </view>
+        </div>
 
-        <view class="form-item">
-          <text class="form-label">个性签名</text>
+        <div class="form-item">
+          <span class="form-label">个性签名</span>
           <textarea class="form-textarea" v-model="form.bio" placeholder="介绍一下自己吧" maxlength="100" />
-        </view>
+        </div>
 
-        <view class="form-item">
-          <text class="form-label">身份角色</text>
-          <view class="role-picker">
-            <view class="role-option" :class="{ active: form.role === 'resident' }" @click="selectRole('resident')">
-              <text class="role-icon">🏠</text>
-              <text>居民</text>
-            </view>
-            <view class="role-option" :class="{ active: form.role === 'volunteer' }" @click="selectRole('volunteer')">
-              <text class="role-icon">❤️</text>
-              <text>志愿者</text>
-            </view>
-            <view class="role-option" :class="{ active: form.role === 'merchant' }" @click="selectRole('merchant')">
-              <text class="role-icon">🏪</text>
-              <text>商家</text>
-            </view>
-            <view class="role-option" :class="{ active: form.role === 'elderly' }" @click="selectRole('elderly')">
-              <text class="role-icon">👴</text>
-              <text>老人</text>
-            </view>
-          </view>
-        </view>
-      </view>
+        <div class="form-item">
+          <span class="form-label">身份角色</span>
+          <div class="role-picker">
+            <div class="role-option" :class="{ active: form.role === 'resident' }" @click="selectRole('resident')">
+              <span class="role-icon">🏠</span>
+              <span>居民</span>
+            </div>
+            <div class="role-option" :class="{ active: form.role === 'volunteer' }" @click="selectRole('volunteer')">
+              <span class="role-icon">❤️</span>
+              <span>志愿者</span>
+            </div>
+            <div class="role-option" :class="{ active: form.role === 'merchant' }" @click="selectRole('merchant')">
+              <span class="role-icon">🏪</span>
+              <span>商家</span>
+            </div>
+            <div class="role-option" :class="{ active: form.role === 'elderly' }" @click="selectRole('elderly')">
+              <span class="role-icon">👴</span>
+              <span>老人</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
-  </view>
+      <div class="safe-area-bottom"></div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuth } from '../../store/index'
 import { userApi } from '../../utils/api'
+import { navigateBack } from '../../utils/router'
+import { toastSuccess, toastError } from '../../utils/toast'
+import { showLoading, hideLoading } from '../../utils/ui'
 
 const { user, updateUser } = useAuth()
 const statusBarHeight = ref(20)
 const loading = ref(false)
+const avatarInput = ref<HTMLInputElement | null>(null)
 
 const form = ref({
   nickname: '',
@@ -120,8 +121,7 @@ const form = ref({
 })
 
 onMounted(() => {
-  const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 20
+  statusBarHeight.value = 20
   if (user.value) {
     form.value = {
       nickname: user.value.nickname || '',
@@ -137,26 +137,27 @@ onMounted(() => {
 })
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBack()
 }
 
 const chooseAvatar = () => {
-  uni.chooseImage({
-    count: 1,
-    sizeType: ['compressed'],
-    sourceType: ['album', 'camera'],
-    success: (res) => {
-      form.value.avatar = res.tempFilePaths[0]
+  avatarInput.value?.click()
+}
+
+const onAvatarChange = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      form.value.avatar = ev.target?.result as string
     }
-  })
+    reader.readAsDataURL(file)
+  }
 }
 
 const selectGender = (gender: 'male' | 'female' | 'other') => {
   form.value.gender = gender
-}
-
-const onBirthdayChange = (e: any) => {
-  form.value.birthday = e.detail.value
 }
 
 const selectRole = (role: 'resident' | 'volunteer' | 'merchant' | 'elderly') => {
@@ -165,25 +166,26 @@ const selectRole = (role: 'resident' | 'volunteer' | 'merchant' | 'elderly') => 
 
 const saveProfile = async () => {
   if (!form.value.nickname.trim()) {
-    uni.showToast({ title: '请输入昵称', icon: 'none' })
+    toastError('请输入昵称')
     return
   }
 
   try {
     loading.value = true
-    uni.showLoading({ title: '保存中...' })
-    
+    showLoading('保存中...')
+
     const updatedUser = await userApi.updateProfile(form.value)
     updateUser(updatedUser)
-    
-    uni.hideLoading()
-    uni.showToast({ title: '保存成功', icon: 'success' })
-    
+
+    hideLoading()
+    toastSuccess('保存成功')
+
     setTimeout(() => {
-      uni.navigateBack()
+      navigateBack()
     }, 1500)
   } catch (error) {
-    uni.hideLoading()
+    hideLoading()
+    toastError('保存失败')
     console.error('保存失败:', error)
   } finally {
     loading.value = false
@@ -221,6 +223,7 @@ const saveProfile = async () => {
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  cursor: pointer;
 }
 
 .navbar-title {
@@ -236,9 +239,11 @@ const saveProfile = async () => {
   border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
 }
 
-.content {
+.scroll-content {
+  overflow-y: auto;
   height: calc(100vh - 60px);
 }
 
@@ -257,6 +262,7 @@ const saveProfile = async () => {
   width: 100px;
   height: 100px;
   margin-bottom: 12px;
+  cursor: pointer;
 }
 
 .avatar {
@@ -264,6 +270,7 @@ const saveProfile = async () => {
   height: 100%;
   border-radius: 50%;
   border: 3px solid var(--border-color);
+  object-fit: cover;
 }
 
 .avatar-overlay {
@@ -281,7 +288,7 @@ const saveProfile = async () => {
   transition: opacity 0.3s;
 }
 
-.avatar-wrapper:active .avatar-overlay {
+.avatar-wrapper:hover .avatar-overlay {
   opacity: 1;
 }
 
@@ -322,6 +329,10 @@ const saveProfile = async () => {
   font-size: 15px;
   color: var(--text-primary);
   padding: 10px 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
 }
 
 .form-textarea {
@@ -330,12 +341,11 @@ const saveProfile = async () => {
   padding: 10px 0;
   min-height: 80px;
   line-height: 1.6;
-}
-
-.picker-value {
-  font-size: 15px;
-  color: var(--text-primary);
-  padding: 10px 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  width: 100%;
 }
 
 /* 性别选择 */
@@ -353,6 +363,7 @@ const saveProfile = async () => {
   font-size: 15px;
   color: var(--text-secondary);
   transition: all 0.3s;
+  cursor: pointer;
 }
 
 .gender-option.active {
@@ -377,6 +388,7 @@ const saveProfile = async () => {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   transition: all 0.3s;
+  cursor: pointer;
 }
 
 .role-option.active {
@@ -394,12 +406,12 @@ const saveProfile = async () => {
   transition: transform 0.3s;
 }
 
-.role-option text:nth-child(2) {
+.role-option span:nth-child(2) {
   font-size: 13px;
   color: var(--text-secondary);
 }
 
-.role-option.active text:nth-child(2) {
+.role-option.active span:nth-child(2) {
   color: var(--primary-color);
   font-weight: 500;
 }

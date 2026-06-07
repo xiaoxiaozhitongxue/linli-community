@@ -1,210 +1,234 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部区域 -->
-    <view class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="header-content">
-        <text class="header-title">💰 社区创业</text>
-        <text class="header-subtitle">把兴趣变成生意，邻居先成为客户</text>
-      </view>
-    </view>
+    <div class="header">
+      <div class="header-content">
+        <span class="header-title">💰 社区创业</span>
+        <span class="header-subtitle">把兴趣变成生意，邻居先成为客户</span>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y>
+    <div class="content" style="overflow-y: auto; height: calc(100vh - 120px);">
       <!-- 我的小店 -->
-      <view class="my-shop" v-if="hasShop">
-        <view class="shop-card">
-          <view class="shop-cover" :style="{ background: shop.bgColor }">
-            <text class="shop-emoji">{{ shop.emoji }}</text>
-          </view>
-          <view class="shop-info">
-            <text class="shop-name">{{ shop.name }}</text>
-            <view class="shop-stats">
-              <text class="shop-stat">商品 {{ shop.products }}</text>
-              <text class="shop-stat">订单 {{ shop.orders }}</text>
-              <text class="shop-stat">评分 ⭐ {{ shop.rating }}</text>
-            </view>
-          </view>
-          <view class="shop-actions">
-            <view class="shop-btn edit" @click="editShop">编辑</view>
-            <view class="shop-btn manage" @click="manageProducts">管理</view>
-          </view>
-        </view>
-      </view>
+      <div class="my-shop" v-if="hasShop">
+        <div class="shop-card">
+          <div class="shop-cover" :style="{ background: shop.bgColor }">
+            <span class="shop-emoji">{{ shop.emoji }}</span>
+          </div>
+          <div class="shop-info">
+            <span class="shop-name">{{ shop.name }}</span>
+            <div class="shop-stats">
+              <span class="shop-stat">商品 {{ shop.products }}</span>
+              <span class="shop-stat">订单 {{ shop.orders }}</span>
+              <span class="shop-stat">评分 ⭐ {{ shop.rating }}</span>
+            </div>
+          </div>
+          <div class="shop-actions">
+            <div class="shop-btn edit" @click="editShop">编辑</div>
+            <div class="shop-btn manage" @click="manageProducts">管理</div>
+          </div>
+        </div>
+      </div>
 
       <!-- 开通小店 -->
-      <view class="open-shop" v-else>
-        <view class="open-shop-content">
-          <text class="open-icon">🏪</text>
-          <text class="open-title">还没有开通小店</text>
-          <text class="open-desc">把您的兴趣和技能变成邻里间的小生意</text>
-          <view class="open-btn" @click="openShop">
-            <text>立即开通</text>
-          </view>
-        </view>
-      </view>
+      <div class="open-shop" v-else>
+        <div class="open-shop-content">
+          <span class="open-icon">🏪</span>
+          <span class="open-title">还没有开通小店</span>
+          <span class="open-desc">把您的兴趣和技能变成邻里间的小生意</span>
+          <div class="open-btn" @click="openShop">
+            <span>立即开通</span>
+          </div>
+        </div>
+      </div>
 
       <!-- 快捷功能 -->
-      <view class="quick-actions">
-        <view class="action-item" @click="goToPublish">
-          <view class="action-icon" style="background: #FFF3E0;">
-            <text>📦</text>
-          </view>
-          <text class="action-text">发布商品</text>
-        </view>
-        <view class="action-item" @click="goToOrders">
-          <view class="action-icon" style="background: #E3F2FD;">
-            <text>📋</text>
-          </view>
-          <text class="action-text">我的订单</text>
-        </view>
-        <view class="action-item" @click="goToAnalytics">
-          <view class="action-icon" style="background: #F3E5F5;">
-            <text>📊</text>
-          </view>
-          <text class="action-text">数据统计</text>
-        </view>
-        <view class="action-item" @click="goToGuide">
-          <view class="action-icon" style="background: #E8F5E9;">
-            <text>📚</text>
-          </view>
-          <text class="action-text">创业指南</text>
-        </view>
-      </view>
+      <div class="quick-actions">
+        <div class="action-item" @click="goToPublish">
+          <div class="action-icon" style="background: #FFF3E0;">
+            <span>📦</span>
+          </div>
+          <span class="action-text">发布商品</span>
+        </div>
+        <div class="action-item" @click="goToOrders">
+          <div class="action-icon" style="background: #E3F2FD;">
+            <span>📋</span>
+          </div>
+          <span class="action-text">我的订单</span>
+        </div>
+        <div class="action-item" @click="goToAnalytics">
+          <div class="action-icon" style="background: #F3E5F5;">
+            <span>📊</span>
+          </div>
+          <span class="action-text">数据统计</span>
+        </div>
+        <div class="action-item" @click="goToGuide">
+          <div class="action-icon" style="background: #E8F5E9;">
+            <span>📚</span>
+          </div>
+          <span class="action-text">创业指南</span>
+        </div>
+      </div>
 
       <!-- 商品分类 -->
-      <view class="categories">
-        <view class="category-list">
-          <view 
-            class="category-item" 
+      <div class="categories">
+        <div class="category-list">
+          <div
+            class="category-item"
             :class="{ active: selectedCategory === 'all' }"
             @click="selectCategory('all')"
           >
             全部
-          </view>
-          <view 
-            class="category-item" 
+          </div>
+          <div
+            class="category-item"
             :class="{ active: selectedCategory === 'food' }"
             @click="selectCategory('food')"
           >
             🍰 烘焙
-          </view>
-          <view 
-            class="category-item" 
+          </div>
+          <div
+            class="category-item"
             :class="{ active: selectedCategory === 'cooking' }"
             @click="selectCategory('cooking')"
           >
             🍳 私房菜
-          </view>
-          <view 
-            class="category-item" 
+          </div>
+          <div
+            class="category-item"
             :class="{ active: selectedCategory === 'handmade' }"
             @click="selectCategory('handmade')"
           >
             🎨 手工
-          </view>
-          <view 
-            class="category-item" 
+          </div>
+          <div
+            class="category-item"
             :class="{ active: selectedCategory === 'service' }"
             @click="selectCategory('service')"
           >
             🛠️ 服务
-          </view>
-        </view>
-      </view>
+          </div>
+        </div>
+      </div>
 
       <!-- 热门商品 -->
-      <view class="section">
-        <view class="section-header">
-          <text class="section-title">🔥 热门商品</text>
-          <text class="section-more">查看更多 ></text>
-        </view>
-        <view class="product-grid">
-          <view 
-            class="product-card" 
-            v-for="product in hotProducts" 
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">🔥 热门商品</span>
+          <span class="section-more" @click="goToAllProducts">查看更多 ></span>
+        </div>
+        <div class="product-grid">
+          <div
+            class="product-card"
+            v-for="product in filteredProducts"
             :key="product.id"
             @click="goToProductDetail(product)"
           >
-            <view class="product-cover" :style="{ background: product.bgColor }">
-              <text class="product-emoji">{{ product.emoji }}</text>
-              <view class="product-badge" v-if="product.isHot">热门</view>
-            </view>
-            <view class="product-info">
-              <text class="product-name">{{ product.name }}</text>
-              <view class="product-shop">
-                <text class="shop-name">{{ product.shopName }}</text>
-                <text class="shop-distance">📍 {{ product.distance }}m</text>
-              </view>
-              <view class="product-footer">
-                <text class="product-price">¥{{ product.price }}</text>
-                <text class="product-sales">已售 {{ product.sales }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
+            <div class="product-cover" :style="{ background: product.bgColor }">
+              <span class="product-emoji">{{ product.emoji }}</span>
+              <div class="product-badge" v-if="product.isHot">热门</div>
+            </div>
+            <div class="product-info">
+              <span class="product-name">{{ product.name }}</span>
+              <div class="product-shop-line">
+                <span class="shop-tag">{{ product.shopName }}</span>
+                <span class="shop-distance">📍 {{ product.distance }}m</span>
+              </div>
+              <div class="product-footer">
+                <span class="product-price">¥{{ product.price }}</span>
+                <span class="product-sales">已售 {{ product.sales }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 附近小店 -->
-      <view class="section">
-        <view class="section-header">
-          <text class="section-title">🏪 附近小店</text>
-        </view>
-        <view class="shop-list">
-          <view 
-            class="shop-item" 
-            v-for="shop in nearbyShops" 
-            :key="shop.id"
-            @click="visitShop(shop)"
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">🏪 附近小店</span>
+        </div>
+        <div class="shop-list">
+          <div
+            class="shop-item"
+            v-for="shopItem in nearbyShops"
+            :key="shopItem.id"
+            @click="visitShop(shopItem)"
           >
-            <view class="shop-avatar" :style="{ background: shop.bgColor }">
-              <text class="shop-emoji">{{ shop.emoji }}</text>
-            </view>
-            <view class="shop-detail">
-              <text class="shop-name">{{ shop.name }}</text>
-              <text class="shop-desc">{{ shop.description }}</text>
-              <view class="shop-meta">
-                <text>⭐ {{ shop.rating }}</text>
-                <text>月销 {{ shop.monthlySales }}</text>
-                <text>📍 {{ shop.distance }}m</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
+            <div class="shop-avatar" :style="{ background: shopItem.bgColor }">
+              <span class="shop-emoji-icon">{{ shopItem.emoji }}</span>
+            </div>
+            <div class="shop-detail">
+              <span class="shop-name-text">{{ shopItem.name }}</span>
+              <span class="shop-desc">{{ shopItem.description }}</span>
+              <div class="shop-meta">
+                <span>⭐ {{ shopItem.rating }}</span>
+                <span>月销 {{ shopItem.monthlySales }}</span>
+                <span>📍 {{ shopItem.distance }}m</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最新订单 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">📋 最新订单</span>
+          <span class="section-more" @click="goToOrders">查看全部 ></span>
+        </div>
+        <div class="order-list">
+          <div class="order-item" v-for="order in recentOrders" :key="order.id">
+            <div class="order-left">
+              <span class="order-product">{{ order.productName }}</span>
+              <span class="order-buyer">{{ order.buyerName }} · {{ order.date }}</span>
+            </div>
+            <div class="order-right">
+              <span class="order-price">¥{{ order.price }}</span>
+              <span class="order-status" :class="'order-status-' + order.status">
+                {{ getOrderStatusName(order.status) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 创业故事 -->
-      <view class="section">
-        <view class="section-header">
-          <text class="section-title">📖 创业故事</text>
-        </view>
-        <view class="story-list">
-          <view 
-            class="story-card" 
-            v-for="story in successStories" 
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">📖 创业故事</span>
+        </div>
+        <div class="story-list">
+          <div
+            class="story-card"
+            v-for="story in successStories"
             :key="story.id"
             @click="goToStoryDetail(story)"
           >
-            <image class="story-cover" :src="story.cover" mode="aspectFill" />
-            <view class="story-content">
-              <text class="story-title">{{ story.title }}</text>
-              <text class="story-excerpt">{{ story.excerpt }}</text>
-              <view class="story-meta">
-                <image class="story-avatar" :src="story.avatar" mode="aspectFill" />
-                <text class="story-author">{{ story.author }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
+            <img class="story-cover" :src="story.cover" alt="故事封面" />
+            <div class="story-content">
+              <span class="story-title">{{ story.title }}</span>
+              <span class="story-excerpt">{{ story.excerpt }}</span>
+              <div class="story-meta">
+                <img class="story-avatar" :src="story.avatar" alt="作者头像" />
+                <span class="story-author">{{ story.author }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
-  </view>
+      <div class="safe-area-bottom"></div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { navigateTo } from '../../utils/router'
+import { toastInfo, toastSuccess } from '../../utils/toast'
+import { showModal } from '../../utils/ui'
 
-const statusBarHeight = ref(20)
 const hasShop = ref(true)
 const selectedCategory = ref('all')
 
@@ -227,7 +251,8 @@ const hotProducts = ref([
     sales: 234,
     isHot: true,
     shopName: '小红的烘焙坊',
-    distance: 120
+    distance: 120,
+    category: 'food'
   },
   {
     id: '2',
@@ -238,7 +263,8 @@ const hotProducts = ref([
     sales: 156,
     isHot: true,
     shopName: '王阿姨私房菜',
-    distance: 200
+    distance: 200,
+    category: 'cooking'
   },
   {
     id: '3',
@@ -249,7 +275,8 @@ const hotProducts = ref([
     sales: 45,
     isHot: false,
     shopName: '手工达人小坊',
-    distance: 350
+    distance: 350,
+    category: 'handmade'
   },
   {
     id: '4',
@@ -260,7 +287,56 @@ const hotProducts = ref([
     sales: 567,
     isHot: true,
     shopName: '健康果汁铺',
-    distance: 80
+    distance: 80,
+    category: 'food'
+  },
+  {
+    id: '5',
+    name: '雪花酥礼盒',
+    emoji: '🍬',
+    bgColor: '#F8BBD0',
+    price: 48,
+    sales: 312,
+    isHot: true,
+    shopName: '小红的烘焙坊',
+    distance: 120,
+    category: 'food'
+  },
+  {
+    id: '6',
+    name: '家传卤味拼盘',
+    emoji: '🍗',
+    bgColor: '#FFE0B2',
+    price: 88,
+    sales: 198,
+    isHot: false,
+    shopName: '王阿姨私房菜',
+    distance: 200,
+    category: 'cooking'
+  },
+  {
+    id: '7',
+    name: '钩针杯垫套装',
+    emoji: '🧶',
+    bgColor: '#D1C4E9',
+    price: 35,
+    sales: 67,
+    isHot: false,
+    shopName: '手工达人小坊',
+    distance: 350,
+    category: 'handmade'
+  },
+  {
+    id: '8',
+    name: '宠物上门喂养',
+    emoji: '🐱',
+    bgColor: '#C8E6C9',
+    price: 50,
+    sales: 89,
+    isHot: true,
+    shopName: '宠物生活馆',
+    distance: 250,
+    category: 'service'
   }
 ])
 
@@ -294,14 +370,42 @@ const nearbyShops = ref([
     rating: 4.9,
     monthlySales: 234,
     distance: 300
+  },
+  {
+    id: '4',
+    name: '宠物生活馆',
+    emoji: '🐾',
+    bgColor: '#E8F5E9',
+    description: '宠物零食、玩具、上门服务',
+    rating: 4.6,
+    monthlySales: 345,
+    distance: 250
+  },
+  {
+    id: '5',
+    name: '绿植盆栽小铺',
+    emoji: '🌿',
+    bgColor: '#E0F2F1',
+    description: '多肉植物、空气凤梨，美化你的家',
+    rating: 4.8,
+    monthlySales: 267,
+    distance: 180
   }
+])
+
+const recentOrders = ref([
+  { id: '1', productName: '柠檬磅蛋糕 x2', buyerName: '李邻居', price: 76, date: '今天 10:30', status: 'paid' },
+  { id: '2', productName: '手工编织包 x1', buyerName: '赵女士', price: 128, date: '昨天 14:20', status: 'shipped' },
+  { id: '3', productName: '私房红烧肉 x1', buyerName: '周先生', price: 68, date: '昨天 18:00', status: 'completed' },
+  { id: '4', productName: '鲜榨果汁 x3', buyerName: '吴阿姨', price: 54, date: '前天 09:00', status: 'completed' },
+  { id: '5', productName: '雪花酥礼盒 x1', buyerName: '郑邻居', price: 48, date: '3天前', status: 'completed' }
 ])
 
 const successStories = ref([
   {
     id: '1',
     title: '从家庭主妇到月入过万的烘焙店主',
-    excerpt: '王阿姨的烘焙之路，从给邻居送蛋糕开始...',
+    excerpt: '王阿姨的烘焙之路，从给邻居送蛋糕开始，如今已是社区里的明星店主...',
     cover: 'https://picsum.photos/300/200?random=10',
     avatar: 'https://i.pravatar.cc/100?img=1',
     author: '王阿姨'
@@ -309,55 +413,94 @@ const successStories = ref([
   {
     id: '2',
     title: '程序员下班后做私房菜的真实故事',
-    excerpt: '小李利用周末时间为邻居做健康私房菜...',
+    excerpt: '小李利用周末时间为邻居做健康私房菜，不仅赚了零花钱，还交到了朋友...',
     cover: 'https://picsum.photos/300/200?random=11',
     avatar: 'https://i.pravatar.cc/100?img=2',
     author: '小李'
+  },
+  {
+    id: '3',
+    title: '退休教师的手工编织创业记',
+    excerpt: '刘老师退休后重拾编织爱好，现在她的手工包要排队一个月才能买到...',
+    cover: 'https://picsum.photos/300/200?random=12',
+    avatar: 'https://i.pravatar.cc/100?img=3',
+    author: '刘老师'
   }
 ])
+
+const filteredProducts = computed(() => {
+  if (selectedCategory.value === 'all') {
+    return hotProducts.value
+  }
+  return hotProducts.value.filter(p => p.category === selectedCategory.value)
+})
+
+const getOrderStatusName = (status: string) => {
+  const map: Record<string, string> = {
+    paid: '待发货',
+    shipped: '已发货',
+    completed: '已完成',
+    cancelled: '已取消'
+  }
+  return map[status] || status
+}
 
 const selectCategory = (category: string) => {
   selectedCategory.value = category
 }
 
 const openShop = () => {
-  uni.navigateTo({ url: '/pages/business/open-shop' })
+  showModal({
+    title: '开通小店',
+    content: '确定要开通属于你的社区小店吗？开通后即可发布商品，开启创业之路！',
+    confirmText: '立即开通',
+    success: (res: any) => {
+      if (res.confirm) {
+        hasShop.value = true
+        toastSuccess('小店开通成功！')
+      }
+    }
+  })
 }
 
 const editShop = () => {
-  uni.navigateTo({ url: '/pages/business/edit-shop' })
+  navigateTo('/pages/business/edit-shop')
 }
 
 const manageProducts = () => {
-  uni.navigateTo({ url: '/pages/business/manage-products' })
+  navigateTo('/pages/business/manage-products')
 }
 
 const goToPublish = () => {
-  uni.navigateTo({ url: '/pages/business/publish' })
+  navigateTo('/pages/business/publish')
 }
 
 const goToOrders = () => {
-  uni.navigateTo({ url: '/pages/business/orders' })
+  navigateTo('/pages/business/orders')
 }
 
 const goToAnalytics = () => {
-  uni.navigateTo({ url: '/pages/business/analytics' })
+  navigateTo('/pages/business/analytics')
 }
 
 const goToGuide = () => {
-  uni.navigateTo({ url: '/pages/business/guide' })
+  navigateTo('/pages/business/guide')
+}
+
+const goToAllProducts = () => {
+  navigateTo('/pages/business/all-products')
 }
 
 const goToProductDetail = (product: any) => {
-  uni.navigateTo({ url: `/pages/business/product?id=${product.id}` })
+  navigateTo(`/pages/business/product?id=${product.id}`)
 }
 
-const visitShop = (shop: any) => {
-  uni.navigateTo({ url: `/pages/business/shop-detail?id=${shop.id}` })
+const visitShop = (shopItem: any) => {
+  navigateTo(`/pages/business/shop-detail?id=${shopItem.id}`)
 }
 
 const goToStoryDetail = (story: any) => {
-  uni.navigateTo({ url: `/pages/business/story?id=${story.id}` })
+  navigateTo(`/pages/business/story?id=${story.id}`)
 }
 </script>
 
@@ -371,6 +514,7 @@ const goToStoryDetail = (story: any) => {
   background: linear-gradient(135deg, #2196F3, #64B5F6);
   padding: var(--spacing-lg);
   padding-bottom: var(--spacing-xl);
+  padding-top: calc(var(--spacing-lg) + 20px);
 }
 
 .header-content {
@@ -391,7 +535,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .content {
-  height: calc(100vh);
+  overflow-y: auto;
 }
 
 /* 我的小店 */
@@ -409,6 +553,7 @@ const goToStoryDetail = (story: any) => {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--spacing-md);
+  cursor: default;
 }
 
 .shop-cover {
@@ -429,7 +574,7 @@ const goToStoryDetail = (story: any) => {
   min-width: 120px;
 }
 
-.shop-name {
+.shop-info .shop-name {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
@@ -456,6 +601,7 @@ const goToStoryDetail = (story: any) => {
   padding: 6px 16px;
   border-radius: 20px;
   font-size: 13px;
+  cursor: pointer;
 }
 
 .shop-btn.edit {
@@ -510,6 +656,7 @@ const goToStoryDetail = (story: any) => {
   border-radius: 25px;
   font-weight: 500;
   display: inline-block;
+  cursor: pointer;
 }
 
 /* 快捷功能 */
@@ -527,6 +674,7 @@ const goToStoryDetail = (story: any) => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  cursor: pointer;
 }
 
 .action-icon {
@@ -554,6 +702,11 @@ const goToStoryDetail = (story: any) => {
   display: flex;
   gap: var(--spacing-sm);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-list::-webkit-scrollbar {
+  display: none;
 }
 
 .category-item {
@@ -563,6 +716,8 @@ const goToStoryDetail = (story: any) => {
   background: var(--card-bg);
   color: var(--text-secondary);
   white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .category-item.active {
@@ -591,6 +746,7 @@ const goToStoryDetail = (story: any) => {
 .section-more {
   font-size: 12px;
   color: var(--text-muted);
+  cursor: pointer;
 }
 
 /* 商品网格 */
@@ -605,6 +761,12 @@ const goToStoryDetail = (story: any) => {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.product-card:active {
+  transform: scale(0.97);
 }
 
 .product-cover {
@@ -642,14 +804,14 @@ const goToStoryDetail = (story: any) => {
   margin-bottom: 4px;
 }
 
-.product-shop {
+.product-shop-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-sm);
 }
 
-.shop-name {
+.shop-tag {
   font-size: 12px;
   color: var(--text-muted);
 }
@@ -689,6 +851,12 @@ const goToStoryDetail = (story: any) => {
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.shop-item:active {
+  transform: scale(0.98);
 }
 
 .shop-avatar {
@@ -699,13 +867,19 @@ const goToStoryDetail = (story: any) => {
   align-items: center;
   justify-content: center;
   margin-right: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.shop-emoji-icon {
+  font-size: 28px;
 }
 
 .shop-detail {
   flex: 1;
+  min-width: 0;
 }
 
-.shop-name {
+.shop-name-text {
   font-size: 15px;
   font-weight: 500;
   color: var(--text-primary);
@@ -718,6 +892,9 @@ const goToStoryDetail = (story: any) => {
   color: var(--text-muted);
   display: block;
   margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shop-meta {
@@ -725,9 +902,82 @@ const goToStoryDetail = (story: any) => {
   gap: var(--spacing-md);
 }
 
-.shop-meta text {
+.shop-meta span {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+/* 订单列表 */
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.order-item {
+  background: var(--card-bg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.order-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.order-product {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.order-buyer {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.order-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.order-price {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.order-status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.order-status-paid {
+  background: #FFF3E0;
+  color: #FF9800;
+}
+
+.order-status-shipped {
+  background: #E3F2FD;
+  color: #2196F3;
+}
+
+.order-status-completed {
+  background: #E8F5E9;
+  color: #4CAF50;
+}
+
+.order-status-cancelled {
+  background: #FFEBEE;
+  color: #F44336;
 }
 
 /* 创业故事 */
@@ -742,16 +992,25 @@ const goToStoryDetail = (story: any) => {
   border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.story-card:active {
+  transform: scale(0.98);
 }
 
 .story-cover {
   width: 100px;
   height: 100px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .story-content {
   flex: 1;
   padding: var(--spacing-md);
+  min-width: 0;
 }
 
 .story-title {
@@ -765,11 +1024,10 @@ const goToStoryDetail = (story: any) => {
 .story-excerpt {
   font-size: 12px;
   color: var(--text-muted);
-  display: block;
+  display: -webkit-box;
   margin-bottom: var(--spacing-sm);
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
@@ -784,10 +1042,15 @@ const goToStoryDetail = (story: any) => {
   height: 20px;
   border-radius: 50%;
   margin-right: 6px;
+  object-fit: cover;
 }
 
 .story-author {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.safe-area-bottom {
+  height: calc(var(--spacing-lg) + 20px);
 }
 </style>

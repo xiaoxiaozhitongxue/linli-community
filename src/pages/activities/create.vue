@@ -1,157 +1,228 @@
 <template>
-  <view class="page">
-    <view class="nav-header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="nav-content">
-        <view class="nav-back" @click="goBack">
-          <text class="nav-back-icon">←</text>
-        </view>
-        <text class="nav-title">发布活动</text>
-        <view class="nav-right" @click="submitActivity" :class="{ disabled: !canSubmit }">
-          <text class="nav-right-text">发布</text>
-        </view>
-      </view>
-    </view>
+  <div class="page">
+    <div class="nav-header">
+      <div class="nav-content">
+        <div class="nav-back" @click="goBack">
+          <span class="nav-back-icon">←</span>
+        </div>
+        <span class="nav-title">发布活动</span>
+        <div class="nav-right" :class="{ disabled: !canSubmit || submitting }" @click="submitActivity">
+          <span class="nav-right-text">{{ submitting ? '发布中...' : '发布' }}</span>
+        </div>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y :style="{ paddingTop: (statusBarHeight + 56) + 'px' }">
-      <view class="form-section">
-        <view class="form-item">
-          <view class="form-label">活动标题</view>
+    <div class="content">
+      <div class="form-section">
+        <div class="form-item">
+          <div class="form-label">活动标题</div>
           <input 
             class="form-input" 
             v-model="form.title" 
             placeholder="请输入活动标题" 
             maxlength="50"
           />
-          <text class="form-count">{{ form.title.length }}/50</text>
-        </view>
+          <span class="form-count">{{ form.title.length }}/50</span>
+        </div>
 
-        <view class="form-item">
-          <view class="form-label">活动分类</view>
-          <view class="category-grid">
-            <view 
+        <div class="form-item">
+          <div class="form-label">活动分类</div>
+          <div class="category-grid">
+            <div 
               v-for="cat in categories" 
               :key="cat.value"
               class="category-item"
               :class="{ active: form.category === cat.value }"
               @click="selectCategory(cat.value)"
             >
-              <text class="category-emoji">{{ cat.emoji }}</text>
-              <text class="category-name">{{ cat.label }}</text>
-            </view>
-          </view>
-        </view>
+              <span class="category-emoji">{{ cat.emoji }}</span>
+              <span class="category-name">{{ cat.label }}</span>
+            </div>
+          </div>
+        </div>
 
-        <view class="form-item">
-          <view class="form-label">活动图片</view>
-          <view class="image-upload">
-            <view 
+        <div class="form-item">
+          <div class="form-label">活动图片</div>
+          <div class="image-upload">
+            <div 
               v-for="(img, index) in form.images" 
               :key="index"
               class="image-item"
             >
-              <image class="image-preview" :src="img" mode="aspectFill" />
-              <view class="image-delete" @click="removeImage(index)">
-                <text class="delete-icon">×</text>
-              </view>
-            </view>
-            <view 
+              <img class="image-preview" :src="img" alt="preview" />
+              <div class="image-delete" @click="removeImage(index)">
+                <span class="delete-icon">×</span>
+              </div>
+            </div>
+            <div 
               v-if="form.images.length < 6"
               class="image-add"
               @click="chooseImage"
             >
-              <text class="add-icon">+</text>
-              <text class="add-text">添加图片</text>
-            </view>
-          </view>
-          <text class="form-tip">最多上传6张图片</text>
-        </view>
+              <span class="add-icon">+</span>
+              <span class="add-text">添加图片</span>
+            </div>
+          </div>
+          <span class="form-tip">最多上传6张图片（模拟上传）</span>
+        </div>
 
-        <view class="form-item">
-          <view class="form-label">活动描述</view>
+        <div class="form-item">
+          <div class="form-label">活动描述</div>
           <textarea 
             class="form-textarea" 
             v-model="form.description" 
             placeholder="请输入活动描述，详细介绍活动内容、注意事项等"
             maxlength="500"
-            :auto-height="true"
-          />
-          <text class="form-count">{{ form.description.length }}/500</text>
-        </view>
+          ></textarea>
+          <span class="form-count">{{ form.description.length }}/500</span>
+        </div>
 
-        <view class="form-item">
-          <view class="form-label">活动时间</view>
-          <view class="form-row" @click="showStartPicker = true">
-            <text class="row-label">开始时间</text>
-            <text class="row-value">{{ formatDateTime(form.startTime) }}</text>
-            <text class="row-arrow">›</text>
-          </view>
-          <view class="form-row" @click="showEndPicker = true">
-            <text class="row-label">结束时间</text>
-            <text class="row-value">{{ formatDateTime(form.endTime) }}</text>
-            <text class="row-arrow">›</text>
-          </view>
-        </view>
+        <div class="form-item">
+          <div class="form-label">活动时间</div>
+          <div class="form-row" @click="openDateTimePicker('start')">
+            <span class="row-label">开始时间</span>
+            <span class="row-value">{{ formatDateTime(form.startTime) }}</span>
+            <span class="row-arrow">›</span>
+          </div>
+          <div class="form-row" @click="openDateTimePicker('end')">
+            <span class="row-label">结束时间</span>
+            <span class="row-value">{{ formatDateTime(form.endTime) }}</span>
+            <span class="row-arrow">›</span>
+          </div>
+        </div>
 
-        <view class="form-item">
-          <view class="form-label">活动地点</view>
-          <view class="form-row" @click="chooseLocation">
-            <text class="row-label">选择位置</text>
-            <text class="row-value" :class="{ placeholder: !form.location }">
+        <div class="form-item">
+          <div class="form-label">活动地点</div>
+          <div class="form-row" @click="openLocationInput">
+            <span class="row-label">选择位置</span>
+            <span class="row-value" :class="{ placeholder: !form.location }">
               {{ form.location || '请选择活动地点' }}
-            </text>
-            <text class="row-arrow">›</text>
-          </view>
-        </view>
+            </span>
+            <span class="row-arrow">›</span>
+          </div>
+        </div>
 
-        <view class="form-item">
-          <view class="form-label">参与人数</view>
-          <view class="form-row">
-            <text class="row-label">上限人数</text>
-            <view class="number-picker">
-              <view 
+        <div class="form-item">
+          <div class="form-label">参与人数</div>
+          <div class="form-row">
+            <span class="row-label">上限人数</span>
+            <div class="number-picker">
+              <div 
                 class="picker-btn" 
                 :class="{ disabled: form.maxParticipants <= 1 }"
                 @click="changeNumber(-1)"
               >
-                -
-              </view>
-              <text class="picker-value">{{ form.maxParticipants }}</text>
-              <view class="picker-btn" @click="changeNumber(1)">+</view>
-            </view>
-          </view>
-        </view>
-      </view>
+                −
+              </div>
+              <span class="picker-value">{{ form.maxParticipants }}</span>
+              <div class="picker-btn" @click="changeNumber(1)">+</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
+      <div class="safe-area-bottom"></div>
+    </div>
 
-    <!-- 开始时间选择器 -->
-    <picker 
-      v-if="showStartPicker"
-      mode="multiSelector" 
-      :range="datetimeRange" 
-      :value="startPickerValue"
-      @change="onStartDateChange"
-      @cancel="showStartPicker = false"
-    />
+    <!-- 日期时间选择器弹窗 -->
+    <div v-if="showDateTimePicker" class="picker-overlay" @click.self="showDateTimePicker = false">
+      <div class="picker-modal">
+        <div class="picker-header">
+          <span class="picker-cancel" @click="showDateTimePicker = false">取消</span>
+          <span class="picker-title">{{ datePickerType === 'start' ? '选择开始时间' : '选择结束时间' }}</span>
+          <span class="picker-confirm" @click="confirmDateTime">确定</span>
+        </div>
+        <div class="picker-body">
+          <div class="picker-column">
+            <div class="picker-column-title">年</div>
+            <div class="picker-list">
+              <div
+                v-for="(year, idx) in yearOptions"
+                :key="idx"
+                class="picker-item"
+                :class="{ active: tempPickerYear === idx }"
+                @click="tempPickerYear = idx"
+              >{{ year }}</div>
+            </div>
+          </div>
+          <div class="picker-column">
+            <div class="picker-column-title">月</div>
+            <div class="picker-list">
+              <div
+                v-for="(month, idx) in 12"
+                :key="idx"
+                class="picker-item"
+                :class="{ active: tempPickerMonth === idx }"
+                @click="tempPickerMonth = idx"
+              >{{ idx + 1 }}月</div>
+            </div>
+          </div>
+          <div class="picker-column">
+            <div class="picker-column-title">日</div>
+            <div class="picker-list">
+              <div
+                v-for="(day, idx) in tempPickerDays"
+                :key="idx"
+                class="picker-item"
+                :class="{ active: tempPickerDay === idx }"
+                @click="tempPickerDay = idx"
+              >{{ day }}日</div>
+            </div>
+          </div>
+          <div class="picker-column">
+            <div class="picker-column-title">时</div>
+            <div class="picker-list">
+              <div
+                v-for="(hour, idx) in 24"
+                :key="idx"
+                class="picker-item"
+                :class="{ active: tempPickerHour === idx }"
+                @click="tempPickerHour = idx"
+              >{{ String(idx).padStart(2, '0') }}时</div>
+            </div>
+          </div>
+          <div class="picker-column">
+            <div class="picker-column-title">分</div>
+            <div class="picker-list">
+              <div
+                v-for="(min, idx) in 12"
+                :key="idx"
+                class="picker-item"
+                :class="{ active: tempPickerMinute === idx }"
+                @click="tempPickerMinute = idx"
+              >{{ String(idx * 5).padStart(2, '0') }}分</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- 结束时间选择器 -->
-    <picker 
-      v-if="showEndPicker"
-      mode="multiSelector" 
-      :range="datetimeRange" 
-      :value="endPickerValue"
-      @change="onEndDateChange"
-      @cancel="showEndPicker = false"
-    />
-  </view>
+    <!-- 地点输入弹窗 -->
+    <div v-if="showLocationModal" class="picker-overlay" @click.self="showLocationModal = false">
+      <div class="location-modal">
+        <div class="location-modal-header">
+          <span class="picker-cancel" @click="showLocationModal = false">取消</span>
+          <span class="picker-title">输入活动地点</span>
+          <span class="picker-confirm" @click="confirmLocation">确定</span>
+        </div>
+        <div class="location-modal-body">
+          <input
+            class="location-input-field"
+            v-model="tempLocation"
+            placeholder="请输入活动地点"
+            @keyup.enter="confirmLocation"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { activitiesApi } from '../../utils/api'
-
-const statusBarHeight = ref(20)
+import { navigateBack } from '../../utils/router'
+import { toastSuccess, toastError } from '../../utils/toast'
 
 const form = ref({
   title: '',
@@ -164,10 +235,23 @@ const form = ref({
   maxParticipants: 20
 })
 
-const showStartPicker = ref(false)
-const showEndPicker = ref(false)
-const startPickerValue = ref([0, 0, 0, 0, 0])
-const endPickerValue = ref([0, 0, 0, 0, 0])
+const submitting = ref(false)
+
+// 日期时间选择器
+const showDateTimePicker = ref(false)
+const datePickerType = ref<'start' | 'end'>('start')
+const tempPickerYear = ref(0)
+const tempPickerMonth = ref(0)
+const tempPickerDay = ref(0)
+const tempPickerHour = ref(9)
+const tempPickerMinute = ref(0)
+
+const yearOptions = ref<string[]>([])
+const tempPickerDays = ref<number[]>([])
+
+// 地点弹窗
+const showLocationModal = ref(false)
+const tempLocation = ref('')
 
 const categories = [
   { value: 'sports', label: '运动健身', emoji: '🏃' },
@@ -177,15 +261,14 @@ const categories = [
   { value: 'other', label: '其他', emoji: '📌' }
 ]
 
-const datetimeRange = ref<any[][]>([[], [], [], [], []])
-
 const canSubmit = computed(() => {
   return (
     form.value.title.trim().length > 0 &&
     form.value.description.trim().length > 0 &&
     form.value.startTime &&
     form.value.endTime &&
-    form.value.location
+    form.value.location &&
+    !submitting.value
   )
 })
 
@@ -199,58 +282,75 @@ const formatDateTime = (dateStr: string) => {
   return `${month}月${day}日 ${hours}:${minutes}`
 }
 
-const initDateTimeRange = () => {
+const getDaysInMonth = (year: number, month: number) => {
+  return new Date(year, month + 1, 0).getDate()
+}
+
+const computeTempDays = () => {
+  const currentYear = new Date().getFullYear()
+  const year = currentYear + tempPickerYear.value
+  const days = getDaysInMonth(year, tempPickerMonth.value)
+  tempPickerDays.value = Array.from({ length: days }, (_, i) => i + 1)
+  if (tempPickerDay.value >= days) {
+    tempPickerDay.value = days - 1
+  }
+}
+
+const openDateTimePicker = (type: 'start' | 'end') => {
+  datePickerType.value = type
+  const targetDate = type === 'start' ? form.value.startTime : form.value.endTime
+  const date = targetDate ? new Date(targetDate) : new Date(Date.now() + 24 * 60 * 60 * 1000)
+  const currentYear = new Date().getFullYear()
+  
+  tempPickerYear.value = date.getFullYear() - currentYear
+  tempPickerMonth.value = date.getMonth()
+  tempPickerDay.value = date.getDate() - 1
+  tempPickerHour.value = date.getHours()
+  tempPickerMinute.value = Math.floor(date.getMinutes() / 5)
+  
+  computeTempDays()
+  showDateTimePicker.value = true
+}
+
+const confirmDateTime = () => {
+  const currentYear = new Date().getFullYear()
+  const selectedDate = new Date(
+    currentYear + tempPickerYear.value,
+    tempPickerMonth.value,
+    tempPickerDay.value + 1,
+    tempPickerHour.value,
+    tempPickerMinute.value * 5
+  )
+  
+  if (datePickerType.value === 'start') {
+    form.value.startTime = selectedDate.toISOString()
+  } else {
+    form.value.endTime = selectedDate.toISOString()
+  }
+  
+  showDateTimePicker.value = false
+}
+
+const openLocationInput = () => {
+  tempLocation.value = form.value.location
+  showLocationModal.value = true
+}
+
+const confirmLocation = () => {
+  form.value.location = tempLocation.value.trim()
+  showLocationModal.value = false
+}
+
+const initDateTimeOptions = () => {
   const now = new Date()
-  const years: string[] = []
-  const months: string[] = []
-  const days: string[] = []
-  const hours: string[] = []
-  const minutes: string[] = []
-
   const currentYear = now.getFullYear()
-  for (let i = 0; i < 2; i++) {
-    years.push(String(currentYear + i) + '年')
-  }
-
-  for (let i = 1; i <= 12; i++) {
-    months.push(String(i) + '月')
-  }
-
-  for (let i = 1; i <= 31; i++) {
-    days.push(String(i) + '日')
-  }
-
-  for (let i = 0; i <= 23; i++) {
-    hours.push(String(i).padStart(2, '0') + '时')
-  }
-
-  for (let i = 0; i <= 59; i += 5) {
-    minutes.push(String(i).padStart(2, '0') + '分')
-  }
-
-  datetimeRange.value = [years, months, days, hours, minutes]
+  yearOptions.value = Array.from({ length: 2 }, (_, i) => `${currentYear + i}年`)
 
   const defaultStart = new Date(now.getTime() + 24 * 60 * 60 * 1000)
   const defaultEnd = new Date(defaultStart.getTime() + 3 * 60 * 60 * 1000)
 
   form.value.startTime = defaultStart.toISOString()
   form.value.endTime = defaultEnd.toISOString()
-
-  startPickerValue.value = [
-    defaultStart.getFullYear() - currentYear,
-    defaultStart.getMonth(),
-    defaultStart.getDate() - 1,
-    defaultStart.getHours(),
-    Math.floor(defaultStart.getMinutes() / 5)
-  ]
-
-  endPickerValue.value = [
-    defaultEnd.getFullYear() - currentYear,
-    defaultEnd.getMonth(),
-    defaultEnd.getDate() - 1,
-    defaultEnd.getHours(),
-    Math.floor(defaultEnd.getMinutes() / 5)
-  ]
 }
 
 const selectCategory = (value: string) => {
@@ -258,56 +358,20 @@ const selectCategory = (value: string) => {
 }
 
 const chooseImage = () => {
-  uni.chooseImage({
-    count: 6 - form.value.images.length,
-    sizeType: ['compressed'],
-    sourceType: ['album', 'camera'],
-    success: (res) => {
-      form.value.images.push(...res.tempFilePaths)
-    }
-  })
+  // 模拟图片选择 - 使用随机图片URL
+  const mockImages = [
+    'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400',
+    'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400',
+    'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400',
+    'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400'
+  ]
+  const randomImg = mockImages[Math.floor(Math.random() * mockImages.length)]
+  form.value.images.push(randomImg)
+  toastSuccess('图片已添加（模拟）')
 }
 
 const removeImage = (index: number) => {
   form.value.images.splice(index, 1)
-}
-
-const onStartDateChange = (e: any) => {
-  const [yearIndex, monthIndex, dayIndex, hourIndex, minuteIndex] = e.detail.value
-  const now = new Date()
-  const selectedDate = new Date(
-    now.getFullYear() + yearIndex,
-    monthIndex,
-    dayIndex + 1,
-    hourIndex,
-    minuteIndex * 5
-  )
-  form.value.startTime = selectedDate.toISOString()
-  startPickerValue.value = e.detail.value
-  showStartPicker.value = false
-}
-
-const onEndDateChange = (e: any) => {
-  const [yearIndex, monthIndex, dayIndex, hourIndex, minuteIndex] = e.detail.value
-  const now = new Date()
-  const selectedDate = new Date(
-    now.getFullYear() + yearIndex,
-    monthIndex,
-    dayIndex + 1,
-    hourIndex,
-    minuteIndex * 5
-  )
-  form.value.endTime = selectedDate.toISOString()
-  endPickerValue.value = e.detail.value
-  showEndPicker.value = false
-}
-
-const chooseLocation = () => {
-  uni.chooseLocation({
-    success: (res) => {
-      form.value.location = res.name || res.address
-    }
-  })
 }
 
 const changeNumber = (delta: number) => {
@@ -318,19 +382,16 @@ const changeNumber = (delta: number) => {
 }
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBack()
 }
 
 const submitActivity = async () => {
   if (!canSubmit.value) {
-    uni.showToast({
-      title: '请完善信息',
-      icon: 'none'
-    })
+    toastError('请完善信息')
     return
   }
 
-  uni.showLoading({ title: '发布中...' })
+  submitting.value = true
 
   try {
     const data = {
@@ -345,27 +406,20 @@ const submitActivity = async () => {
     }
 
     await activitiesApi.createActivity(data)
-
-    uni.hideLoading()
-    uni.showToast({
-      title: '发布成功',
-      icon: 'success'
-    })
+    toastSuccess('发布成功')
 
     setTimeout(() => {
-      uni.navigateBack()
+      navigateBack()
     }, 1500)
   } catch (error) {
-    uni.hideLoading()
-    uni.showToast({
-      title: '发布失败，请重试',
-      icon: 'none'
-    })
+    toastError('发布失败，请重试')
+  } finally {
+    submitting.value = false
   }
 }
 
 onMounted(() => {
-  initDateTimeRange()
+  initDateTimeOptions()
 })
 </script>
 
@@ -390,6 +444,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
+  padding-top: max(12px, env(safe-area-inset-top));
 }
 
 .nav-back {
@@ -398,6 +453,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .nav-back-icon {
@@ -416,10 +472,13 @@ onMounted(() => {
   padding: 6px 16px;
   background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
   border-radius: 16px;
+  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
 .nav-right.disabled {
   background: #E8E8E0;
+  cursor: default;
 }
 
 .nav-right-text {
@@ -433,7 +492,9 @@ onMounted(() => {
 }
 
 .content {
-  height: 100vh;
+  padding-top: 56px;
+  padding-top: calc(56px + env(safe-area-inset-top));
+  min-height: 100vh;
 }
 
 .form-section {
@@ -459,6 +520,13 @@ onMounted(() => {
   font-size: 15px;
   color: #1A1A1A;
   line-height: 1.5;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.form-input::placeholder {
+  color: #9A9A8A;
 }
 
 .form-textarea {
@@ -467,6 +535,15 @@ onMounted(() => {
   font-size: 15px;
   color: #1A1A1A;
   line-height: 1.6;
+  border: none;
+  outline: none;
+  resize: vertical;
+  background: transparent;
+  font-family: inherit;
+}
+
+.form-textarea::placeholder {
+  color: #9A9A8A;
 }
 
 .form-count {
@@ -498,11 +575,17 @@ onMounted(() => {
   background: #F9F9F5;
   border-radius: 12px;
   border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .category-item.active {
   background: #FFF3E0;
   border-color: #FF8C42;
+}
+
+.category-item:hover {
+  background: #FFF3E0;
 }
 
 .category-emoji {
@@ -536,6 +619,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   border-radius: 12px;
+  object-fit: cover;
 }
 
 .image-delete {
@@ -549,6 +633,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .delete-icon {
@@ -566,6 +651,12 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.image-add:hover {
+  border-color: #FF8C42;
 }
 
 .add-icon {
@@ -585,6 +676,7 @@ onMounted(() => {
   align-items: center;
   padding: 12px 0;
   border-bottom: 1px solid #F5F5F0;
+  cursor: pointer;
 }
 
 .form-row:last-child {
@@ -629,10 +721,13 @@ onMounted(() => {
   justify-content: center;
   font-size: 20px;
   color: #4A4A3A;
+  cursor: pointer;
+  user-select: none;
 }
 
 .picker-btn.disabled {
   color: #C8C8B8;
+  cursor: default;
 }
 
 .picker-value {
@@ -645,5 +740,150 @@ onMounted(() => {
 
 .safe-area-bottom {
   height: 40px;
+}
+
+/* 日期选择器弹窗 */
+.picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.picker-modal {
+  width: 100%;
+  max-width: 500px;
+  background: #FFFFFF;
+  border-radius: 16px 16px 0 0;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #F0F0E8;
+}
+
+.picker-cancel {
+  font-size: 15px;
+  color: #9A9A8A;
+  cursor: pointer;
+}
+
+.picker-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.picker-confirm {
+  font-size: 15px;
+  color: #FF8C42;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.picker-body {
+  display: flex;
+  height: 220px;
+  overflow: hidden;
+}
+
+.picker-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.picker-column-title {
+  text-align: center;
+  font-size: 12px;
+  color: #9A9A8A;
+  padding: 8px 0;
+  border-bottom: 1px solid #F0F0E8;
+}
+
+.picker-list {
+  flex: 1;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.picker-list::-webkit-scrollbar {
+  display: none;
+}
+
+.picker-item {
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 15px;
+  color: #4A4A3A;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.picker-item.active {
+  color: #FF8C42;
+  font-weight: 600;
+  background: #FFF3E0;
+}
+
+/* 地点弹窗 */
+.location-modal {
+  width: 100%;
+  max-width: 500px;
+  background: #FFFFFF;
+  border-radius: 16px 16px 0 0;
+  animation: slideUp 0.3s ease;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.location-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #F0F0E8;
+}
+
+.location-modal-body {
+  padding: 16px;
+}
+
+.location-input-field {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #E8E8E0;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #1A1A1A;
+  outline: none;
+  background: #F9F9F5;
+}
+
+.location-input-field:focus {
+  border-color: #FF8C42;
+  background: #FFFFFF;
+}
+
+.location-input-field::placeholder {
+  color: #9A9A8A;
 }
 </style>

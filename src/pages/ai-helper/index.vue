@@ -1,252 +1,256 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部区域 -->
-    <view class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="header-content">
-        <text class="header-title">🤝 AI互助</text>
-        <text class="header-subtitle">快速匹配，邻里互帮</text>
-      </view>
-    </view>
+    <div class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <div class="header-content">
+        <span class="header-title">🤝 AI互助</span>
+        <span class="header-subtitle">快速匹配，邻里互帮</span>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y>
+    <div class="content" style="overflow-y: auto; height: calc(100vh - 80px);">
       <!-- 快速发起 -->
-      <view class="quick-post">
-        <view class="quick-post-header">
-          <text class="quick-post-icon">✨</text>
-          <text class="quick-post-title">一句话发布互助任务</text>
-        </view>
-        <view class="input-box">
-          <textarea 
-            class="input-textarea" 
-            v-model="taskInput" 
+      <div class="quick-post">
+        <div class="quick-post-header">
+          <span class="quick-post-icon">✨</span>
+          <span class="quick-post-title">一句话发布互助任务</span>
+        </div>
+        <div class="input-box">
+          <textarea
+            class="input-textarea"
+            v-model="taskInput"
             placeholder="如：帮忙取个快递，有偿5元"
             :maxlength="200"
           />
-        </view>
-        <view class="quick-post-footer">
-          <view class="task-types">
-            <view 
-              class="task-type" 
+        </div>
+        <div class="quick-post-footer">
+          <div class="task-types">
+            <div
+              class="task-type"
               :class="{ active: selectedType === 'delivery' }"
               @click="selectType('delivery')"
             >
               📦 取快递
-            </view>
-            <view 
-              class="task-type" 
+            </div>
+            <div
+              class="task-type"
               :class="{ active: selectedType === 'shopping' }"
               @click="selectType('shopping')"
             >
               🛒 帮买菜
-            </view>
-            <view 
-              class="task-type" 
+            </div>
+            <div
+              class="task-type"
               :class="{ active: selectedType === 'pet' }"
               @click="selectType('pet')"
             >
               🐕 代遛狗
-            </view>
-            <view 
-              class="task-type" 
+            </div>
+            <div
+              class="task-type"
               :class="{ active: selectedType === 'child' }"
               @click="selectType('child')"
             >
               👶 接孩子
-            </view>
-          </view>
-          <view class="post-actions">
-            <view class="reward-input">
-              <text class="reward-label">悬赏</text>
-              <input 
-                class="reward-field" 
-                type="number" 
-                v-model="rewardAmount" 
+            </div>
+          </div>
+          <div class="post-actions">
+            <div class="reward-input">
+              <span class="reward-label">悬赏</span>
+              <input
+                class="reward-field"
+                type="number"
+                v-model="rewardAmount"
                 placeholder="0"
               />
-              <text class="reward-unit">元</text>
-            </view>
-            <view class="submit-btn" @click="submitTask">
-              <text>发布任务</text>
-            </view>
-          </view>
-        </view>
-      </view>
+              <span class="reward-unit">元</span>
+            </div>
+            <div class="submit-btn" @click="submitTask">
+              <span>发布任务</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- AI匹配动画 -->
-      <view class="ai-matching" v-if="isMatching">
-        <view class="matching-animation">
-          <view class="matching-circle"></view>
-          <view class="matching-circle circle-2"></view>
-          <view class="matching-circle circle-3"></view>
-          <view class="matching-center">
-            <text class="matching-emoji">🔍</text>
-          </view>
-        </view>
-        <text class="matching-text">AI正在为您匹配最佳邻居...</text>
-        <view class="matching-progress">
-          <view class="progress-bar" :style="{ width: matchingProgress + '%' }"></view>
-        </view>
-        <text class="matching-count">已匹配 {{ matchedCount }} 位邻居</text>
-      </view>
+      <div class="ai-matching" v-if="isMatching">
+        <div class="matching-animation">
+          <div class="matching-circle"></div>
+          <div class="matching-circle circle-2"></div>
+          <div class="matching-circle circle-3"></div>
+          <div class="matching-center">
+            <span class="matching-emoji">🔍</span>
+          </div>
+        </div>
+        <span class="matching-text">AI正在为您匹配最佳邻居...</span>
+        <div class="matching-progress">
+          <div class="progress-bar" :style="{ width: matchingProgress + '%' }"></div>
+        </div>
+        <span class="matching-count">已匹配 {{ matchedCount }} 位邻居</span>
+      </div>
 
       <!-- 匹配结果 -->
-      <view class="match-results" v-if="matchResults.length > 0">
-        <view class="results-header">
-          <text class="results-title">🎯 智能匹配结果</text>
-          <text class="results-subtitle">根据您的位置、信誉、距离综合推荐</text>
-        </view>
-        <view class="results-list">
-          <view 
-            class="result-card" 
-            v-for="(match, index) in matchResults" 
+      <div class="match-results" v-if="matchResults.length > 0">
+        <div class="results-header">
+          <span class="results-title">🎯 智能匹配结果</span>
+          <span class="results-subtitle">根据您的位置、信誉、距离综合推荐</span>
+        </div>
+        <div class="results-list">
+          <div
+            class="result-card"
+            v-for="(match, index) in matchResults"
             :key="match.id"
           >
-            <view class="result-rank">{{ index + 1 }}</view>
-            <image class="result-avatar" :src="match.avatar" mode="aspectFill" />
-            <view class="result-info">
-              <view class="result-name-row">
-                <text class="result-name">{{ match.name }}</text>
-                <view class="result-badge" v-if="match.isVerified">已认证</view>
-              </view>
-              <view class="result-stats">
-                <text class="result-stat">⭐ {{ match.rating }}</text>
-                <text class="result-stat">📍 {{ match.distance }}m</text>
-                <text class="result-stat">✅ {{ match.completedTasks }}单</text>
-              </view>
-              <view class="result-tags">
-                <text class="result-tag" v-for="tag in match.tags" :key="tag">{{ tag }}</text>
-              </view>
-            </view>
-            <view class="result-action">
-              <view class="invite-btn" @click="inviteMatch(match)">邀请</view>
-            </view>
-          </view>
-        </view>
-      </view>
+            <div class="result-rank">{{ index + 1 }}</div>
+            <img class="result-avatar" :src="match.avatar" />
+            <div class="result-info">
+              <div class="result-name-row">
+                <span class="result-name">{{ match.name }}</span>
+                <div class="result-badge" v-if="match.isVerified">已认证</div>
+              </div>
+              <div class="result-stats">
+                <span class="result-stat">⭐ {{ match.rating }}</span>
+                <span class="result-stat">📍 {{ match.distance }}m</span>
+                <span class="result-stat">✅ {{ match.completedTasks }}单</span>
+              </div>
+              <div class="result-tags">
+                <span class="result-tag" v-for="tag in match.tags" :key="tag">{{ tag }}</span>
+              </div>
+            </div>
+            <div class="result-action">
+              <div class="invite-btn" @click="inviteMatch(match)">邀请</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 任务广场 -->
-      <view class="task-square">
-        <view class="square-header">
-          <text class="square-title">📋 任务广场</text>
-          <view class="square-filters">
-            <view 
-              class="filter-btn" 
+      <div class="task-square">
+        <div class="square-header">
+          <span class="square-title">📋 任务广场</span>
+          <div class="square-filters">
+            <div
+              class="filter-btn"
               :class="{ active: taskFilter === 'all' }"
               @click="filterTasks('all')"
             >
               全部
-            </view>
-            <view 
-              class="filter-btn" 
+            </div>
+            <div
+              class="filter-btn"
               :class="{ active: taskFilter === 'nearby' }"
               @click="filterTasks('nearby')"
             >
               距离近
-            </view>
-            <view 
-              class="filter-btn" 
+            </div>
+            <div
+              class="filter-btn"
               :class="{ active: taskFilter === 'highReward' }"
               @click="filterTasks('highReward')"
             >
               悬赏高
-            </view>
-          </view>
-        </view>
+            </div>
+          </div>
+        </div>
 
-        <view class="task-list">
-          <view 
-            class="task-card" 
-            v-for="task in filteredTasks" 
+        <div class="task-list">
+          <div
+            class="task-card"
+            v-for="task in filteredTasks"
             :key="task.id"
             @click="goToTaskDetail(task)"
           >
-            <view class="task-header">
-              <image class="task-creator-avatar" :src="task.creatorAvatar" mode="aspectFill" />
-              <view class="task-creator-info">
-                <text class="task-creator-name">{{ task.creatorName }}</text>
-                <text class="task-create-time">{{ task.createTime }}</text>
-              </view>
-              <view class="task-type-tag" :class="'type-' + task.type">
+            <div class="task-header">
+              <img class="task-creator-avatar" :src="task.creatorAvatar" />
+              <div class="task-creator-info">
+                <span class="task-creator-name">{{ task.creatorName }}</span>
+                <span class="task-create-time">{{ task.createTime }}</span>
+              </div>
+              <div class="task-type-tag" :class="'type-' + task.type">
                 {{ getTypeName(task.type) }}
-              </view>
-            </view>
-            <view class="task-content">
-              <text class="task-title">{{ task.title }}</text>
-              <text class="task-desc">{{ task.description }}</text>
-            </view>
-            <view class="task-footer">
-              <view class="task-reward">
-                <text class="reward-icon">💰</text>
-                <text class="reward-value">{{ task.reward }}元</text>
-              </view>
-              <view class="task-meta">
-                <text class="task-distance">📍 {{ task.distance }}m</text>
-                <text class="task-responses">👥 {{ task.responses }}人已响应</text>
-              </view>
-            </view>
-            <view class="task-action-bar">
-              <view class="respond-btn" @click.stop="respondToTask(task)">
+              </div>
+            </div>
+            <div class="task-content">
+              <span class="task-title">{{ task.title }}</span>
+              <span class="task-desc">{{ task.description }}</span>
+            </div>
+            <div class="task-footer">
+              <div class="task-reward">
+                <span class="reward-icon">💰</span>
+                <span class="reward-value">{{ task.reward }}元</span>
+              </div>
+              <div class="task-meta">
+                <span class="task-distance">📍 {{ task.distance }}m</span>
+                <span class="task-responses">👥 {{ task.responses }}人已响应</span>
+              </div>
+            </div>
+            <div class="task-action-bar">
+              <div class="respond-btn" @click.stop="respondToTask(task)">
                 我来帮忙
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 我的任务 -->
-      <view class="my-tasks">
-        <view class="my-tasks-header">
-          <text class="my-tasks-title">📁 我的任务</text>
-        </view>
-        <view class="my-tasks-tabs">
-          <view 
-            class="my-task-tab" 
+      <div class="my-tasks">
+        <div class="my-tasks-header">
+          <span class="my-tasks-title">📁 我的任务</span>
+        </div>
+        <div class="my-tasks-tabs">
+          <div
+            class="my-task-tab"
             :class="{ active: myTaskTab === 'created' }"
             @click="switchMyTaskTab('created')"
           >
             我发起 ({{ myCreatedTasks.length }})
-          </view>
-          <view 
-            class="my-task-tab" 
+          </div>
+          <div
+            class="my-task-tab"
             :class="{ active: myTaskTab === 'accepted' }"
             @click="switchMyTaskTab('accepted')"
           >
             我接单 ({{ myAcceptedTasks.length }})
-          </view>
-          <view 
-            class="my-task-tab" 
+          </div>
+          <div
+            class="my-task-tab"
             :class="{ active: myTaskTab === 'history' }"
             @click="switchMyTaskTab('history')"
           >
             已完成
-          </view>
-        </view>
+          </div>
+        </div>
 
-        <view class="my-task-list">
-          <view 
-            class="my-task-item" 
-            v-for="task in currentMyTasks" 
+        <div class="my-task-list">
+          <div
+            class="my-task-item"
+            v-for="task in currentMyTasks"
             :key="task.id"
           >
-            <view class="my-task-status" :class="'status-' + task.status">
+            <div class="my-task-status" :class="'status-' + task.status">
               {{ getStatusName(task.status) }}
-            </view>
-            <view class="my-task-content">
-              <text class="my-task-title">{{ task.title }}</text>
-              <text class="my-task-time">{{ task.updateTime }}</text>
-            </view>
-            <text class="my-task-reward">{{ task.reward }}元</text>
-          </view>
-        </view>
-      </view>
+            </div>
+            <div class="my-task-content">
+              <span class="my-task-title">{{ task.title }}</span>
+              <span class="my-task-time">{{ task.updateTime }}</span>
+            </div>
+            <span class="my-task-reward">{{ task.reward }}元</span>
+          </div>
+        </div>
+      </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
-  </view>
+      <div class="safe-area-bottom"></div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { navigateTo } from '../../utils/router'
+import { toastSuccess, toastInfo } from '../../utils/toast'
+
+const STORAGE_KEY = 'ai_helper_tasks'
 
 const statusBarHeight = ref(20)
 const taskInput = ref('')
@@ -261,9 +265,9 @@ const myTaskTab = ref('created')
 
 // 匹配结果模拟数据
 const mockMatchResults = [
-  { 
-    id: '1', 
-    name: '王阿姨', 
+  {
+    id: '1',
+    name: '王阿姨',
     avatar: 'https://i.pravatar.cc/100?img=1',
     rating: 4.9,
     distance: 120,
@@ -271,9 +275,9 @@ const mockMatchResults = [
     isVerified: true,
     tags: ['热心肠', '时间灵活']
   },
-  { 
-    id: '2', 
-    name: '小李', 
+  {
+    id: '2',
+    name: '小李',
     avatar: 'https://i.pravatar.cc/100?img=2',
     rating: 4.8,
     distance: 200,
@@ -281,9 +285,9 @@ const mockMatchResults = [
     isVerified: true,
     tags: ['效率高', '好沟通']
   },
-  { 
-    id: '3', 
-    name: '老张', 
+  {
+    id: '3',
+    name: '老张',
     avatar: 'https://i.pravatar.cc/100?img=3',
     rating: 4.7,
     distance: 350,
@@ -293,8 +297,8 @@ const mockMatchResults = [
   }
 ]
 
-// 任务广场数据
-const tasks = ref([
+// 默认任务广场数据
+const defaultTasks = [
   {
     id: '1',
     type: 'delivery',
@@ -306,7 +310,10 @@ const tasks = ref([
     creatorName: '小红',
     creatorAvatar: 'https://i.pravatar.cc/100?img=4',
     createTime: '10分钟前',
-    status: 'open'
+    status: 'open',
+    creatorRating: 4.8,
+    creatorTasks: 23,
+    location: '阳光社区 菜鸟驿站'
   },
   {
     id: '2',
@@ -319,7 +326,10 @@ const tasks = ref([
     creatorName: '上班族小王',
     creatorAvatar: 'https://i.pravatar.cc/100?img=5',
     createTime: '20分钟前',
-    status: 'open'
+    status: 'open',
+    creatorRating: 4.5,
+    creatorTasks: 12,
+    location: '永和大王 阳光社区店'
   },
   {
     id: '3',
@@ -332,7 +342,10 @@ const tasks = ref([
     creatorName: '铲屎官小刘',
     creatorAvatar: 'https://i.pravatar.cc/100?img=6',
     createTime: '1小时前',
-    status: 'open'
+    status: 'open',
+    creatorRating: 4.9,
+    creatorTasks: 56,
+    location: '阳光社区 花园'
   },
   {
     id: '4',
@@ -345,9 +358,36 @@ const tasks = ref([
     creatorName: '双职工家庭',
     creatorAvatar: 'https://i.pravatar.cc/100?img=7',
     createTime: '2小时前',
-    status: 'open'
+    status: 'open',
+    creatorRating: 4.6,
+    creatorTasks: 8,
+    location: '阳光小学 门口'
   }
-])
+]
+
+// 从 localStorage 加载任务数据
+function loadTasks(): any[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      return JSON.parse(stored)
+    }
+  } catch (e) {
+    console.error('加载任务数据失败:', e)
+  }
+  return [...defaultTasks]
+}
+
+// 保存任务数据到 localStorage
+function saveTasks() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks.value))
+  } catch (e) {
+    console.error('保存任务数据失败:', e)
+  }
+}
+
+const tasks = ref<any[]>(loadTasks())
 
 // 我的任务
 const myCreatedTasks = ref([
@@ -381,15 +421,15 @@ const selectType = (type: string) => {
 
 const submitTask = () => {
   if (!taskInput.value.trim()) {
-    uni.showToast({ title: '请描述您的需求', icon: 'none' })
+    toastInfo('请描述您的需求')
     return
   }
-  
+
   isMatching.value = true
   matchingProgress.value = 0
   matchedCount.value = 0
   matchResults.value = []
-  
+
   // 模拟AI匹配过程
   let progress = 0
   const interval = setInterval(() => {
@@ -398,26 +438,41 @@ const submitTask = () => {
     if (progress <= 60) {
       matchedCount.value = Math.floor(Math.random() * 3) + 1
     }
-    
+
     if (progress >= 100) {
       clearInterval(interval)
       isMatching.value = false
       matchResults.value = mockMatchResults
-      uni.showToast({ title: '匹配成功！', icon: 'success' })
+
+      // 将新任务添加到任务广场
+      const newTask = {
+        id: Date.now().toString(),
+        type: selectedType.value || 'delivery',
+        title: taskInput.value.trim(),
+        description: taskInput.value.trim(),
+        reward: Number(rewardAmount.value) || 5,
+        distance: Math.floor(Math.random() * 500) + 50,
+        responses: 0,
+        creatorName: '我',
+        creatorAvatar: 'https://i.pravatar.cc/100?img=8',
+        createTime: '刚刚',
+        status: 'open',
+        creatorRating: 4.5,
+        creatorTasks: 10,
+        location: '阳光社区'
+      }
+      tasks.value.unshift(newTask)
+      saveTasks()
+
+      toastSuccess('匹配成功！')
     }
   }, 200)
 }
 
 const inviteMatch = (match: any) => {
-  uni.showModal({
-    title: '确认邀请',
-    content: `确定邀请 ${match.name} 帮助您完成任务吗？`,
-    success: (res) => {
-      if (res.confirm) {
-        uni.showToast({ title: '已发送邀请', icon: 'success' })
-      }
-    }
-  })
+  if (window.confirm(`确定邀请 ${match.name} 帮助您完成任务吗？`)) {
+    toastSuccess('已发送邀请')
+  }
 }
 
 const filterTasks = (filter: string) => {
@@ -429,20 +484,15 @@ const switchMyTaskTab = (tab: string) => {
 }
 
 const goToTaskDetail = (task: any) => {
-  uni.navigateTo({ url: `/pages/ai-helper/detail?id=${task.id}` })
+  navigateTo(`/pages/ai-helper/detail?id=${task.id}`)
 }
 
 const respondToTask = (task: any) => {
-  uni.showModal({
-    title: '确认接单',
-    content: '确定要接下这个任务吗？',
-    success: (res) => {
-      if (res.confirm) {
-        task.responses++
-        uni.showToast({ title: '接单成功', icon: 'success' })
-      }
-    }
-  })
+  if (window.confirm('确定要接下这个任务吗？')) {
+    task.responses++
+    saveTasks()
+    toastSuccess('接单成功')
+  }
 }
 
 const getTypeName = (type: string) => {
@@ -463,6 +513,11 @@ const getStatusName = (status: string) => {
   }
   return map[status] || status
 }
+
+onMounted(() => {
+  // 页面加载时确保数据从 localStorage 中读取
+  tasks.value = loadTasks()
+})
 </script>
 
 <style scoped>
@@ -538,10 +593,11 @@ const getStatusName = (status: string) => {
   color: var(--text-primary);
   border: none;
   background: transparent;
+  outline: none;
+  resize: none;
 }
 
 .quick-post-footer {
-  
 }
 
 .task-types {
@@ -557,6 +613,7 @@ const getStatusName = (status: string) => {
   font-size: 13px;
   background: var(--bg-color);
   color: var(--text-secondary);
+  cursor: pointer;
 }
 
 .task-type.active {
@@ -592,6 +649,7 @@ const getStatusName = (status: string) => {
   text-align: center;
   border: none;
   background: transparent;
+  outline: none;
 }
 
 .reward-unit {
@@ -607,6 +665,7 @@ const getStatusName = (status: string) => {
   border-radius: var(--radius-md);
   text-align: center;
   font-weight: 500;
+  cursor: pointer;
 }
 
 /* AI匹配 */
@@ -747,6 +806,7 @@ const getStatusName = (status: string) => {
   font-size: 12px;
   font-weight: 600;
   margin-right: var(--spacing-md);
+  flex-shrink: 0;
 }
 
 .result-avatar {
@@ -754,10 +814,13 @@ const getStatusName = (status: string) => {
   height: 48px;
   border-radius: 50%;
   margin-right: var(--spacing-md);
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .result-info {
   flex: 1;
+  min-width: 0;
 }
 
 .result-name-row {
@@ -811,6 +874,7 @@ const getStatusName = (status: string) => {
   padding: 8px 20px;
   border-radius: 20px;
   font-size: 13px;
+  cursor: pointer;
 }
 
 /* 任务广场 */
@@ -842,6 +906,7 @@ const getStatusName = (status: string) => {
   font-size: 12px;
   background: var(--bg-color);
   color: var(--text-secondary);
+  cursor: pointer;
 }
 
 .filter-btn.active {
@@ -860,6 +925,7 @@ const getStatusName = (status: string) => {
   padding: var(--spacing-lg);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
 }
 
 .task-header {
@@ -873,6 +939,8 @@ const getStatusName = (status: string) => {
   height: 36px;
   border-radius: 50%;
   margin-right: var(--spacing-sm);
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .task-creator-info {
@@ -979,6 +1047,7 @@ const getStatusName = (status: string) => {
   border-radius: var(--radius-md);
   text-align: center;
   font-weight: 500;
+  cursor: pointer;
 }
 
 /* 我的任务 */
@@ -1011,6 +1080,7 @@ const getStatusName = (status: string) => {
   font-size: 13px;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
+  cursor: pointer;
 }
 
 .my-task-tab.active {

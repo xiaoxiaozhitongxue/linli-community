@@ -1,97 +1,98 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部导航 -->
-    <view class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="navbar-content">
-        <view class="back-btn" @click="goBack">
-          <text>←</text>
-        </view>
-        <text class="navbar-title">我的收藏</text>
-        <view class="placeholder"></view>
-      </view>
-    </view>
+    <div class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <div class="navbar-content">
+        <div class="back-btn" @click="goBack">
+          <span>←</span>
+        </div>
+        <span class="navbar-title">我的收藏</span>
+        <div class="placeholder"></div>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y @scrolltolower="loadMore" refresher-enabled @refresherrefresh="onRefresh">
+    <div class="scroll-content" ref="scrollRef" @scroll="onScroll">
       <!-- 空状态 -->
-      <view v-if="!loading && favorites.length === 0" class="empty-state">
-        <text class="empty-icon">⭐</text>
-        <text class="empty-text">暂无收藏</text>
-      </view>
+      <div v-if="!loading && favorites.length === 0" class="empty-state">
+        <span class="empty-icon">⭐</span>
+        <span class="empty-text">暂无收藏</span>
+      </div>
 
       <!-- 收藏列表 -->
-      <view v-else class="favorite-list">
-        <view class="favorite-card" v-for="item in favorites" :key="item.id">
-          <view class="favorite-header">
-            <view class="type-tag" :class="item.target_type">
+      <div v-else class="favorite-list">
+        <div class="favorite-card" v-for="item in favorites" :key="item.id">
+          <div class="favorite-header">
+            <div class="type-tag" :class="item.target_type">
               {{ getTypeText(item.target_type) }}
-            </view>
-            <text class="favorite-time">{{ formatTime(item.created_at) }}</text>
-          </view>
+            </div>
+            <span class="favorite-time">{{ formatTime(item.created_at) }}</span>
+          </div>
 
-          <view v-if="item.target" class="favorite-content">
+          <div v-if="item.target" class="favorite-content">
             <!-- 动态类型 -->
-            <view v-if="item.target_type === 'post'" class="post-preview">
-              <text class="post-preview-text">{{ item.target.content }}</text>
-              <view v-if="item.target.images && item.target.images.length > 0" class="post-preview-images">
-                <image 
-                  v-for="(img, index) in item.target.images.slice(0, 3)" 
+            <div v-if="item.target_type === 'post'" class="post-preview">
+              <span class="post-preview-text">{{ item.target.content }}</span>
+              <div v-if="item.target.images && item.target.images.length > 0" class="post-preview-images">
+                <img
+                  v-for="(img, index) in item.target.images.slice(0, 3)"
                   :key="index"
                   class="preview-image"
                   :src="img"
-                  mode="aspectFill"
+                  alt="图片"
                 />
-              </view>
-              <view class="post-preview-meta">
-                <view class="meta-item">
-                  <text class="meta-icon">❤️</text>
-                  <text class="meta-text">{{ item.target.like_count }}</text>
-                </view>
-                <view class="meta-item">
-                  <text class="meta-icon">💬</text>
-                  <text class="meta-text">{{ item.target.comment_count }}</text>
-                </view>
-              </view>
-            </view>
+              </div>
+              <div class="post-preview-meta">
+                <div class="meta-item">
+                  <span class="meta-icon">❤️</span>
+                  <span class="meta-text">{{ item.target.like_count }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-icon">💬</span>
+                  <span class="meta-text">{{ item.target.comment_count }}</span>
+                </div>
+              </div>
+            </div>
 
             <!-- 活动类型 -->
-            <view v-if="item.target_type === 'activity'" class="activity-preview">
-              <view class="preview-cover">
-                <image 
-                  v-if="item.target.images && item.target.images.length > 0" 
+            <div v-if="item.target_type === 'activity'" class="activity-preview">
+              <div class="preview-cover">
+                <img
+                  v-if="item.target.images && item.target.images.length > 0"
                   class="cover-img"
                   :src="item.target.images[0]"
-                  mode="aspectFill"
+                  alt="活动封面"
                 />
-                <view v-else class="cover-placeholder">
-                  <text>{{ getCategoryIcon(item.target.category) }}</text>
-                </view>
-              </view>
-              <view class="preview-info">
-                <text class="preview-title">{{ item.target.title }}</text>
-                <text class="preview-desc">{{ item.target.location }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
+                <div v-else class="cover-placeholder">
+                  <span>{{ getCategoryIcon(item.target.category) }}</span>
+                </div>
+              </div>
+              <div class="preview-info">
+                <span class="preview-title">{{ item.target.title }}</span>
+                <span class="preview-desc">{{ item.target.location }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- 加载更多 -->
-        <view v-if="loading" class="loading-more">
-          <text>加载中...</text>
-        </view>
+        <div v-if="loading" class="loading-more">
+          <span>加载中...</span>
+        </div>
 
-        <view v-if="!hasMore && favorites.length > 0" class="no-more">
-          <text>没有更多了</text>
-        </view>
-      </view>
+        <div v-if="!hasMore && favorites.length > 0" class="no-more">
+          <span>没有更多了</span>
+        </div>
+      </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
-  </view>
+      <div class="safe-area-bottom"></div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { userApi } from '../../utils/api'
+import { navigateBack } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
@@ -99,15 +100,51 @@ const favorites = ref<any[]>([])
 const page = ref(1)
 const limit = ref(10)
 const hasMore = ref(true)
+const scrollRef = ref<HTMLElement | null>(null)
+
+// 模拟数据
+const mockFavorites = ref([
+  {
+    id: '1',
+    target_type: 'post',
+    created_at: Math.floor(Date.now() / 1000) - 3600,
+    target: {
+      content: '今天天气真好，带孩子在社区花园散步，发现花园里的花都开了！',
+      images: ['https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400&h=400&fit=crop'],
+      like_count: 42,
+      comment_count: 8
+    }
+  },
+  {
+    id: '2',
+    target_type: 'post',
+    created_at: Math.floor(Date.now() / 1000) - 86400,
+    target: {
+      content: '我的社区咖啡店新品试营业啦！本周六周日全场8折，欢迎邻居们来品尝！',
+      like_count: 89,
+      comment_count: 23
+    }
+  },
+  {
+    id: '3',
+    target_type: 'activity',
+    created_at: Math.floor(Date.now() / 1000) - 86400 * 2,
+    target: {
+      title: '周末亲子烘焙活动',
+      location: '阳光社区活动中心',
+      category: 'other',
+      images: []
+    }
+  }
+])
 
 onMounted(() => {
-  const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 20
+  statusBarHeight.value = 20
   loadFavorites()
 })
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBack()
 }
 
 const loadFavorites = async (isRefresh = false) => {
@@ -135,18 +172,22 @@ const loadFavorites = async (isRefresh = false) => {
     hasMore.value = page.value < res.total_pages
     page.value++
   } catch (error) {
-    console.error('加载失败:', error)
+    console.error('加载失败，使用模拟数据:', error)
+    if (isRefresh || favorites.value.length === 0) {
+      favorites.value = mockFavorites.value
+      hasMore.value = false
+    }
   } finally {
     loading.value = false
   }
 }
 
-const onRefresh = async () => {
-  await loadFavorites(true)
-}
-
-const loadMore = () => {
-  loadFavorites()
+const onScroll = () => {
+  if (!scrollRef.value) return
+  const el = scrollRef.value
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 100) {
+    loadFavorites()
+  }
 }
 
 const formatTime = (timestamp: number) => {
@@ -157,7 +198,7 @@ const formatTime = (timestamp: number) => {
   if (diff < 3600) return Math.floor(diff / 60) + '分钟前'
   if (diff < 86400) return Math.floor(diff / 3600) + '小时前'
   if (diff < 2592000) return Math.floor(diff / 86400) + '天前'
-  
+
   const date = new Date(timestamp * 1000)
   return `${date.getMonth() + 1}月${date.getDate()}日`
 }
@@ -213,6 +254,7 @@ const getCategoryIcon = (category: string) => {
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  cursor: pointer;
 }
 
 .navbar-title {
@@ -225,7 +267,8 @@ const getCategoryIcon = (category: string) => {
   width: 44px;
 }
 
-.content {
+.scroll-content {
+  overflow-y: auto;
   height: calc(100vh - 60px);
 }
 
@@ -326,6 +369,7 @@ const getCategoryIcon = (category: string) => {
   height: 80px;
   border-radius: 8px;
   background: var(--border-color);
+  object-fit: cover;
 }
 
 .post-preview-meta {
@@ -365,6 +409,7 @@ const getCategoryIcon = (category: string) => {
 .cover-img {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
 .cover-placeholder {
