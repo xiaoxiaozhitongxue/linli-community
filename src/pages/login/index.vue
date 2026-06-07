@@ -65,6 +65,22 @@
           <span>登录</span>
         </div>
 
+        <!-- 演示账号快捷登录 -->
+        <div class="demo-section">
+          <div class="divider">
+            <div class="divider-line"></div>
+            <span class="divider-text">演示账号</span>
+            <div class="divider-line"></div>
+          </div>
+          <div class="demo-btn" @click="demoLogin">
+            <span class="demo-icon">🚀</span>
+            <span class="demo-text">一键体验（免登录）</span>
+          </div>
+          <div class="demo-hint">
+            手机号：13800138000 | 验证码：123456
+          </div>
+        </div>
+
         <!-- 其他登录方式 -->
         <div class="divider">
           <div class="divider-line"></div>
@@ -159,6 +175,35 @@ const handleLogin = async () => {
     toastError('登录失败，请重试')
     console.error('Login error:', error)
   }
+}
+
+const demoLogin = () => {
+  showLoading('登录中...')
+  
+  const demoUser = {
+    id: 'demo_001',
+    phone: '13800138000',
+    nickname: '邻里小明',
+    avatar: '',
+    community: '阳光社区',
+    bio: '热爱社区，乐于助人',
+    role: 'volunteer' as const,
+    credit_score: 95,
+    is_verified: true,
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    last_active_at: Date.now()
+  }
+  
+  setUser(demoUser, 'demo_token_' + Date.now())
+  
+  setTimeout(() => {
+    hideLoading()
+    toastSuccess('欢迎回来，邻里小明！')
+    setTimeout(() => {
+      switchTab('/pages/index/index')
+    }, 800)
+  }, 500)
 }
 
 const loginWithWechat = () => {
@@ -369,5 +414,46 @@ const showPrivacy = () => {
 .third-party-icon {
   font-size: 32px;
   margin-bottom: var(--spacing-xs);
+}
+
+/* 演示账号 */
+.demo-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.demo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-bottom: var(--spacing-sm);
+}
+
+.demo-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.demo-icon {
+  font-size: 20px;
+}
+
+.demo-text {
+  font-size: 15px;
+}
+
+.demo-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 4px 0;
 }
 </style>
