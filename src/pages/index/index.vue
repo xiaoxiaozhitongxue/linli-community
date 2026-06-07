@@ -1,230 +1,228 @@
 <template>
-  <view class="page">
-    <view class="status-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="status-content">
-        <view class="location" @click="chooseLocation">
-          <text class="location-icon">📍</text>
-          <text class="location-text">{{ communityName }}</text>
-          <text class="location-arrow">▼</text>
-        </view>
-        <view class="search-bar" @click="goToSearch">
-          <text class="search-icon">🔍</text>
-          <text class="search-placeholder">搜索邻里、活动...</text>
-        </view>
-      </view>
-    </view>
+  <div class="page">
+    <div class="status-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <div class="status-content">
+        <div class="location" @click="chooseLocation">
+          <span class="location-icon">📍</span>
+          <span class="location-text">{{ communityName }}</span>
+          <span class="location-arrow">▼</span>
+        </div>
+        <div class="search-bar" @click="goToSearch">
+          <span class="search-icon">🔍</span>
+          <span class="search-placeholder">搜索邻里、活动...</span>
+        </div>
+      </div>
+    </div>
 
-    <scroll-view 
+    <div 
       class="content" 
-      scroll-y 
       :style="{ paddingTop: (statusBarHeight + 60) + 'px' }"
-      refresher-enabled
-      :refresher-triggered="refreshing"
-      @refresherrefresh="onRefresh"
-      @scrolltolower="loadMorePosts"
     >
-      <view class="banner-section">
-        <swiper class="banner-swiper" circular autoplay :interval="4000" :duration="500">
-          <swiper-item v-for="(banner, index) in banners" :key="index">
-            <view class="banner-item" :style="{ background: banner.bgColor }">
-              <view class="banner-content">
-                <text class="banner-title">{{ banner.title }}</text>
-                <text class="banner-desc">{{ banner.desc }}</text>
-              </view>
-            </view>
-          </swiper-item>
-        </swiper>
-      </view>
+      <div class="banner-section">
+        <div class="banner-swiper">
+          <div 
+            class="banner-item" 
+            v-for="(banner, index) in banners" 
+            :key="index"
+            :class="{ active: currentBanner === index }"
+            :style="{ background: banner.bgColor }"
+          >
+            <div class="banner-content">
+              <span class="banner-title">{{ banner.title }}</span>
+              <span class="banner-desc">{{ banner.desc }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <view class="quick-actions">
-        <view 
+      <div class="quick-actions">
+        <div 
           class="quick-item" 
           v-for="action in quickActions" 
           :key="action.id"
           @click="handleQuickAction(action)"
         >
-          <view class="quick-icon" :style="{ background: action.bgColor }">
-            <text>{{ action.icon }}</text>
-          </view>
-          <text class="quick-text">{{ action.name }}</text>
-        </view>
-      </view>
+          <div class="quick-icon" :style="{ background: action.bgColor }">
+            <span>{{ action.icon }}</span>
+          </div>
+          <span class="quick-text">{{ action.name }}</span>
+        </div>
+      </div>
 
-      <view class="section">
-        <view class="section-header">
-          <text class="section-title">🔥 热门活动</text>
-          <text class="section-more" @click="goToActivities">查看更多 ›</text>
-        </view>
-        <scroll-view class="activity-scroll" scroll-x>
-          <view 
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">🔥 热门活动</span>
+          <span class="section-more" @click="goToActivities">查看更多 ›</span>
+        </div>
+        <div class="activity-scroll">
+          <div 
             class="activity-card" 
             v-for="activity in hotActivities" 
             :key="activity.id"
             @click="goToActivityDetail(activity.id)"
           >
-            <view class="activity-cover" :style="{ background: activity.coverBg }">
-              <text class="activity-emoji">{{ activity.emoji }}</text>
-            </view>
-            <view class="activity-info">
-              <text class="activity-name">{{ activity.name }}</text>
-              <view class="activity-meta">
-                <text class="activity-time">{{ activity.time }}</text>
-                <text class="activity-join">{{ activity.joined }}人参与</text>
-              </view>
-            </view>
-          </view>
-        </scroll-view>
-      </view>
+            <div class="activity-cover" :style="{ background: activity.coverBg }">
+              <span class="activity-emoji">{{ activity.emoji }}</span>
+            </div>
+            <div class="activity-info">
+              <span class="activity-name">{{ activity.name }}</span>
+              <div class="activity-meta">
+                <span class="activity-time">{{ activity.time }}</span>
+                <span class="activity-join">{{ activity.joined }}人参与</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <view class="section">
-        <view class="section-header">
-          <text class="section-title">📖 邻里动态</text>
-        </view>
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">📖 邻里动态</span>
+        </div>
 
-        <view v-if="loading && feedList.length === 0" class="loading-container">
-          <view class="loading-spinner"></view>
-          <text class="loading-text">加载中...</text>
-        </view>
+        <div v-if="loading && feedList.length === 0" class="loading-container">
+          <div class="loading-spinner"></div>
+          <span class="loading-text">加载中...</span>
+        </div>
 
-        <view v-else-if="error && feedList.length === 0" class="error-container">
-          <text class="error-icon">😢</text>
-          <text class="error-text">{{ error }}</text>
-          <view class="retry-btn" @click="onRefresh">
-            <text>重试</text>
-          </view>
-        </view>
+        <div v-else-if="error && feedList.length === 0" class="error-container">
+          <span class="error-icon">😢</span>
+          <span class="error-text">{{ error }}</span>
+          <div class="retry-btn" @click="onRefresh">
+            <span>重试</span>
+          </div>
+        </div>
 
-        <view v-else class="feed-list">
-          <view 
+        <div v-else class="feed-list">
+          <div 
             class="feed-card animate-fadeIn" 
             v-for="(post, index) in feedList" 
             :key="post.id"
             :style="{ animationDelay: (index * 0.1) + 's' }"
           >
-            <view class="feed-header">
-              <image 
+            <div class="feed-header">
+              <img 
                 class="feed-avatar" 
                 :src="post.user?.avatar || 'https://via.placeholder.com/40'" 
-                mode="aspectFill" 
               />
-              <view class="feed-user-info">
-                <text class="feed-username">{{ post.user?.nickname || '邻居' }}</text>
-                <view class="feed-meta">
-                  <text class="feed-time">{{ formatTime(post.created_at) }}</text>
-                  <text v-if="post.location" class="feed-location">• {{ post.location }}</text>
-                </view>
-              </view>
-            </view>
+              <div class="feed-user-info">
+                <span class="feed-username">{{ post.user?.nickname || '邻居' }}</span>
+                <div class="feed-meta">
+                  <span class="feed-time">{{ formatTime(post.created_at) }}</span>
+                  <span v-if="post.location" class="feed-location">• {{ post.location }}</span>
+                </div>
+              </div>
+            </div>
 
-            <view class="feed-content">
-              <text class="feed-text">{{ post.content }}</text>
-              <view v-if="post.images && post.images.length > 0" class="feed-images" :class="'images-' + post.images.length">
-                <image 
+            <div class="feed-content">
+              <span class="feed-text">{{ post.content }}</span>
+              <div v-if="post.images && post.images.length > 0" class="feed-images" :class="'images-' + post.images.length">
+                <img 
                   class="feed-image" 
                   v-for="(img, imgIndex) in post.images" 
                   :key="imgIndex"
                   :src="img" 
-                  mode="aspectFill"
                   @click="previewImage(post.images, imgIndex)"
                 />
-              </view>
-            </view>
+              </div>
+            </div>
 
-            <view class="feed-actions">
-              <view 
+            <div class="feed-actions">
+              <div 
                 class="feed-action" 
                 :class="{ liked: post.is_liked }"
                 @click="likePost(post)"
               >
-                <text class="action-icon">{{ post.is_liked ? '❤️' : '🤍' }}</text>
-                <text class="action-count">{{ post.like_count || 0 }}</text>
-              </view>
-              <view class="feed-action" @click="showComments(post)">
-                <text class="action-icon">💬</text>
-                <text class="action-count">{{ post.comment_count || 0 }}</text>
-              </view>
-              <view class="feed-action" @click="sharePost(post)">
-                <text class="action-icon">🔗</text>
-                <text class="action-count">分享</text>
-              </view>
-            </view>
-          </view>
-        </view>
+                <span class="action-icon">{{ post.is_liked ? '❤️' : '🤍' }}</span>
+                <span class="action-count">{{ post.like_count || 0 }}</span>
+              </div>
+              <div class="feed-action" @click="showComments(post)">
+                <span class="action-icon">💬</span>
+                <span class="action-count">{{ post.comment_count || 0 }}</span>
+              </div>
+              <div class="feed-action" @click="sharePost(post)">
+                <span class="action-icon">🔗</span>
+                <span class="action-count">分享</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <view v-if="hasMore && feedList.length > 0" class="load-more">
-          <text v-if="!loadingMore" @click="loadMorePosts">加载更多</text>
-          <view v-else class="loading-more">
-            <view class="loading-spinner small"></view>
-            <text>加载中...</text>
-          </view>
-        </view>
+        <div v-if="hasMore && feedList.length > 0" class="load-more">
+          <span v-if="!loadingMore" @click="loadMorePosts">加载更多</span>
+          <div v-else class="loading-more">
+            <div class="loading-spinner small"></div>
+            <span>加载中...</span>
+          </div>
+        </div>
 
-        <view v-if="!hasMore && feedList.length > 0" class="no-more">
-          <text>没有更多了</text>
-        </view>
+        <div v-if="!hasMore && feedList.length > 0" class="no-more">
+          <span>没有更多了</span>
+        </div>
 
-        <view class="safe-area-bottom"></view>
-      </view>
-    </scroll-view>
+        <div class="safe-area-bottom"></div>
+      </div>
+    </div>
 
-    <view class="fab-btn" @click="goToCreate">
-      <text class="fab-icon">✏️</text>
-      <text class="fab-text">发布</text>
-    </view>
+    <div class="fab-btn" @click="goToCreate">
+      <span class="fab-icon">✏️</span>
+      <span class="fab-text">发布</span>
+    </div>
 
-    <view v-if="showCommentModal" class="comment-mask" @click="hideComments">
-      <view class="comment-panel" @click.stop>
-        <view class="comment-header">
-          <text class="comment-title">评论 ({{ currentPost?.comment_count || 0 }})</text>
-          <text class="comment-close" @click="hideComments">✕</text>
-        </view>
+    <div v-if="showCommentModal" class="comment-mask" @click="hideComments">
+      <div class="comment-panel" @click.stop>
+        <div class="comment-header">
+          <span class="comment-title">评论 ({{ currentPost?.comment_count || 0 }})</span>
+          <span class="comment-close" @click="hideComments">✕</span>
+        </div>
 
-        <scroll-view class="comment-list" scroll-y>
-          <view v-if="commentLoading && comments.length === 0" class="comment-loading">
-            <view class="loading-spinner small"></view>
-          </view>
-          <view v-else-if="comments.length === 0" class="comment-empty">
-            <text class="empty-icon">💬</text>
-            <text class="empty-text">暂无评论，快来抢沙发吧！</text>
-          </view>
-          <view v-else class="comment-item" v-for="comment in comments" :key="comment.id">
-            <image 
+        <div class="comment-list">
+          <div v-if="commentLoading && comments.length === 0" class="comment-loading">
+            <div class="loading-spinner small"></div>
+          </div>
+          <div v-else-if="comments.length === 0" class="comment-empty">
+            <span class="empty-icon">💬</span>
+            <span class="empty-text">暂无评论，快来抢沙发吧！</span>
+          </div>
+          <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
+            <img 
               class="comment-avatar" 
               :src="comment.user?.avatar || 'https://via.placeholder.com/32'" 
-              mode="aspectFill" 
             />
-            <view class="comment-content">
-              <text class="comment-user">{{ comment.user?.nickname || '邻居' }}</text>
-              <text class="comment-text">{{ comment.content }}</text>
-              <text class="comment-time">{{ formatTime(comment.created_at) }}</text>
-            </view>
-          </view>
-        </scroll-view>
+            <div class="comment-content">
+              <span class="comment-user">{{ comment.user?.nickname || '邻居' }}</span>
+              <span class="comment-text">{{ comment.content }}</span>
+              <span class="comment-time">{{ formatTime(comment.created_at) }}</span>
+            </div>
+          </div>
+        </div>
 
-        <view class="comment-input-wrapper">
+        <div class="comment-input-wrapper">
           <input 
             class="comment-input" 
             v-model="commentText" 
             placeholder="说点什么..."
             :disabled="!isLoggedIn"
           />
-          <view 
+          <div 
             class="comment-submit" 
             :class="{ disabled: !commentText.trim() || !isLoggedIn }"
             @click="submitComment"
           >
-            <text>发送</text>
-          </view>
-        </view>
-      </view>
-    </view>
-  </view>
+            <span>发送</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { postsApi, type Post, type Comment } from '../../utils/api'
 import { useAuth } from '../../store'
+import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
+import { navigateTo, switchTab } from '../../utils/router'
 
 const { initAuth, isLoggedIn } = useAuth()
 
@@ -236,6 +234,8 @@ const loadingMore = ref(false)
 const error = ref('')
 const hasMore = ref(true)
 const currentPage = ref(1)
+const currentBanner = ref(0)
+let bannerTimer: any = null
 
 const banners = ref([
   { 
@@ -321,10 +321,7 @@ async function loadMorePosts() {
 
 async function likePost(post: Post) {
   if (!isLoggedIn.value) {
-    uni.showToast({
-      title: '请先登录',
-      icon: 'none'
-    })
+    toastError('请先登录')
     return
   }
   
@@ -344,10 +341,7 @@ async function likePost(post: Post) {
   } catch (err) {
     feedList.value[index].is_liked = originalLiked
     feedList.value[index].like_count = originalCount
-    uni.showToast({
-      title: '操作失败',
-      icon: 'none'
-    })
+    toastError('操作失败')
   }
 }
 
@@ -372,10 +366,7 @@ async function loadComments(postId: string) {
     const response = await postsApi.getComments(postId, { limit: 50 })
     comments.value = response.items
   } catch (err) {
-    uni.showToast({
-      title: '加载评论失败',
-      icon: 'none'
-    })
+    toastError('加载评论失败')
   } finally {
     commentLoading.value = false
   }
@@ -385,10 +376,7 @@ async function submitComment() {
   if (!commentText.value.trim() || !isLoggedIn.value || !currentPost.value) return
   
   if (!isLoggedIn.value) {
-    uni.showToast({
-      title: '请先登录',
-      icon: 'none'
-    })
+    toastError('请先登录')
     return
   }
   
@@ -405,21 +393,15 @@ async function submitComment() {
     }
     
     commentText.value = ''
-    uni.showToast({
-      title: '评论成功',
-      icon: 'success'
-    })
+    toastSuccess('评论成功')
   } catch (err) {
-    uni.showToast({
-      title: '评论失败',
-      icon: 'none'
-    })
+    toastError('评论失败')
   }
 }
 
-function formatTime(timestamp: string): string {
+function formatTime(timestamp: number | string): string {
   const now = Date.now()
-  const date = new Date(timestamp).getTime()
+  const date = typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime()
   const diff = now - date
   
   const minute = 60 * 1000
@@ -444,62 +426,75 @@ function formatTime(timestamp: string): string {
 }
 
 function chooseLocation() {
-  uni.chooseLocation({
-    success: (res) => {
-      communityName.value = res.name || '我的社区'
-    }
-  })
+  toastInfo('选择位置功能开发中')
 }
 
 function goToSearch() {
-  uni.showToast({
-    title: '搜索功能开发中',
-    icon: 'none'
-  })
+  toastInfo('搜索功能开发中')
 }
 
 function handleQuickAction(action: any) {
-  uni.switchTab({
-    url: action.path
-  })
+  switchTab(action.path)
 }
 
 function goToActivityDetail(id: string) {
-  uni.showToast({
-    title: '活动详情开发中',
-    icon: 'none'
-  })
+  toastInfo('活动详情开发中')
 }
 
 function goToActivities() {
-  uni.switchTab({
-    url: '/pages/neighborhood/index'
-  })
+  switchTab('/pages/neighborhood/index')
 }
 
 function sharePost(post: Post) {
-  uni.showShareMenu()
+  // 在实际项目中可能会调用原生的分享 API
+  // 这里我们模拟一个简单的分享功能
+  if (navigator.share) {
+    navigator.share({
+      title: '邻里社区',
+      text: post.content,
+      url: window.location.href
+    }).catch(console.error)
+  } else {
+    // 复制链接到剪贴板
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      toastSuccess('链接已复制到剪贴板')
+    }).catch(() => {
+      toastInfo('分享功能开发中')
+    })
+  }
 }
 
 function previewImage(images: string[], index: number) {
-  uni.previewImage({
-    urls: images,
-    current: index
-  })
+  toastInfo('预览图片功能开发中')
 }
 
 function goToCreate() {
-  uni.navigateTo({
-    url: '/pages/post/create'
-  })
+  navigateTo('/pages/post/create')
+}
+
+function startBannerAutoPlay() {
+  bannerTimer = setInterval(() => {
+    currentBanner.value = (currentBanner.value + 1) % banners.value.length
+  }, 4000)
+}
+
+function stopBannerAutoPlay() {
+  if (bannerTimer) {
+    clearInterval(bannerTimer)
+    bannerTimer = null
+  }
 }
 
 onMounted(() => {
   initAuth()
-  const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 20
+  statusBarHeight.value = 20
   loading.value = true
   fetchPosts(1, true)
+  startBannerAutoPlay()
+})
+
+onUnmounted(() => {
+  stopBannerAutoPlay()
 })
 </script>
 
@@ -565,7 +560,8 @@ onMounted(() => {
 }
 
 .content {
-  height: calc(100vh - 60px);
+  min-height: 100vh;
+  overflow-y: auto;
 }
 
 .banner-section {
@@ -577,13 +573,24 @@ onMounted(() => {
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-md);
+  position: relative;
 }
 
 .banner-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 120px;
   padding: var(--spacing-xl);
   display: flex;
   align-items: center;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.banner-item.active {
+  opacity: 1;
 }
 
 .banner-content {
@@ -660,7 +667,9 @@ onMounted(() => {
 }
 
 .activity-scroll {
+  overflow-x: auto;
   white-space: nowrap;
+  padding-bottom: 4px;
 }
 
 .activity-card {
@@ -737,6 +746,7 @@ onMounted(() => {
   border-radius: 50%;
   margin-right: var(--spacing-md);
   background: #f0f0f0;
+  object-fit: cover;
 }
 
 .feed-user-info {
@@ -810,6 +820,7 @@ onMounted(() => {
   aspect-ratio: 1;
   border-radius: var(--radius-md);
   background: #f0f0f0;
+  object-fit: cover;
 }
 
 .feed-actions {
@@ -956,6 +967,7 @@ onMounted(() => {
   flex: 1;
   padding: var(--spacing-lg);
   max-height: 40vh;
+  overflow-y: auto;
 }
 
 .comment-loading {
@@ -993,6 +1005,7 @@ onMounted(() => {
   border-radius: 50%;
   background: #f0f0f0;
   flex-shrink: 0;
+  object-fit: cover;
 }
 
 .comment-content {
@@ -1035,6 +1048,8 @@ onMounted(() => {
   border-radius: var(--radius-lg);
   padding: var(--spacing-sm) var(--spacing-md);
   font-size: 14px;
+  border: none;
+  outline: none;
 }
 
 .comment-submit {

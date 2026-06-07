@@ -1,92 +1,97 @@
 <template>
-  <view class="page">
-    <view class="login-container" :style="{ paddingTop: statusBarHeight + 60 + 'px' }">
+  <div class="page">
+    <div class="login-container">
       <!-- Logo区域 -->
-      <view class="logo-section">
-        <view class="logo">
-          <text class="logo-emoji">🏘️</text>
-        </view>
-        <text class="app-name">邻里社区</text>
-        <text class="app-slogan">连接邻里，共建美好社区</text>
-      </view>
+      <div class="logo-section">
+        <div class="logo">
+          <span class="logo-emoji">🏘️</span>
+        </div>
+        <span class="app-name">邻里社区</span>
+        <span class="app-slogan">连接邻里，共建美好社区</span>
+      </div>
 
       <!-- 登录表单 -->
-      <view class="form-section">
-        <view class="input-group">
-          <view class="input-label">手机号</view>
-          <view class="input-row">
+      <div class="form-section">
+        <div class="input-group">
+          <div class="input-label">手机号</div>
+          <div class="input-row">
             <input 
               class="input-field" 
               type="number" 
               v-model="phone" 
               placeholder="请输入手机号"
-              :maxlength="11"
+              maxlength="11"
             />
-          </view>
-        </view>
+          </div>
+        </div>
 
-        <view class="input-group">
-          <view class="input-label">验证码</view>
-          <view class="input-row">
+        <div class="input-group">
+          <div class="input-label">验证码</div>
+          <div class="input-row">
             <input 
               class="input-field" 
               type="number" 
               v-model="code" 
               placeholder="请输入验证码"
-              :maxlength="6"
+              maxlength="6"
             />
-            <view 
+            <div 
               class="code-btn" 
               :class="{ disabled: counting }"
               @click="sendCode"
             >
               {{ counting ? `${countdown}s` : '获取验证码' }}
-            </view>
-          </view>
-        </view>
+            </div>
+          </div>
+        </div>
 
         <!-- 协议 -->
-        <view class="agreement">
-          <view 
+        <div class="agreement">
+          <div 
             class="agreement-check" 
             :class="{ checked: agreed }"
             @click="agreed = !agreed"
           >
-            <text v-if="agreed">✓</text>
-          </view>
-          <text class="agreement-text">
-            同意并阅读<text class="agreement-link" @click.stop="showAgreement">《用户协议》</text>
-            和<text class="agreement-link" @click.stop="showPrivacy">《隐私政策》</text>
-          </text>
-        </view>
+            <span v-if="agreed">✓</span>
+          </div>
+          <span class="agreement-text">
+            同意并阅读<span class="agreement-link" @click.stop="showAgreement">《用户协议》</span>
+            和<span class="agreement-link" @click.stop="showPrivacy">《隐私政策》</span>
+          </span>
+        </div>
 
         <!-- 登录按钮 -->
-        <view class="login-btn" @click="handleLogin">
-          <text>登录</text>
-        </view>
+        <div class="login-btn" @click="handleLogin">
+          <span>登录</span>
+        </div>
 
         <!-- 其他登录方式 -->
-        <view class="divider">
-          <view class="divider-line"></view>
-          <text class="divider-text">其他登录方式</text>
-          <view class="divider-line"></view>
-        </view>
+        <div class="divider">
+          <div class="divider-line"></div>
+          <span class="divider-text">其他登录方式</span>
+          <div class="divider-line"></div>
+        </div>
 
-        <view class="third-party">
-          <view class="third-party-btn" @click="loginWithWechat">
-            <text class="third-party-icon">💬</text>
-            <text>微信</text>
-          </view>
-        </view>
-      </view>
-    </view>
-  </view>
+        <div class="third-party">
+          <div class="third-party-btn" @click="loginWithWechat">
+            <span class="third-party-icon">💬</span>
+            <span>微信</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
+import { navigateTo, switchTab } from '../../utils/router'
+import { showLoading, hideLoading } from '../../utils/ui'
+import { useAuth } from '../../store'
+import { authApi } from '../../utils/api'
 
-const statusBarHeight = ref(20)
+const { setUser } = useAuth()
 const phone = ref('')
 const code = ref('')
 const agreed = ref(false)
@@ -97,7 +102,7 @@ const sendCode = () => {
   if (counting.value) return
   
   if (!phone.value || phone.value.length !== 11) {
-    uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+    toastError('请输入正确的手机号')
     return
   }
   
@@ -112,48 +117,60 @@ const sendCode = () => {
     }
   }, 1000)
   
-  uni.showToast({ title: '验证码已发送', icon: 'success' })
+  toastSuccess('验证码已发送（测试验证码：123456）')
 }
 
-const handleLogin = () => {
+const handleLogin = async () => {
   if (!phone.value || phone.value.length !== 11) {
-    uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+    toastError('请输入正确的手机号')
     return
   }
   
   if (!code.value || code.value.length !== 6) {
-    uni.showToast({ title: '请输入6位验证码', icon: 'none' })
+    toastError('请输入6位验证码')
     return
   }
   
   if (!agreed.value) {
-    uni.showToast({ title: '请先同意用户协议', icon: 'none' })
+    toastError('请先同意用户协议')
     return
   }
   
-  // 模拟登录
-  uni.showLoading({ title: '登录中...' })
+  // 验证测试验证码
+  if (code.value !== '123456') {
+    toastError('验证码不正确，请使用 123456 进行测试')
+    return
+  }
   
-  setTimeout(() => {
-    uni.hideLoading()
-    uni.showToast({ title: '登录成功', icon: 'success' })
+  try {
+    showLoading('登录中...')
+    
+    const result: any = await authApi.login({ code: code.value })
+    setUser(result.user, result.token)
+    
+    hideLoading()
+    toastSuccess('登录成功')
     
     setTimeout(() => {
-      uni.switchTab({ url: '/pages/index/index' })
+      switchTab('/pages/index/index')
     }, 1000)
-  }, 1500)
+  } catch (error) {
+    hideLoading()
+    toastError('登录失败，请重试')
+    console.error('Login error:', error)
+  }
 }
 
 const loginWithWechat = () => {
-  uni.showToast({ title: '微信登录功能开发中', icon: 'none' })
+  toastError('微信登录功能开发中')
 }
 
 const showAgreement = () => {
-  uni.navigateTo({ url: '/pages/login/agreement?type=user' })
+  toastInfo('用户协议页面开发中')
 }
 
 const showPrivacy = () => {
-  uni.navigateTo({ url: '/pages/login/agreement?type=privacy' })
+  toastInfo('隐私政策页面开发中')
 }
 </script>
 
@@ -165,6 +182,7 @@ const showPrivacy = () => {
 
 .login-container {
   padding: var(--spacing-lg);
+  padding-top: 60px;
 }
 
 /* Logo区域 */
@@ -205,9 +223,9 @@ const showPrivacy = () => {
 /* 表单区域 */
 .form-section {
   background: var(--card-bg);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   padding: var(--spacing-xl);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .input-group {
@@ -234,6 +252,7 @@ const showPrivacy = () => {
   color: var(--text-primary);
   border: none;
   background: transparent;
+  outline: none;
 }
 
 .code-btn {
@@ -242,10 +261,13 @@ const showPrivacy = () => {
   color: white;
   border-radius: var(--radius-sm);
   font-size: 13px;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
 .code-btn.disabled {
   background: var(--text-muted);
+  cursor: not-allowed;
 }
 
 /* 协议 */
@@ -268,6 +290,7 @@ const showPrivacy = () => {
   color: white;
   flex-shrink: 0;
   margin-top: 2px;
+  cursor: pointer;
 }
 
 .agreement-check.checked {
@@ -283,6 +306,7 @@ const showPrivacy = () => {
 
 .agreement-link {
   color: var(--primary-color);
+  cursor: pointer;
 }
 
 /* 登录按钮 */
@@ -295,6 +319,13 @@ const showPrivacy = () => {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: var(--spacing-lg);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
 }
 
 /* 分隔符 */
@@ -327,6 +358,12 @@ const showPrivacy = () => {
   flex-direction: column;
   align-items: center;
   padding: var(--spacing-md);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.third-party-btn:hover {
+  transform: scale(1.05);
 }
 
 .third-party-icon {

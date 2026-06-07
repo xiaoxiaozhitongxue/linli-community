@@ -1,3 +1,7 @@
+import { toastError } from './toast'
+import { navigateTo } from './router'
+import { showLoading as uiShowLoading, hideLoading as uiHideLoading } from './ui'
+
 const BASE_URL = ''
 
 interface RequestConfig {
@@ -17,29 +21,23 @@ interface ResponseData<T = any> {
 
 function getToken(): string {
   try {
-    return uni.getStorageSync('token') || ''
+    return localStorage.getItem('token') || ''
   } catch (e) {
     return ''
   }
 }
 
-function showLoading(title: string = '加载中...') {
-  uni.showLoading({
-    title,
-    mask: true
-  })
-}
-
-function hideLoading() {
-  uni.hideLoading()
-}
-
 function showError(message: string) {
-  uni.showToast({
-    title: message,
-    icon: 'none',
-    duration: 2000
-  })
+  toastError(message)
+}
+
+function buildQueryString(params: any): string {
+  if (!params) return ''
+  const query = Object.entries(params)
+    .filter(([_, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&')
+  return query ? `?${query}` : ''
 }
 
 export function request<T = any>(config: RequestConfig): Promise<T> {
@@ -54,24 +52,34 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
 
   return new Promise((resolve, reject) => {
     if (needLoading) {
-      showLoading()
+      uiShowLoading()
     }
 
-    uni.request({
-      url: BASE_URL + url,
-      method,
-      data,
-      header: {
-        'Content-Type': 'application/json',
-        'Authorization': getToken() ? `Bearer ${getToken()}` : '',
-        ...header
-      },
-      success: (res: any) => {
-        if (needLoading) {
-          hideLoading()
-        }
+    let requestUrl = BASE_URL + url
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': getToken() ? `Bearer ${getToken()}` : '',
+      ...header
+    }
 
-        const response = res.data as ResponseData<T>
+    const requestInit: RequestInit = {
+      method,
+      headers: requestHeaders
+    }
+
+    if (method === 'GET' && data) {
+      requestUrl += buildQueryString(data)
+    } else if (data) {
+      requestInit.body = JSON.stringify(data)
+    }
+
+    fetch(requestUrl, requestInit)
+      .then(async (res) => {
+        const response = await res.json() as ResponseData<T>
+        
+        if (needLoading) {
+          uiHideLoading()
+        }
         
         if (response.code === 200 || response.code === 201) {
           resolve(response.data)
@@ -81,19 +89,21 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
           }
           
           if (response.code === 401) {
-            uni.removeStorageSync('token')
-            uni.removeStorageSync('userInfo')
-            uni.navigateTo({
-              url: '/pages/login/index'
-            })
+            try {
+              localStorage.removeItem('token')
+              localStorage.removeItem('userInfo')
+            } catch (e) {
+              console.error('清除用户信息失败', e)
+            }
+            navigateTo('/pages/login/index')
           }
           
           reject(new Error(response.message || '请求失败'))
         }
-      },
-      fail: (err) => {
+      })
+      .catch((err) => {
         if (needLoading) {
-          hideLoading()
+          uiHideLoading()
         }
         
         if (needError) {
@@ -101,8 +111,7 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
         }
         
         reject(err)
-      }
-    })
+      })
   })
 }
 

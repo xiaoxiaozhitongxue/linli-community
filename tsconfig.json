@@ -16,14 +16,14 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     },
-    "types": ["@dcloudio/types", "@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types"]
   },
   "include": [
-    "pages/**/*.ts",
-    "pages/**/*.vue",
-    "cloudflare/**/*.js"
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "functions/**/*.js"
   ],
   "exclude": ["node_modules", "dist"]
 }

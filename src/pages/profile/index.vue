@@ -1,134 +1,137 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部个人信息 -->
-    <view class="profile-header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="header-bg"></view>
-      <view class="profile-content">
-        <view class="profile-main" @click="goToEditProfile" v-if="isLoggedIn">
-          <image class="profile-avatar" :src="user?.avatar || 'https://i.pravatar.cc/100?img=10'" mode="aspectFill" />
-          <view class="profile-info">
-            <view class="profile-name-row">
-              <text class="profile-name">{{ user?.nickname || '用户' }}</text>
-              <view class="profile-badge" :class="'badge-' + user?.role">
+    <div class="profile-header" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <div class="header-bg"></div>
+      <div class="profile-content">
+        <div class="profile-main" @click="goToEditProfile" v-if="isLoggedIn">
+          <img class="profile-avatar" :src="user?.avatar || 'https://i.pravatar.cc/100?img=10'" />
+          <div class="profile-info">
+            <div class="profile-name-row">
+              <span class="profile-name">{{ user?.nickname || '用户' }}</span>
+              <div class="profile-badge" :class="'badge-' + user?.role">
                 {{ getRoleName(user?.role || '') }}
-              </view>
-            </view>
-            <text class="profile-desc">{{ user?.bio || '快来完善个人资料吧' }}</text>
-            <view class="profile-location">
-              <text>📍 {{ user?.community || '未设置' }}</text>
-            </view>
-          </view>
-          <text class="edit-icon">✏️</text>
-        </view>
+              </div>
+            </div>
+            <span class="profile-desc">{{ user?.bio || '快来完善个人资料吧' }}</span>
+            <div class="profile-location">
+              <span>📍 {{ user?.community || '未设置' }}</span>
+            </div>
+          </div>
+          <span class="edit-icon">✏️</span>
+        </div>
 
         <!-- 未登录状态 -->
-        <view class="profile-main" @click="goToLogin" v-else>
-          <image class="profile-avatar" src="https://i.pravatar.cc/100?img=10" mode="aspectFill" />
-          <view class="profile-info">
-            <view class="profile-name-row">
-              <text class="profile-name">点击登录</text>
-            </view>
-            <text class="profile-desc">登录后享受完整服务</text>
-          </view>
-          <text class="edit-icon">></text>
-        </view>
+        <div class="profile-main" @click="goToLogin" v-else>
+          <img class="profile-avatar" src="https://i.pravatar.cc/100?img=10" />
+          <div class="profile-info">
+            <div class="profile-name-row">
+              <span class="profile-name">点击登录</span>
+            </div>
+            <span class="profile-desc">登录后享受完整服务</span>
+          </div>
+          <span class="edit-icon">›</span>
+        </div>
 
         <!-- 数据统计 -->
-        <view class="stats-row" v-if="isLoggedIn">
-          <view class="stat-item" @click="goToMyPosts">
-            <text class="stat-value">{{ stats.posts }}</text>
-            <text class="stat-label">动态</text>
-          </view>
-          <view class="stat-divider"></view>
-          <view class="stat-item" @click="goToMyActivities">
-            <text class="stat-value">{{ stats.activities }}</text>
-            <text class="stat-label">活动</text>
-          </view>
-          <view class="stat-divider"></view>
-          <view class="stat-item" @click="goToMyCredits">
-            <text class="stat-value">{{ user?.credit_score || 0 }}</text>
-            <text class="stat-label">信用分</text>
-          </view>
-          <view class="stat-divider"></view>
-          <view class="stat-item" @click="goToMyFavorites">
-            <text class="stat-value">{{ stats.favorites }}</text>
-            <text class="stat-label">收藏</text>
-          </view>
-        </view>
-      </view>
-    </view>
+        <div class="stats-row" v-if="isLoggedIn">
+          <div class="stat-item" @click="goToMyPosts">
+            <span class="stat-value">{{ stats.posts }}</span>
+            <span class="stat-label">动态</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item" @click="goToMyActivities">
+            <span class="stat-value">{{ stats.activities }}</span>
+            <span class="stat-label">活动</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item" @click="goToMyCredits">
+            <span class="stat-value">{{ user?.credit_score || 0 }}</span>
+            <span class="stat-label">信用分</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item" @click="goToMyFavorites">
+            <span class="stat-value">{{ stats.favorites }}</span>
+            <span class="stat-label">收藏</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <scroll-view class="content" scroll-y v-if="isLoggedIn">
+    <div class="content" scroll-y v-if="isLoggedIn">
       <!-- 我的服务 -->
-      <view class="menu-section">
-        <view class="menu-title">我的服务</view>
-        <view class="menu-grid">
-          <view class="menu-item" @click="goToMyPosts">
-            <view class="menu-icon" style="background: #E8F5E9;">
-              <text>📝</text>
-            </view>
-            <text class="menu-text">我的动态</text>
-          </view>
-          <view class="menu-item" @click="goToMyActivities">
-            <view class="menu-icon" style="background: #E3F2FD;">
-              <text>🎯</text>
-            </view>
-            <text class="menu-text">我的活动</text>
-          </view>
-          <view class="menu-item" @click="goToMyFavorites">
-            <view class="menu-icon" style="background: #FFF3E0;">
-              <text>⭐</text>
-            </view>
-            <text class="menu-text">我的收藏</text>
-          </view>
-          <view class="menu-item" @click="goToEditProfile">
-            <view class="menu-icon" style="background: #FCE4EC;">
-              <text>👤</text>
-            </view>
-            <text class="menu-text">资料编辑</text>
-          </view>
-        </view>
-      </view>
+      <div class="menu-section">
+        <div class="menu-title">我的服务</div>
+        <div class="menu-grid">
+          <div class="menu-item" @click="goToMyPosts">
+            <div class="menu-icon" style="background: #E8F5E9;">
+              <span>📝</span>
+            </div>
+            <span class="menu-text">我的动态</span>
+          </div>
+          <div class="menu-item" @click="goToMyActivities">
+            <div class="menu-icon" style="background: #E3F2FD;">
+              <span>🎯</span>
+            </div>
+            <span class="menu-text">我的活动</span>
+          </div>
+          <div class="menu-item" @click="goToMyFavorites">
+            <div class="menu-icon" style="background: #FFF3E0;">
+              <span>⭐</span>
+            </div>
+            <span class="menu-text">我的收藏</span>
+          </div>
+          <div class="menu-item" @click="goToEditProfile">
+            <div class="menu-icon" style="background: #FCE4EC;">
+              <span>👤</span>
+            </div>
+            <span class="menu-text">资料编辑</span>
+          </div>
+        </div>
+      </div>
 
       <!-- 功能列表 -->
-      <view class="menu-section">
-        <view class="menu-title">常用功能</view>
-        <view class="menu-list">
-          <view class="menu-list-item" v-for="item in menuItems" :key="item.id" @click="goToMenu(item)">
-            <view class="menu-list-left">
-              <text class="menu-list-icon">{{ item.icon }}</text>
-              <text class="menu-list-text">{{ item.name }}</text>
-            </view>
-            <text class="menu-list-arrow">></text>
-          </view>
-        </view>
-      </view>
+      <div class="menu-section">
+        <div class="menu-title">常用功能</div>
+        <div class="menu-list">
+          <div class="menu-list-item" v-for="item in menuItems" :key="item.id" @click="goToMenu(item)">
+            <div class="menu-list-left">
+              <span class="menu-list-icon">{{ item.icon }}</span>
+              <span class="menu-list-text">{{ item.name }}</span>
+            </div>
+            <span class="menu-list-arrow">›</span>
+          </div>
+        </div>
+      </div>
 
       <!-- 退出登录 -->
-      <view class="logout-btn" @click="logout">
+      <div class="logout-btn" @click="logout">
         退出登录
-      </view>
+      </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
+      <div class="safe-area-bottom"></div>
+    </div>
 
     <!-- 未登录提示 -->
-    <view class="content" v-else>
-      <view class="empty-state">
-        <text class="empty-icon">👋</text>
-        <text class="empty-text">请先登录</text>
-        <view class="btn btn-primary" style="margin-top: 24px;" @click="goToLogin">
+    <div class="content" v-else>
+      <div class="empty-state">
+        <span class="empty-icon">👋</span>
+        <span class="empty-text">请先登录</span>
+        <div class="btn btn-primary" style="margin-top: 24px;" @click="goToLogin">
           立即登录
-        </view>
-      </view>
-    </view>
-  </view>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuth } from '../../store/index'
 import { userApi } from '../../utils/api'
+import { navigateTo } from '../../utils/router'
+import { toastInfo } from '../../utils/toast'
+import { showModal } from '../../utils/ui'
 
 const { user, logout: authLogout, isLoggedIn, initAuth, updateUser } = useAuth()
 const statusBarHeight = ref(20)
@@ -190,39 +193,39 @@ const loadStats = async () => {
 }
 
 const goToEditProfile = () => {
-  uni.navigateTo({ url: '/pages/profile/edit' })
+  navigateTo('/pages/profile/edit')
 }
 
 const goToMyPosts = () => {
-  uni.navigateTo({ url: '/pages/profile/my-posts' })
+  navigateTo('/pages/profile/my-posts')
 }
 
 const goToMyActivities = () => {
-  uni.navigateTo({ url: '/pages/profile/my-activities' })
+  navigateTo('/pages/profile/my-activities')
 }
 
 const goToMyFavorites = () => {
-  uni.navigateTo({ url: '/pages/profile/my-favorites' })
+  navigateTo('/pages/profile/my-favorites')
 }
 
 const goToMyCredits = () => {
-  uni.showToast({ title: '信用分详情即将上线', icon: 'none' })
+  toastInfo('信用分详情即将上线')
 }
 
 const goToMenu = (item: any) => {
   if (item.id === '5') {
-    uni.navigateTo({ url: '/pages/profile/settings' })
+    navigateTo('/pages/profile/settings')
   } else {
-    uni.showToast({ title: '功能即将上线', icon: 'none' })
+    toastInfo('功能即将上线')
   }
 }
 
 const goToLogin = () => {
-  uni.navigateTo({ url: '/pages/login/index' })
+  navigateTo('/pages/login/index')
 }
 
 const logout = () => {
-  uni.showModal({
+  showModal({
     title: '提示',
     content: '确定要退出登录吗？',
     success: (res) => {
@@ -235,8 +238,7 @@ const logout = () => {
 
 onMounted(() => {
   initAuth()
-  const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 20
+  statusBarHeight.value = 20
   if (isLoggedIn.value) {
     loadUserProfile()
   }
@@ -276,6 +278,7 @@ onMounted(() => {
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-md);
   margin-bottom: var(--spacing-lg);
+  cursor: pointer;
 }
 
 .profile-avatar {
@@ -285,6 +288,7 @@ onMounted(() => {
   margin-right: var(--spacing-md);
   border: 3px solid white;
   box-shadow: var(--shadow-sm);
+  object-fit: cover;
 }
 
 .profile-info {
@@ -359,6 +363,7 @@ onMounted(() => {
 
 .stat-item {
   text-align: center;
+  cursor: pointer;
 }
 
 .stat-value {
@@ -380,7 +385,7 @@ onMounted(() => {
 }
 
 .content {
-  height: calc(100vh - 220px);
+  min-height: calc(100vh - 220px);
 }
 
 /* 空状态 */
@@ -400,6 +405,18 @@ onMounted(() => {
 .empty-text {
   font-size: 16px;
   color: var(--text-muted);
+}
+
+.btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
 }
 
 /* 菜单区块 */
@@ -428,6 +445,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  cursor: pointer;
 }
 
 .menu-icon {
@@ -460,6 +478,7 @@ onMounted(() => {
   align-items: center;
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
 }
 
 .menu-list-item:last-child {
@@ -495,5 +514,6 @@ onMounted(() => {
   border-radius: var(--radius-md);
   text-align: center;
   font-size: 15px;
+  cursor: pointer;
 }
 </style>

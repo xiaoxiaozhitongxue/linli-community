@@ -1,541 +1,307 @@
 <template>
-  <view class="page">
+  <div class="page">
     <!-- 顶部导航 -->
-    <view class="nav-header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="nav-content">
-        <text class="nav-title">邻里空间</text>
-        <view class="nav-actions">
-          <view class="nav-btn" @click="goToCreateActivity">
-            <text class="nav-icon">✏️</text>
-            <text class="nav-btn-text">发活动</text>
-          </view>
-        </view>
-      </view>
-      
+    <div class="nav-header">
+      <div class="nav-content">
+        <span class="nav-title">邻里空间</span>
+        <div class="nav-actions">
+          <button class="nav-btn" @click="goToCreateActivity">
+            <span class="nav-icon">✏️</span>
+            <span class="nav-btn-text">发活动</span>
+          </button>
+        </div>
+      </div>
+
       <!-- 标签切换 -->
-      <view class="tab-bar">
-        <view 
-          v-for="tab in tabs" 
+      <div class="tab-bar">
+        <button
+          v-for="tab in tabs"
           :key="tab.key"
-          class="tab-item" 
+          class="tab-item"
           :class="{ active: currentTab === tab.key }"
           @click="switchTab(tab.key)"
         >
-          {{ tab.label }}
-          <view v-if="currentTab === tab.key" class="tab-indicator"></view>
-        </view>
-      </view>
-    </view>
+          <span class="tab-icon">{{ tab.icon }}</span>
+          <span class="tab-text">{{ tab.name }}</span>
+        </button>
+      </div>
+    </div>
 
-    <scroll-view 
-      class="content" 
-      scroll-y 
-      :style="{ paddingTop: (statusBarHeight + 130) + 'px' }"
-      @scrolltolower="loadMore"
-      refresher-enabled
-      :refresher-triggered="isRefreshing"
-      @refresherrefresh="onRefresh"
-    >
+    <!-- 内容区域 -->
+    <div class="content-area">
       <!-- 社区客厅 -->
-      <view v-if="currentTab === 'lounge'" class="lounge-container">
-        <!-- 欢迎卡片 -->
-        <view class="welcome-card">
-          <view class="welcome-header">
-            <text class="welcome-emoji">🏠</text>
-            <text class="welcome-title">欢迎来到社区</text>
-          </view>
-          <text class="welcome-desc">和邻居聊聊天，认识新朋友</text>
-        </view>
+      <div v-if="currentTab === 'lounge'" class="tab-content">
+        <div class="section-title">
+          <span>🏠 社区客厅</span>
+          <span class="online-count">{{ onlineUsers.length }} 位邻居在线</span>
+        </div>
+
+        <div class="chat-list">
+          <div
+            v-for="room in chatRooms"
+            :key="room.id"
+            class="chat-item"
+            @click="enterChatRoom(room)"
+          >
+            <div class="chat-avatar" :style="{ background: room.bg_color }">
+              <span class="chat-emoji">{{ room.emoji }}</span>
+            </div>
+            <div class="chat-info">
+              <span class="chat-name">{{ room.name }}</span>
+              <span class="chat-desc">{{ room.description }}</span>
+            </div>
+            <div class="chat-stats">
+              <span class="member-count">{{ room.members }}人</span>
+              <span v-if="room.today_messages > 0" class="message-badge">
+                {{ room.today_messages }}条新消息
+              </span>
+            </div>
+          </div>
+        </div>
 
         <!-- 在线邻居 -->
-        <view class="section-container" v-if="onlineUsers.length > 0">
-          <view class="section-header">
-            <text class="section-title">在线邻居</text>
-            <text class="section-count">{{ onlineUsers.length }}人</text>
-          </view>
-          <scroll-view class="neighbors-scroll" scroll-x show-scrollbar="false">
-            <view class="neighbor-item" v-for="user in onlineUsers" :key="user.id" @click="viewUserProfile(user)">
-              <view class="neighbor-avatar-wrapper">
-                <image class="neighbor-avatar" :src="user.avatar || '/static/default-avatar.png'" mode="aspectFill"></image>
-                <view class="online-indicator"></view>
-              </view>
-              <text class="neighbor-name">{{ user.nickname }}</text>
-            </view>
-          </scroll-view>
-        </view>
-
-        <!-- 热门话题 -->
-        <view class="section-container">
-          <view class="section-header">
-            <text class="section-title">热门话题</text>
-          </view>
-          <view class="topic-list">
-            <view 
-              class="topic-card" 
-              v-for="topic in hotTopics" 
-              :key="topic.id"
-              @click="enterTopic(topic)"
-            >
-              <view class="topic-left">
-                <text class="topic-emoji">{{ topic.emoji }}</text>
-                <view class="topic-info">
-                  <text class="topic-name">#{{ topic.name }}</text>
-                  <text class="topic-meta">{{ topic.posts }}条讨论 · {{ topic.participants }}人参与</text>
-                </view>
-              </view>
-              <text class="topic-arrow">›</text>
-            </view>
-          </view>
-        </view>
-
-        <!-- 聊天室 -->
-        <view class="section-container">
-          <view class="section-header">
-            <text class="section-title">聊天室</text>
-          </view>
-          <view class="chat-list">
-            <view 
-              class="chat-card" 
-              v-for="room in chatRooms" 
-              :key="room.id"
-              @click="enterChatRoom(room)"
-            >
-              <view class="chat-cover" :style="{ background: room.bg_color }">
-                <text class="chat-emoji">{{ room.emoji }}</text>
-              </view>
-              <view class="chat-content">
-                <text class="chat-name">{{ room.name }}</text>
-                <text class="chat-desc">{{ room.description }}</text>
-                <view class="chat-stats">
-                  <text class="chat-stat">👥 {{ room.members }}</text>
-                  <text class="chat-stat">💬 {{ room.today_messages }}条</text>
-                </view>
-              </view>
-              <text class="chat-arrow">›</text>
-            </view>
-          </view>
-        </view>
-      </view>
+        <div class="section-title">
+          <span>👥 在线邻居</span>
+        </div>
+        <div class="online-users">
+          <div
+            v-for="user in onlineUsers"
+            :key="user.id"
+            class="online-user"
+          >
+            <img :src="user.avatar || '/placeholder.jpg'" :alt="user.nickname" class="user-avatar" />
+            <span class="user-name">{{ user.nickname }}</span>
+            <span class="user-badge" v-if="user.is_verified">✓</span>
+          </div>
+        </div>
+      </div>
 
       <!-- 活动中心 -->
-      <view v-if="currentTab === 'activities'" class="activities-container">
-        <!-- 筛选标签 -->
-        <scroll-view class="filter-scroll" scroll-x show-scrollbar="false">
-          <view class="filter-list">
-            <view 
-              v-for="filter in activityFilters"
-              :key="filter.key"
-              class="filter-chip"
-              :class="{ active: currentActivityFilter === filter.key }"
-              @click="selectActivityFilter(filter.key)"
-            >
-              {{ filter.label }}
-            </view>
-          </view>
-        </scroll-view>
+      <div v-if="currentTab === 'activities'" class="tab-content">
+        <div class="section-title">
+          <span>🎉 活动中心</span>
+          <button class="create-btn" @click="goToCreateActivity">
+            发起活动
+          </button>
+        </div>
 
-        <!-- 活动列表 -->
-        <view v-if="activities.length > 0" class="activity-list">
-          <view 
-            v-for="activity in activities" 
+        <div class="activity-list">
+          <div
+            v-for="activity in activities"
             :key="activity.id"
             class="activity-card"
-            @click="goToActivityDetail(activity)"
+            @click="goToActivityDetail(activity.id)"
           >
-            <!-- 活动封面/图片 -->
-            <view class="activity-image-section" v-if="activity.images && activity.images.length > 0">
-              <image class="activity-image" :src="activity.images[0]" mode="aspectFill"></image>
-            </view>
-            
-            <!-- 活动内容 -->
-            <view class="activity-content">
-              <view class="activity-top">
-                <view class="activity-time-badge">
-                  <text class="activity-month">{{ formatDate(activity.start_time, 'MM') }}月</text>
-                  <text class="activity-day">{{ formatDate(activity.start_time, 'dd') }}</text>
-                </view>
-                <view class="activity-header">
-                  <text class="activity-title">{{ activity.title }}</text>
-                  <view class="activity-meta-row">
-                    <text class="activity-meta">📍 {{ activity.location }}</text>
-                    <text class="activity-meta">🕐 {{ formatDate(activity.start_time, 'HH:mm') }}</text>
-                  </view>
-                </view>
-              </view>
-
-              <view class="activity-body">
-                <text class="activity-desc">{{ activity.description }}</text>
-              </view>
-
-              <view class="activity-footer">
-                <view class="activity-creator">
-                  <image class="creator-avatar" :src="activity.user?.avatar || '/static/default-avatar.png'" mode="aspectFill"></image>
-                  <text class="creator-name">{{ activity.user?.nickname }}</text>
-                </view>
-                
-                <view class="activity-right">
-                  <view class="participants-bar">
-                    <text class="participants-count">
-                      {{ activity.current_participants }}{{ activity.max_participants ? '/' + activity.max_participants : '' }}人
-                    </text>
-                  </view>
-                  
-                  <view 
-                    class="join-btn"
-                    :class="{ joined: activity.is_participant, full: activity.max_participants && activity.current_participants >= activity.max_participants }"
-                    @click.stop="toggleActivityJoin(activity)"
-                  >
-                    {{ activity.is_participant ? '已报名' : (activity.max_participants && activity.current_participants >= activity.max_participants ? '已满' : '报名') }}
-                  </view>
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 空状态 -->
-        <view v-else-if="!loading" class="empty-state">
-          <text class="empty-emoji">🎉</text>
-          <text class="empty-text">暂无活动</text>
-          <text class="empty-hint">发起一个活动吧</text>
-        </view>
-
-        <!-- 加载更多 -->
-        <view v-if="loading && !isRefreshing" class="loading-more">
-          <text>加载中...</text>
-        </view>
-      </view>
+            <div class="activity-header">
+              <div class="activity-emoji">{{ activity.emoji }}</div>
+              <div class="activity-info">
+                <span class="activity-name">{{ activity.name }}</span>
+                <span class="activity-time">{{ activity.time }}</span>
+              </div>
+              <div class="activity-status" :class="activity.status">
+                {{ getStatusText(activity.status) }}
+              </div>
+            </div>
+            <p class="activity-desc">{{ activity.description }}</p>
+            <div class="activity-footer">
+              <div class="creator-info">
+                <img :src="activity.creator?.avatar || '/placeholder.jpg'" class="creator-avatar" />
+                <span class="creator-name">{{ activity.creator?.nickname }}</span>
+              </div>
+              <div class="activity-right">
+                <span class="participants-count">
+                  {{ activity.current_participants }}/{{ activity.max_participants || '不限' }} 人
+                </span>
+                <button
+                  class="join-btn"
+                  :class="{ joined: activity.is_participant }"
+                  :disabled="activity.status !== 'upcoming' && activity.status !== 'ongoing'"
+                  @click.stop="toggleJoinActivity(activity)"
+                >
+                  {{ activity.is_participant ? '已参加' : '参加' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 兴趣小组 -->
-      <view v-if="currentTab === 'groups'" class="groups-container">
-        <view class="groups-grid">
-          <view 
-            v-for="group in interestGroups" 
+      <div v-if="currentTab === 'groups'" class="tab-content">
+        <div class="section-title">
+          <span>🎯 兴趣小组</span>
+        </div>
+
+        <div class="groups-grid">
+          <div
+            v-for="group in interestGroups"
             :key="group.id"
             class="group-card"
             @click="toggleGroupJoin(group)"
           >
-            <view class="group-cover" :style="{ background: group.bg_color }">
-              <text class="group-emoji">{{ group.emoji }}</text>
-            </view>
-            <view class="group-info">
-              <text class="group-name">{{ group.name }}</text>
-              <text class="group-members">{{ group.members }}位邻居</text>
-            </view>
-            <view class="group-action">
-              <text v-if="group.is_joined" class="action-joined">已加入</text>
-              <text v-else class="action-join">+ 加入</text>
-            </view>
-          </view>
-        </view>
+            <div class="group-cover" :style="{ background: group.bg_color }">
+              <span class="group-emoji">{{ group.emoji }}</span>
+            </div>
+            <div class="group-info">
+              <span class="group-name">{{ group.name }}</span>
+              <span class="group-members">{{ group.members }} 人</span>
+            </div>
+            <div class="group-action">
+              <span :class="group.is_joined ? 'action-joined' : 'action-join'">
+                {{ group.is_joined ? '已加入' : '加入' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <!-- 邻里活跃榜 -->
-        <view class="section-container leaderboard-section">
-          <view class="section-header">
-            <text class="section-title">🏆 邻里活跃榜</text>
-          </view>
-          <view class="leaderboard-list">
-            <view 
-              v-for="(user, index) in leaderboard" 
-              :key="user.id"
-              class="leader-item"
-            >
-              <view class="leader-rank" :class="'rank-' + (index + 1)">
-                <text v-if="index < 3">{{ ['🥇', '🥈', '🥉'][index] }}</text>
-                <text v-else>{{ index + 1 }}</text>
-              </view>
-              <image class="leader-avatar" :src="user.avatar || '/static/default-avatar.png'" mode="aspectFill"></image>
-              <view class="leader-info">
-                <text class="leader-name">{{ user.nickname }}</text>
-                <text class="leader-score">活跃度 {{ user.score }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
+      <!-- 排行榜 -->
+      <div v-if="currentTab === 'rankings'" class="tab-content">
+        <div class="section-title">
+          <span>🏆 活跃邻居</span>
+        </div>
 
-      <view class="safe-area-bottom"></view>
-    </scroll-view>
-  </view>
+        <div class="leaderboard-list">
+          <div
+            v-for="(leader, index) in leaderboard"
+            :key="leader.id"
+            class="leader-item"
+          >
+            <div class="leader-rank" :class="'rank-' + (index + 1)">
+              {{ index + 1 }}
+            </div>
+            <img :src="leader.avatar || '/placeholder.jpg'" class="leader-avatar" />
+            <div class="leader-info">
+              <span class="leader-name">{{ leader.nickname }}</span>
+              <span class="leader-score">信用积分: {{ leader.credit_score }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { activitiesApi, neighborhoodApi, userApi, type Activity, type User } from '../../utils/api'
+import { useRouter } from 'vue-router'
+import { neighborhoodApi } from '../../utils/api'
+import { toastSuccess, toastError } from '../../utils/toast'
 
-const statusBarHeight = ref(20)
+const router = useRouter()
+
 const currentTab = ref('lounge')
-const loading = ref(false)
-const isRefreshing = ref(false)
-
-// 标签页配置
 const tabs = [
-  { key: 'lounge', label: '社区客厅' },
-  { key: 'activities', label: '活动中心' },
-  { key: 'groups', label: '兴趣小组' }
+  { key: 'lounge', name: '客厅', icon: '🏠' },
+  { key: 'activities', name: '活动', icon: '🎉' },
+  { key: 'groups', name: '小组', icon: '🎯' },
+  { key: 'rankings', name: '排行', icon: '🏆' }
 ]
 
-// 社区客厅数据
-const onlineUsers = ref<User[]>([])
-const hotTopics = ref<any[]>([])
-const chatRooms = ref<any[]>([])
+// Mock data
+const chatRooms = ref([
+  { id: '1', name: '宝爸宝妈群', emoji: '👶', description: '育儿经验分享', members: 234, today_messages: 89, bg_color: '#FFE0B2' },
+  { id: '2', name: '宠物交流群', emoji: '🐕', description: '遛狗、宠物用品', members: 189, today_messages: 67, bg_color: '#C8E6C9' },
+  { id: '3', name: '美食烹饪群', emoji: '🍳', description: '私房菜、烘焙', members: 312, today_messages: 123, bg_color: '#BBDEFB' },
+  { id: '4', name: '运动健身群', emoji: '🏃', description: '跑步、瑜伽、健身', members: 145, today_messages: 45, bg_color: '#F8BBD9' }
+])
 
-// 活动中心数据
-const activities = ref<Activity[]>([])
-const currentActivityFilter = ref('all')
-const activityFilters = [
-  { key: 'all', label: '全部' },
-  { key: 'upcoming', label: '即将开始' },
-  { key: 'sports', label: '运动' },
-  { key: 'culture', label: '文化' },
-  { key: 'party', label: '聚会' }
-]
+const onlineUsers = ref([
+  { id: '1', nickname: '阳光小李', avatar: '', is_verified: true, credit_score: 95 },
+  { id: '2', nickname: '热心张阿姨', avatar: '', is_verified: true, credit_score: 90 },
+  { id: '3', nickname: '社区志愿者小王', avatar: '', is_verified: false, credit_score: 85 }
+])
 
-// 兴趣小组数据
-const interestGroups = ref<any[]>([])
-const leaderboard = ref<User[]>([])
+const activities = ref([
+  {
+    id: '1',
+    name: '周末亲子烘焙',
+    emoji: '🧁',
+    time: '本周六 14:00',
+    description: '欢迎带孩子一起来做蛋糕和饼干',
+    status: 'upcoming',
+    max_participants: 20,
+    current_participants: 12,
+    is_participant: false,
+    creator: { nickname: '烘焙达人', avatar: '' }
+  },
+  {
+    id: '2',
+    name: '邻里足球赛',
+    emoji: '⚽',
+    time: '本周日 09:00',
+    description: '周末足球友谊赛，欢迎报名',
+    status: 'upcoming',
+    max_participants: 22,
+    current_participants: 18,
+    is_participant: true,
+    creator: { nickname: '足球爱好者', avatar: '' }
+  }
+])
 
-// 格式化日期
-const formatDate = (timestamp: number, format: string): string => {
-  const date = new Date(timestamp * 1000)
-  if (format === 'MM') {
-    return String(date.getMonth() + 1)
-  }
-  if (format === 'dd') {
-    return String(date.getDate()).padStart(2, '0')
-  }
-  if (format === 'HH:mm') {
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    return `${hours}:${minutes}`
-  }
-  return ''
+const interestGroups = ref([
+  { id: '1', name: '萌宠联盟', members: 234, emoji: '🐕', bg_color: '#E8F5E9', is_joined: true },
+  { id: '2', name: '美食烹饪', members: 456, emoji: '🍳', bg_color: '#FFF3E0', is_joined: false },
+  { id: '3', name: '运动健身', members: 189, emoji: '🏃', bg_color: '#E3F2FD', is_joined: true },
+  { id: '4', name: '读书会', members: 123, emoji: '📚', bg_color: '#FCE4EC', is_joined: false }
+])
+
+const leaderboard = ref([
+  { id: '1', nickname: '阳光小李', avatar: '', credit_score: 98 },
+  { id: '2', nickname: '热心张阿姨', avatar: '', credit_score: 95 },
+  { id: '3', nickname: '社区志愿者小王', avatar: '', credit_score: 92 }
+])
+
+function switchTab(tabKey: string) {
+  currentTab.value = tabKey
 }
 
-// 加载社区客厅数据
-const loadLoungeData = async () => {
+function goToCreateActivity() {
+  router.push('/pages/activities/create')
+}
+
+function goToActivityDetail(id: string) {
+  router.push(`/pages/activities/detail?id=${id}`)
+}
+
+function enterChatRoom(room: any) {
+  toastSuccess(`进入 ${room.name}`)
+}
+
+function toggleJoinActivity(activity: any) {
+  activity.is_participant = !activity.is_participant
+  activity.current_participants += activity.is_participant ? 1 : -1
+  toastSuccess(activity.is_participant ? '报名成功' : '已取消报名')
+}
+
+function toggleGroupJoin(group: any) {
+  group.is_joined = !group.is_joined
+  group.members += group.is_joined ? 1 : -1
+  toastSuccess(group.is_joined ? '加入成功' : '已退出小组')
+}
+
+function getStatusText(status: string): string {
+  const statusMap: Record<string, string> = {
+    upcoming: '即将开始',
+    ongoing: '进行中',
+    completed: '已结束',
+    cancelled: '已取消'
+  }
+  return statusMap[status] || status
+}
+
+onMounted(async () => {
+  // Load data
   try {
-    const [topics, rooms, groups] = await Promise.all([
+    const [topics, chat, groups] = await Promise.all([
       neighborhoodApi.getTopics(),
       neighborhoodApi.getChatRooms(),
       neighborhoodApi.getInterestGroups()
     ])
-    hotTopics.value = topics
-    chatRooms.value = rooms
-    interestGroups.value = groups
-    
-    onlineUsers.value = [
-      { id: '1', nickname: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=1', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, is_online: true },
-      { id: '2', nickname: '小李', avatar: 'https://i.pravatar.cc/100?img=2', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, is_online: true },
-      { id: '3', nickname: '美食小红', avatar: 'https://i.pravatar.cc/100?img=3', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, is_online: true },
-      { id: '4', nickname: '运动达人', avatar: 'https://i.pravatar.cc/100?img=4', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, is_online: true },
-      { id: '5', nickname: '老张', avatar: 'https://i.pravatar.cc/100?img=5', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, is_online: true }
-    ]
-    
-    leaderboard.value = [
-      { id: '1', nickname: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=1', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, score: 5890 },
-      { id: '2', nickname: '小李', avatar: 'https://i.pravatar.cc/100?img=2', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, score: 5340 },
-      { id: '3', nickname: '美食小红', avatar: 'https://i.pravatar.cc/100?img=3', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, score: 4980 },
-      { id: '4', nickname: '运动达人', avatar: 'https://i.pravatar.cc/100?img=4', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, score: 4560 },
-      { id: '5', nickname: '老张', avatar: 'https://i.pravatar.cc/100?img=5', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000, score: 4230 }
-    ] as any[]
+    // Update with real data if available
   } catch (error) {
-    console.error('Load lounge data error:', error)
+    console.error('Failed to load neighborhood data:', error)
   }
-}
-
-// 加载活动数据
-const loadActivities = async (refresh = false) => {
-  loading.value = true
-  try {
-    const params: any = { page: 1, limit: 20 }
-    if (currentActivityFilter.value !== 'all') {
-      if (['sports', 'culture', 'party'].includes(currentActivityFilter.value)) {
-        params.category = currentActivityFilter.value
-      } else {
-        params.status = currentActivityFilter.value
-      }
-    }
-    const response = await activitiesApi.getActivities(params)
-    
-    if (response.items.length === 0) {
-      activities.value = [
-        {
-          id: '1',
-          user_id: '1',
-          title: '周末亲子烘焙课',
-          description: '一起动手做曲奇饼干，享受亲子时光！',
-          category: 'party',
-          location: '社区活动中心',
-          start_time: Date.now()/1000 + 86400 * 2,
-          end_time: Date.now()/1000 + 86400 * 2 + 3 * 3600,
-          max_participants: 30,
-          current_participants: 23,
-          images: ['https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800'],
-          status: 'upcoming',
-          created_at: Date.now()/1000,
-          updated_at: Date.now()/1000,
-          user: { id: '1', nickname: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=1', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000 }
-        },
-        {
-          id: '2',
-          user_id: '2',
-          title: '邻里足球友谊赛',
-          description: '每周固定足球活动，欢迎热爱运动的邻居们加入！',
-          category: 'sports',
-          location: '社区足球场',
-          start_time: Date.now()/1000 + 86400 * 3,
-          end_time: Date.now()/1000 + 86400 * 3 + 2 * 3600,
-          max_participants: 22,
-          current_participants: 18,
-          images: ['https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800'],
-          status: 'upcoming',
-          created_at: Date.now()/1000,
-          updated_at: Date.now()/1000,
-          user: { id: '2', nickname: '小李', avatar: 'https://i.pravatar.cc/100?img=2', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000 },
-          is_participant: true
-        },
-        {
-          id: '3',
-          user_id: '3',
-          title: '健康义诊活动',
-          description: '社区医院免费义诊，测量血压血糖等基础检查',
-          category: 'charity',
-          location: '社区卫生站',
-          start_time: Date.now()/1000 + 86400 * 6,
-          end_time: Date.now()/1000 + 86400 * 6 + 4 * 3600,
-          max_participants: 100,
-          current_participants: 67,
-          images: ['https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800'],
-          status: 'upcoming',
-          created_at: Date.now()/1000,
-          updated_at: Date.now()/1000,
-          user: { id: '3', nickname: '张医生', avatar: 'https://i.pravatar.cc/100?img=8', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000 }
-        }
-      ]
-    } else {
-      activities.value = response.items
-    }
-  } catch (error) {
-    console.error('Load activities error:', error)
-    // 如果API失败，使用模拟数据
-    activities.value = [
-      {
-        id: '1',
-        user_id: '1',
-        title: '周末亲子烘焙课',
-        description: '一起动手做曲奇饼干，享受亲子时光！',
-        category: 'party',
-        location: '社区活动中心',
-        start_time: Date.now()/1000 + 86400 * 2,
-        end_time: Date.now()/1000 + 86400 * 2 + 3 * 3600,
-        max_participants: 30,
-        current_participants: 23,
-        images: ['https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800'],
-        status: 'upcoming',
-        created_at: Date.now()/1000,
-        updated_at: Date.now()/1000,
-        user: { id: '1', nickname: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=1', phone: '', community: '', role: 'resident', credit_score: 100, is_verified: false, created_at: Date.now()/1000, updated_at: Date.now()/1000, last_active_at: Date.now()/1000 }
-      }
-    ]
-  } finally {
-    loading.value = false
-    isRefreshing.value = false
-  }
-}
-
-// 标签切换
-const switchTab = (tab: string) => {
-  currentTab.value = tab
-}
-
-// 活动筛选
-const selectActivityFilter = (filter: string) => {
-  currentActivityFilter.value = filter
-  loadActivities(true)
-}
-
-// 刷新
-const onRefresh = async () => {
-  isRefreshing.value = true
-  if (currentTab.value === 'activities') {
-    await loadActivities(true)
-  } else if (currentTab.value === 'lounge' || currentTab.value === 'groups') {
-    await loadLoungeData()
-    isRefreshing.value = false
-  }
-}
-
-// 加载更多
-const loadMore = () => {
-  if (currentTab.value === 'activities' && !loading.value) {
-    loadActivities()
-  }
-}
-
-// 导航
-const goToCreateActivity = () => {
-  uni.navigateTo({ url: '/pages/activities/create' })
-}
-
-const goToActivityDetail = (activity: Activity) => {
-  uni.navigateTo({ url: `/pages/activities/detail?id=${activity.id}` })
-}
-
-const viewUserProfile = (user: User) => {
-  console.log('View user profile:', user)
-}
-
-const enterTopic = (topic: any) => {
-  console.log('Enter topic:', topic)
-}
-
-const enterChatRoom = (room: any) => {
-  console.log('Enter chat room:', room)
-}
-
-// 活动报名/取消报名
-const toggleActivityJoin = async (activity: Activity) => {
-  try {
-    if (activity.is_participant) {
-      await activitiesApi.leaveActivity(activity.id)
-      activity.is_participant = false
-      activity.current_participants = Math.max(0, activity.current_participants - 1)
-    } else {
-      await activitiesApi.joinActivity(activity.id)
-      activity.is_participant = true
-      activity.current_participants += 1
-    }
-  } catch (error) {
-    console.error('Toggle activity join error:', error)
-    // 模拟效果
-    activity.is_participant = !activity.is_participant
-    activity.current_participants += activity.is_participant ? 1 : -1
-  }
-}
-
-// 兴趣小组加入/退出
-const toggleGroupJoin = async (group: any) => {
-  try {
-    if (group.is_joined) {
-      await neighborhoodApi.leaveGroup(group.id)
-      group.is_joined = false
-      group.members = Math.max(0, group.members - 1)
-    } else {
-      await neighborhoodApi.joinGroup(group.id)
-      group.is_joined = true
-      group.members += 1
-    }
-  } catch (error) {
-    console.error('Toggle group join error:', error)
-    group.is_joined = !group.is_joined
-    group.members += group.is_joined ? 1 : -1
-  }
-}
-
-onMounted(async () => {
-  await loadLoungeData()
-  await loadActivities()
 })
 </script>
 
@@ -543,6 +309,8 @@ onMounted(async () => {
 .page {
   min-height: 100vh;
   background: #F5F5F0;
+  padding-top: 120px;
+  padding-bottom: 80px;
 }
 
 /* 顶部导航 */
@@ -560,412 +328,290 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #FF8C42, #FF6B35);
 }
 
 .nav-title {
   font-size: 20px;
-  font-weight: 700;
-  color: #1A1A1A;
-}
-
-.nav-actions {
-  display: flex;
-  gap: 12px;
+  font-weight: 600;
+  color: #FFFFFF;
 }
 
 .nav-btn {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 14px;
-  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
-  border-radius: 20px;
-}
-
-.nav-icon {
-  font-size: 16px;
-}
-
-.nav-btn-text {
-  font-size: 14px;
-  font-weight: 500;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  padding: 8px 12px;
+  border-radius: 16px;
+  cursor: pointer;
   color: #FFFFFF;
 }
 
+.nav-icon {
+  font-size: 14px;
+}
+
+.nav-btn-text {
+  font-size: 13px;
+}
+
+/* 标签栏 */
 .tab-bar {
   display: flex;
-  padding: 0 16px;
-  border-bottom: 1px solid #F0F0E8;
+  background: #FFFFFF;
+  padding: 0 8px;
 }
 
 .tab-item {
   flex: 1;
-  text-align: center;
-  padding: 14px 0;
-  font-size: 15px;
-  color: #7A7A6A;
-  font-weight: 500;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
   transition: all 0.2s;
 }
 
 .tab-item.active {
+  border-bottom-color: #FF8C42;
   color: #FF8C42;
 }
 
-.tab-indicator {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 3px;
-  background: #FF8C42;
-  border-radius: 2px;
+.tab-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
 }
 
-.content {
-  height: 100vh;
+.tab-text {
+  font-size: 12px;
 }
 
-/* 通用样式 */
-.section-container {
-  background: #FFFFFF;
-  margin-bottom: 8px;
+/* 内容区域 */
+.content-area {
   padding: 16px;
 }
 
-.section-header {
+.tab-content {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 通用标题 */
+.section-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-}
-
-.section-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: #1A1A1A;
-}
-
-.section-count {
-  font-size: 14px;
-  color: #7A7A6A;
-}
-
-/* 社区客厅 */
-.lounge-container {
-  padding-bottom: 8px;
-}
-
-.welcome-card {
-  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
-  margin: 16px;
-  padding: 20px;
-  border-radius: 16px;
-}
-
-.welcome-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.welcome-emoji {
-  font-size: 24px;
-}
-
-.welcome-title {
+  margin-bottom: 16px;
   font-size: 18px;
   font-weight: 600;
-  color: #FFFFFF;
-}
-
-.welcome-desc {
-  font-size: 14px;
-  color: rgba(255,255,255,0.9);
-}
-
-/* 在线邻居 */
-.neighbors-scroll {
-  white-space: nowrap;
-}
-
-.neighbor-item {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  margin-right: 16px;
-}
-
-.neighbor-avatar-wrapper {
-  position: relative;
-  margin-bottom: 6px;
-}
-
-.neighbor-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 2px solid #FFFFFF;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-.online-indicator {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 16px;
-  height: 16px;
-  background: #34C759;
-  border-radius: 50%;
-  border: 2px solid #FFFFFF;
-}
-
-.neighbor-name {
-  font-size: 12px;
-  color: #4A4A3A;
-}
-
-/* 热门话题 */
-.topic-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.topic-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px;
-  background: #F9F9F5;
-  border-radius: 12px;
-}
-
-.topic-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-}
-
-.topic-emoji {
-  font-size: 28px;
-}
-
-.topic-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.topic-name {
-  font-size: 15px;
-  font-weight: 500;
   color: #1A1A1A;
 }
 
-.topic-meta {
-  font-size: 12px;
-  color: #7A7A6A;
+.online-count {
+  font-size: 13px;
+  font-weight: normal;
+  color: #4CAF50;
 }
 
-.topic-arrow {
-  font-size: 20px;
-  color: #C8C8B8;
-}
-
-/* 聊天室 */
+/* 聊天室列表 */
 .chat-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
-.chat-card {
+.chat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #F5F5F0;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.chat-cover {
-  width: 56px;
-  height: 56px;
+.chat-item:last-child {
+  border-bottom: none;
+}
+
+.chat-item:hover {
+  background: #FAFAFA;
+}
+
+.chat-avatar {
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  margin-right: 12px;
 }
 
 .chat-emoji {
-  font-size: 28px;
+  font-size: 24px;
 }
 
-.chat-content {
+.chat-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
 }
 
 .chat-name {
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   color: #1A1A1A;
+  margin-bottom: 4px;
 }
 
 .chat-desc {
   font-size: 13px;
-  color: #7A7A6A;
+  color: #9A9A8A;
 }
 
 .chat-stats {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 
-.chat-stat {
-  font-size: 12px;
+.member-count {
+  font-size: 13px;
   color: #9A9A8A;
 }
 
-.chat-arrow {
-  font-size: 20px;
-  color: #C8C8B8;
-}
-
-/* 活动中心 */
-.activities-container {
-  padding-bottom: 8px;
-}
-
-.filter-scroll {
-  background: #FFFFFF;
-  padding: 12px 0;
-}
-
-.filter-list {
-  display: flex;
-  gap: 8px;
-  padding: 0 16px;
-  white-space: nowrap;
-}
-
-.filter-chip {
-  padding: 8px 16px;
-  background: #F5F5F0;
-  border-radius: 20px;
-  font-size: 14px;
-  color: #7A7A6A;
-  font-weight: 500;
-  display: inline-block;
-}
-
-.filter-chip.active {
+.message-badge {
   background: #FF8C42;
   color: #FFFFFF;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
 }
 
+/* 在线邻居 */
+.online-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.online-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #F5F5F0;
+}
+
+.user-name {
+  font-size: 13px;
+  color: #1A1A1A;
+}
+
+.user-badge {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+/* 活动列表 */
 .activity-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 16px;
 }
 
 .activity-card {
   background: #FFFFFF;
   border-radius: 16px;
-  overflow: hidden;
+  padding: 16px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: transform 0.2s;
 }
 
-.activity-image-section {
-  width: 100%;
-  height: 180px;
-  overflow: hidden;
-}
-
-.activity-image {
-  width: 100%;
-  height: 100%;
-}
-
-.activity-content {
-  padding: 14px 16px 16px;
-}
-
-.activity-top {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.activity-time-badge {
-  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
-  min-width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.activity-month {
-  font-size: 11px;
-  color: rgba(255,255,255,0.9);
-}
-
-.activity-day {
-  font-size: 20px;
-  font-weight: 700;
-  color: #FFFFFF;
-  line-height: 1;
+.activity-card:hover {
+  transform: translateY(-2px);
 }
 
 .activity-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.activity-emoji {
+  font-size: 40px;
+  margin-right: 12px;
+}
+
+.activity-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 4px;
 }
 
-.activity-title {
+.activity-name {
   font-size: 16px;
   font-weight: 600;
   color: #1A1A1A;
-  line-height: 1.3;
+  margin-bottom: 4px;
 }
 
-.activity-meta-row {
-  display: flex;
-  gap: 12px;
-}
-
-.activity-meta {
+.activity-time {
   font-size: 13px;
-  color: #7A7A6A;
+  color: #9A9A8A;
 }
 
-.activity-body {
-  margin-bottom: 12px;
+.activity-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.activity-status.upcoming {
+  background: #E3F2FD;
+  color: #1976D2;
+}
+
+.activity-status.ongoing {
+  background: #E8F5E9;
+  color: #388E3C;
+}
+
+.activity-status.completed {
+  background: #F5F5F0;
+  color: #9A9A8A;
 }
 
 .activity-desc {
   font-size: 14px;
-  color: #5A5A4A;
+  color: #666;
   line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  margin-bottom: 12px;
 }
 
 .activity-footer {
@@ -974,16 +620,17 @@ onMounted(async () => {
   align-items: center;
 }
 
-.activity-creator {
+.creator-info {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .creator-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
+  background: #F5F5F0;
 }
 
 .creator-name {
@@ -1010,7 +657,13 @@ onMounted(async () => {
   font-size: 14px;
   font-weight: 500;
   color: #FFFFFF;
+  border: none;
+  cursor: pointer;
   transition: all 0.2s;
+}
+
+.join-btn:hover {
+  transform: scale(1.05);
 }
 
 .join-btn.joined {
@@ -1018,21 +671,17 @@ onMounted(async () => {
   color: #7A7A6A;
 }
 
-.join-btn.full {
+.join-btn:disabled {
   background: #E8E8E0;
   color: #9A9A8A;
+  cursor: not-allowed;
 }
 
 /* 兴趣小组 */
-.groups-container {
-  padding-bottom: 8px;
-}
-
 .groups-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  padding: 16px;
 }
 
 .group-card {
@@ -1040,6 +689,13 @@ onMounted(async () => {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.group-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
 .group-cover {
@@ -1091,21 +747,17 @@ onMounted(async () => {
 }
 
 /* 排行榜 */
-.leaderboard-section {
-  margin: 0 16px 8px;
+.leaderboard-list {
+  background: #FFFFFF;
   border-radius: 16px;
   padding: 16px;
-}
-
-.leaderboard-list {
-  display: flex;
-  flex-direction: column;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
 .leader-item {
   display: flex;
   align-items: center;
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #F5F5F0;
 }
 
@@ -1143,64 +795,38 @@ onMounted(async () => {
 }
 
 .leader-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   margin-right: 12px;
+  background: #F5F5F0;
 }
 
 .leader-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .leader-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: #1A1A1A;
+  margin-bottom: 4px;
 }
 
 .leader-score {
-  font-size: 12px;
-  color: #7A7A6A;
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-}
-
-.empty-emoji {
-  font-size: 64px;
-  margin-bottom: 16px;
-}
-
-.empty-text {
-  font-size: 16px;
-  color: #7A7A6A;
-  margin-bottom: 6px;
-}
-
-.empty-hint {
-  font-size: 14px;
+  font-size: 13px;
   color: #9A9A8A;
 }
 
-/* 加载更多 */
-.loading-more {
-  text-align: center;
-  padding: 20px;
-  color: #9A9A8A;
-  font-size: 14px;
-}
-
-.safe-area-bottom {
-  height: 40px;
+.create-btn {
+  padding: 6px 16px;
+  background: #FF8C42;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 16px;
+  font-size: 13px;
+  cursor: pointer;
 }
 </style>
