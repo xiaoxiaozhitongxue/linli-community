@@ -1,10 +1,44 @@
 import {
   createResponse,
   createErrorResponse,
+  createPaginatedResponse,
   getDb,
   requireAuth,
-  now
+  now,
+  generateId
 } from '../../lib/index.js'
+
+async function getActivitiesWithUserInfo(db, activities, userId) {
+  const userIds = [...new Set(activities.map(a => a.user_id))]
+  const users = await db.query(
+    `SELECT id, nickname, avatar, community FROM users WHERE id IN (${userIds.map(() => '?').join(', ')})`,
+    userIds
+  )
+  const userMap = {}
+  for (const user of users) {
+    userMap[user.id] = user
+  }
+
+  let participantMap = {}
+  if (userId) {
+    const activityIds = activities.map(a => a.id)
+    const placeholders = activityIds.map(() => '?').join(',')
+    const participants = await db.query(
+      `SELECT activity_id FROM activity_participants WHERE user_id = ? AND activity_id IN (${placeholders})`,
+      [userId, ...activityIds]
+    )
+    for (const p of participants) {
+      participantMap[p.activity_id] = true
+    }
+  }
+
+  return activities.map(activity => ({
+    ...activity,
+    user: userMap[activity.user_id] || null,
+    is_participant: !!participantMap[activity.id],
+    images: activity.images ? JSON.parse(activity.images) : []
+  }))
+}
 
 export async function onRequestGet(context) {
   try {
@@ -12,41 +46,60 @@ export async function onRequestGet(context) {
     
     const url = new URL(context.request.url)
     const page = parseInt(url.searchParams.get('page')) || 1
-    const limit = parseInt(url.searchParams.get('limit')) || 10
+    const limit = Math.min(parseInt(url.searchParams.get('limit')) || 10, 50)
     const offset = (page - 1) * limit
+    const status = url.searchParams.get('status')
+    const category = url.searchParams.get('category')
+    const sort = url.searchParams.get('sort') || 'created_at'
+    const order = url.searchParams.get('order') === 'asc' ? 'ASC' : 'DESC'
 
-    const activities = await db.all(`
-      SELECT 
-        a.*,
-        u.nickname as author_nickname,
-        u.avatar as author_avatar
+    // 验证排序字段
+    const allowedSortFields = ['created_at', 'start_time', 'current_participants']
+    const sortField = allowedSortFields.includes(sort) ? sort : 'created_at'
+
+    let whereClauses = []
+    let params = []
+
+    if (status) {
+      whereClauses.push('a.status = ?')
+      params.push(status)
+    }
+
+    if (category) {
+      whereClauses.push('a.category = ?')
+      params.push(category)
+    }
+
+    const whereClause = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : ''
+
+    const activities = await db.query(`
+      SELECT a.*, u.nickname, u.avatar, u.community
       FROM activities a
       JOIN users u ON a.user_id = u.id
-      ORDER BY a.created_at DESC
+      ${whereClause}
+      ORDER BY a.${sortField} ${order}
       LIMIT ? OFFSET ?
-    `, [limit, offset])
+    `, [...params, limit, offset])
 
-    const totalCount = await db.get(`
-      SELECT COUNT(*) as count FROM activities
-    `)
+    const countQuery = whereClause 
+      ? `SELECT COUNT(*) as count FROM activities a ${whereClause}`
+      : `SELECT COUNT(*) as count FROM activities`
+    
+    const totalResult = await db.get(countQuery, params)
+    const total = totalResult.count
 
-    const formattedActivities = activities.map(activity => ({
-      ...activity,
-      images: activity.images ? JSON.parse(activity.images) : [],
-      user: {
-        id: activity.user_id,
-        nickname: activity.author_nickname,
-        avatar: activity.author_avatar
+    let userId = null
+    try {
+      const authError = await requireAuth(context)
+      if (!authError) {
+        userId = context.user.id
       }
-    }))
+    } catch (e) {
+    }
 
-    return createResponse({
-      items: formattedActivities,
-      page,
-      limit,
-      total: totalCount.count,
-      total_pages: Math.ceil(totalCount.count / limit)
-    }, '获取活动成功')
+    const formattedActivities = await getActivitiesWithUserInfo(db, activities, userId)
+
+    return createPaginatedResponse(formattedActivities, page, limit, total, '获取活动成功')
   } catch (error) {
     console.error('Get activities error:', error)
     return createErrorResponse(500, '获取活动失败', error.message)
@@ -78,7 +131,12 @@ export async function onRequestPost(context) {
       return createErrorResponse(400, '缺少必要参数')
     }
 
-    const id = crypto.randomUUID()
+    const validCategories = ['sports', 'culture', 'charity', 'party', 'other']
+    if (!validCategories.includes(category)) {
+      return createErrorResponse(400, '无效的活动类型')
+    }
+
+    const id = generateId()
     const startTimeTimestamp = new Date(start_time).getTime() / 1000
     const endTimeTimestamp = end_time ? new Date(end_time).getTime() / 1000 : null
 
@@ -94,8 +152,9 @@ export async function onRequestPost(context) {
       JSON.stringify(images), now(), now()
     ])
 
+    // 获取创建的活动
     const createdActivity = await db.get(`
-      SELECT a.*, u.nickname, u.avatar
+      SELECT a.*, u.nickname, u.avatar, u.community
       FROM activities a
       JOIN users u ON a.user_id = u.id
       WHERE a.id = ?
@@ -107,8 +166,10 @@ export async function onRequestPost(context) {
       user: {
         id: createdActivity.user_id,
         nickname: createdActivity.nickname,
-        avatar: createdActivity.avatar
-      }
+        avatar: createdActivity.avatar,
+        community: createdActivity.community
+      },
+      is_participant: false
     }, '创建活动成功')
   } catch (error) {
     console.error('Create activity error:', error)

@@ -50,7 +50,7 @@ export interface Activity {
   user_id: string
   title: string
   description: string
-  category: 'sports' | 'culture' | 'other'
+  category: 'sports' | 'culture' | 'charity' | 'party' | 'other'
   location: string
   start_time: number
   end_time?: number
@@ -60,15 +60,24 @@ export interface Activity {
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
   created_at: number
   updated_at: number
-  user: User
+  user: Partial<User>
   is_participant?: boolean
-  participants?: User[]
+  participants?: Array<{
+    id: string
+    user_id: string
+    nickname: string
+    avatar?: string
+    joined_at: number
+    status: 'registered' | 'attended' | 'absent'
+  }>
 }
 
 export interface ActivityParticipant {
   id: string
   activity_id: string
   user_id: string
+  nickname: string
+  avatar?: string
   joined_at: number
   status: 'registered' | 'attended' | 'absent'
 }
@@ -113,7 +122,7 @@ export interface InterestGroup {
   is_joined: boolean
 }
 
-const MOCK_MODE = true
+const MOCK_MODE = false
 
 const mockUsers: User[] = [
   {
@@ -554,21 +563,23 @@ export const userApi = {
 }
 
 export const activitiesApi = {
-  getActivities: (params?: { page?: number; limit?: number; status?: string; category?: string }) => {
+  getActivities: (params?: { page?: number; limit?: number; status?: string; category?: string; sort?: string; order?: string }) => {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve({
             items: mockActivities,
-            page: params?.page || 1,
-            limit: params?.limit || 10,
-            total: mockActivities.length,
-            total_pages: 1
+            pagination: {
+              page: params?.page || 1,
+              limit: params?.limit || 10,
+              total: mockActivities.length,
+              totalPages: 1
+            }
           })
         }, 300)
       })
     }
-    return get<PaginatedResponse<Activity>>('/api/activities', params)
+    return get<PaginatedData<Activity>>('/api/activities', params)
   },
 
   getActivity: (id: string) => {
@@ -655,6 +666,50 @@ export const activitiesApi = {
       })
     }
     return del(`/api/activities/${id}/leave`)
+  },
+
+  updateActivity: (id: string, data: Partial<{
+    title: string
+    description: string
+    category: string
+    location: string
+    start_time: string
+    end_time?: string
+    max_participants?: number
+    images?: string[]
+    status?: string
+  }>) => {
+    if (MOCK_MODE) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const activity = mockActivities.find(a => a.id === id)
+          if (activity) {
+            Object.assign(activity, {
+              ...data,
+              start_time: data.start_time ? new Date(data.start_time).getTime() : activity.start_time,
+              end_time: data.end_time ? new Date(data.end_time).getTime() : activity.end_time
+            })
+            resolve(activity)
+          }
+        }, 300)
+      })
+    }
+    return put<Activity>(`/api/activities/${id}`, data)
+  },
+
+  deleteActivity: (id: string) => {
+    if (MOCK_MODE) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const index = mockActivities.findIndex(a => a.id === id)
+          if (index > -1) {
+            mockActivities.splice(index, 1)
+          }
+          resolve({ id })
+        }, 300)
+      })
+    }
+    return del<{ id: string }>(`/api/activities/${id}`)
   }
 }
 

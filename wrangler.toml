@@ -7,3 +7,12 @@ publish = "dist"
 
 [env]
 NODE_VERSION = "20"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "linli-community-db"
+database_id = "linli-community-db"
+
+[vars]
+APP_NAME = "邻里社区"
+APP_VERSION = "1.0.0"
