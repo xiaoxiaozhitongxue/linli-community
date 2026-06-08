@@ -131,6 +131,11 @@ const router = createRouter({
       path: '/pages/activities/detail',
       component: () => import('./pages/activities/detail.vue'),
       meta: { title: '活动详情', requiresAuth: false }
+    },
+    {
+      path: '/pages/search/index',
+      component: () => import('./pages/search/index.vue'),
+      meta: { title: '搜索', tabBar: false }
     }
   ],
   // 页面切换的滚动行为

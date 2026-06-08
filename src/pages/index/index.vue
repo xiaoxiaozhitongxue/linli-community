@@ -585,7 +585,7 @@ function chooseLocation() {
 }
 
 function goToSearch() {
-  toastInfo('搜索功能开发中')
+  navigateTo('/pages/search/index')
 }
 
 function handleQuickAction(action: any) {
