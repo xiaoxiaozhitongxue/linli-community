@@ -60,6 +60,40 @@
           </div>
         </div>
 
+        <!-- 昵称输入（首次注册需要） -->
+        <div class="input-group" :class="{ error: nicknameError }">
+          <div class="input-label">昵称</div>
+          <div class="input-row" :class="{ focused: nicknameFocused }">
+            <input 
+              class="input-field" 
+              type="text" 
+              v-model="nickname" 
+              placeholder="请输入您的昵称"
+              @focus="onNicknameFocus"
+              @blur="onNicknameBlur"
+              @input="onNicknameInput"
+            />
+          </div>
+          <div class="error-text" v-if="nicknameError">{{ nicknameError }}</div>
+        </div>
+
+        <!-- 社区选择（首次注册需要） -->
+        <div class="input-group" :class="{ error: communityError }">
+          <div class="input-label">所在社区</div>
+          <div class="input-row" :class="{ focused: communityFocused }">
+            <select 
+              class="input-field select-field" 
+              v-model="community"
+              @focus="onCommunityFocus"
+              @blur="onCommunityBlur"
+            >
+              <option value="">请选择社区</option>
+              <option v-for="c in communities" :key="c" :value="c">{{ c }}</option>
+            </select>
+          </div>
+          <div class="error-text" v-if="communityError">{{ communityError }}</div>
+        </div>
+
         <!-- 协议 -->
         <div class="agreement" :class="{ error: agreementError }">
           <div 
@@ -82,7 +116,7 @@
           :class="{ loading: isLoading, disabled: !canLogin }"
           @click="handleLogin"
         >
-          <span v-if="!isLoading">登录</span>
+          <span v-if="!isLoading">登录 / 注册</span>
           <span v-else class="loading-text">
             <span class="spinner"></span>
             登录中...
@@ -101,7 +135,7 @@
             <span class="demo-text">一键体验（免登录）</span>
           </div>
           <div class="demo-hint">
-            手机号：13800138000 | 验证码：123456
+            测试账号：13800138000 | 验证码：123456
           </div>
         </div>
       </div>
@@ -128,9 +162,20 @@ import { getAndClearLoginRedirect } from '../../utils/auth'
 
 const { setUser } = useAuth()
 
+// 社区列表
+const communities = [
+  '阳光社区',
+  '幸福社区',
+  '花园社区',
+  '和平社区',
+  '东风社区'
+]
+
 // 表单数据
 const phone = ref('')
 const code = ref('')
+const nickname = ref('')
+const community = ref('')
 const agreed = ref(false)
 
 // UI状态
@@ -143,10 +188,14 @@ const agreementBounce = ref(false)
 // 聚焦状态
 const phoneFocused = ref(false)
 const codeFocused = ref(false)
+const nicknameFocused = ref(false)
+const communityFocused = ref(false)
 
 // 错误状态
 const phoneError = ref('')
 const codeError = ref('')
+const nicknameError = ref('')
+const communityError = ref('')
 const agreementError = ref('')
 const globalError = ref('')
 
@@ -164,7 +213,9 @@ onUnmounted(() => {
 // 验证状态
 const phoneValid = computed(() => phone.value.length === 11 && /^1[3-9]\d{9}$/.test(phone.value))
 const codeValid = computed(() => code.value.length === 6)
-const canLogin = computed(() => phoneValid.value && codeValid.value && agreed.value && !isLoading.value)
+const nicknameValid = computed(() => nickname.value.trim().length >= 2)
+const communityValid = computed(() => community.value.trim().length > 0)
+const canLogin = computed(() => phoneValid.value && codeValid.value && nicknameValid.value && communityValid.value && agreed.value && !isLoading.value)
 
 // 聚焦/失焦处理
 const onPhoneFocus = () => { phoneFocused.value = true }
@@ -176,6 +227,16 @@ const onCodeFocus = () => { codeFocused.value = true }
 const onCodeBlur = () => { 
   codeFocused.value = false
   validateCode()
+}
+const onNicknameFocus = () => { nicknameFocused.value = true }
+const onNicknameBlur = () => { 
+  nicknameFocused.value = false
+  validateNickname()
+}
+const onCommunityFocus = () => { communityFocused.value = true }
+const onCommunityBlur = () => { 
+  communityFocused.value = false
+  validateCommunity()
 }
 
 // 输入处理
@@ -191,6 +252,10 @@ const onCodeInput = () => {
   code.value = code.value.replace(/\D/g, '')
   // 清除错误
   if (codeError.value) codeError.value = ''
+}
+
+const onNicknameInput = () => {
+  if (nicknameError.value) nicknameError.value = ''
 }
 
 // 验证
@@ -221,6 +286,28 @@ const validateCode = () => {
     return false
   }
   codeError.value = ''
+  return true
+}
+
+const validateNickname = () => {
+  if (!nickname.value.trim()) {
+    nicknameError.value = '请输入昵称'
+    return false
+  }
+  if (nickname.value.trim().length < 2) {
+    nicknameError.value = '昵称至少2个字符'
+    return false
+  }
+  nicknameError.value = ''
+  return true
+}
+
+const validateCommunity = () => {
+  if (!community.value.trim()) {
+    communityError.value = '请选择所在社区'
+    return false
+  }
+  communityError.value = ''
   return true
 }
 
@@ -284,10 +371,13 @@ const handleLogin = async () => {
   // 清除之前的错误
   phoneError.value = ''
   codeError.value = ''
+  nicknameError.value = ''
+  communityError.value = ''
   agreementError.value = ''
   
-  // 验证
-  if (!validatePhone() || !validateCode()) {
+  // 验证所有字段
+  const valid = validatePhone() && validateCode() && validateNickname() && validateCommunity()
+  if (!valid) {
     triggerShake()
     return
   }
@@ -309,7 +399,12 @@ const handleLogin = async () => {
     isLoading.value = true
     showLoading('登录中...')
     
-    const result: any = await authApi.login({ code: code.value })
+    const result: any = await authApi.login({ 
+      phone: phone.value, 
+      code: code.value,
+      nickname: nickname.value,
+      community: community.value
+    })
     setUser(result.user, result.token)
     
     hideLoading()
@@ -325,10 +420,11 @@ const handleLogin = async () => {
         switchTab('/pages/index/index')
       }
     }, 800)
-  } catch (error) {
+  } catch (error: any) {
     hideLoading()
     isLoading.value = false
-    showGlobalError('登录失败，请重试')
+    const errMsg = error?.response?.data?.message || error?.message || '登录失败，请重试'
+    showGlobalError(errMsg)
     console.error('Login error:', error)
   }
 }
@@ -510,11 +606,6 @@ const showPrivacy = () => {
   box-shadow: 0 0 0 4px var(--color-primary-soft), var(--shadow-sm);
 }
 
-.input-group.error .input-row {
-  border-color: var(--color-error);
-  background: var(--color-error-soft);
-}
-
 .input-field {
   flex: 1;
   font-size: var(--font-size-md);
@@ -522,6 +613,15 @@ const showPrivacy = () => {
   border: none;
   background: transparent;
   outline: none;
+}
+
+.select-field {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8.5L2 4.5h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
 }
 
 .input-field::placeholder {

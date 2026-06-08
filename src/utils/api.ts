@@ -448,7 +448,7 @@ export const postsApi = {
 }
 
 export const authApi = {
-  login: (data: { code: string }) => {
+  login: (data: { phone: string; code: string; nickname?: string; community?: string }) => {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
