@@ -322,11 +322,8 @@ function setupRouteGuard(router: any) {
       return
     }
     
-    // 如果已登录且在登录页，自动跳转首页
-    if (isLoggedIn && toPath === LOGIN_PAGE) {
-      next({ path: '/pages/index/index', replace: true })
-      return
-    }
+    // 移除自动跳转登录页的逻辑，让用户可以手动访问登录页进行测试
+
     
     next()
   })

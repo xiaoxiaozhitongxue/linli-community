@@ -21,9 +21,7 @@
           <div class="icon-glow" v-if="currentPath === tab.path || currentPath.startsWith(tab.path + '/')"></div>
         </div>
         <span class="tab-label">{{ tab.name }}</span>
-        <div class="active-indicator">
-          <div class="indicator-dot"></div>
-        </div>
+
       </div>
     </div>
   </div>
@@ -227,34 +225,7 @@ const handleTouchEnd = () => {
   100% { transform: scale(1); opacity: 1; }
 }
 
-.active-indicator {
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.indicator-dot {
-  width: 0;
-  height: 3px;
-  background: var(--color-primary);
-  border-radius: 2px;
-  transition: all var(--transition-bounce);
-  opacity: 0.3;
-}
-
-.tab-item.active .indicator-dot {
-  width: 20px;
-  animation: indicatorSlide 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes indicatorSlide {
-  0% { width: 0; opacity: 0; }
-  100% { width: 20px; opacity: 1; }
-}
 
 .ripple-effect {
   position: absolute;
