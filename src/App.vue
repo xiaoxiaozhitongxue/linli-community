@@ -5,10 +5,11 @@ import Toast from './components/Toast.vue'
 import BottomTabBar from './components/BottomTabBar.vue'
 import FloatingPublishButton from './components/FloatingPublishButton.vue'
 import { useAuth } from './store'
+import { showLoginGuide, setLoginRedirect } from './utils/auth'
 
 const route = useRoute()
 const router = useRouter()
-const { initAuth } = useAuth()
+const { initAuth, isLoggedIn } = useAuth()
 
 // 判断是否显示底部导航栏的页面
 const showTabBar = computed(() => {
@@ -34,16 +35,31 @@ const showFloatingPublishButton = computed(() => {
 
 // 处理发布动态
 const handlePublishPost = () => {
+  if (!isLoggedIn.value) {
+    setLoginRedirect(window.location.hash.replace('#', '') || '/pages/index/index')
+    showLoginGuide()
+    return
+  }
   router.push('/pages/post/create')
 }
 
 // 处理发布活动
 const handlePublishActivity = () => {
+  if (!isLoggedIn.value) {
+    setLoginRedirect(window.location.hash.replace('#', '') || '/pages/index/index')
+    showLoginGuide()
+    return
+  }
   router.push('/pages/activities/create')
 }
 
 // 处理发布互助
 const handlePublishHelp = () => {
+  if (!isLoggedIn.value) {
+    setLoginRedirect(window.location.hash.replace('#', '') || '/pages/index/index')
+    showLoginGuide()
+    return
+  }
   router.push('/pages/ai-helper/publish')
 }
 

@@ -123,18 +123,9 @@
           </span>
         </div>
 
-        <!-- 演示账号快捷登录 -->
-        <div class="demo-section">
-          <div class="divider">
-            <div class="divider-line"></div>
-            <span class="divider-text">演示账号</span>
-            <div class="divider-line"></div>
-          </div>
-          <div class="demo-btn" @click="demoLogin" :class="{ disabled: isLoading }">
-            <span class="demo-icon">🚀</span>
-            <span class="demo-text">一键体验（免登录）</span>
-          </div>
-          <div class="demo-hint">
+        <!-- 测试账号提示 -->
+        <div class="test-hint">
+          <div class="test-hint-text">
             测试账号：13800138000 | 验证码：123456
           </div>
         </div>
@@ -427,44 +418,6 @@ const handleLogin = async () => {
     showGlobalError(errMsg)
     console.error('Login error:', error)
   }
-}
-
-// 演示账号登录
-const demoLogin = () => {
-  if (isLoading.value) return
-  
-  showLoading('登录中...')
-  
-  const demoUser = {
-    id: 'demo_001',
-    phone: '13800138000',
-    nickname: '邻里小明',
-    avatar: '',
-    community: '阳光社区',
-    bio: '热爱社区，乐于助人',
-    role: 'volunteer' as const,
-    credit_score: 95,
-    is_verified: true,
-    created_at: Date.now(),
-    updated_at: Date.now(),
-    last_active_at: Date.now()
-  }
-  
-  setUser(demoUser, 'demo_token_' + Date.now())
-  
-  setTimeout(() => {
-    hideLoading()
-    toastSuccess('欢迎回来，邻里小明！')
-    
-    setTimeout(() => {
-      const redirectPath = getAndClearLoginRedirect()
-      if (redirectPath) {
-        redirectTo(redirectPath)
-      } else {
-        switchTab('/pages/index/index')
-      }
-    }, 500)
-  }, 500)
 }
 
 const showAgreement = () => {
@@ -867,88 +820,18 @@ const showPrivacy = () => {
   animation: spin 0.8s linear infinite;
 }
 
-/* 分隔符 */
-.divider {
-  display: flex;
-  align-items: center;
-  margin: var(--spacing-lg) 0;
-}
-
-.divider-line {
-  flex: 1;
-  height: 1px;
-  background: var(--color-border-light);
-}
-
-.divider-text {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  padding: 0 var(--spacing-md);
-}
-
-/* 演示账号 */
-.demo-section {
-  margin-bottom: 0;
-}
-
-.demo-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: linear-gradient(135deg, var(--color-success), #22c55e);
-  color: white;
-  padding: 14px;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-smooth);
-  margin-bottom: var(--spacing-sm);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
-  position: relative;
-  overflow: hidden;
-}
-
-.demo-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-  transition: left var(--transition-slow);
-}
-
-.demo-btn:hover:not(.disabled)::before {
-  left: 100%;
-}
-
-.demo-btn:hover:not(.disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
-}
-
-.demo-btn:active:not(.disabled) {
-  transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
-}
-
-.demo-btn.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.demo-icon {
-  font-size: 18px;
-}
-
-.demo-hint {
+/* 测试账号提示 */
+.test-hint {
   text-align: center;
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.test-hint-text {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
-  padding: 4px 0;
+  padding: var(--spacing-xs) 0;
 }
 
 /* 全局错误提示 */
