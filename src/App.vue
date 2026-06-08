@@ -4,9 +4,11 @@ import { useRoute, useRouter } from 'vue-router'
 import Toast from './components/Toast.vue'
 import BottomTabBar from './components/BottomTabBar.vue'
 import FloatingPublishButton from './components/FloatingPublishButton.vue'
+import { useAuth } from './store'
 
 const route = useRoute()
 const router = useRouter()
+const { initAuth } = useAuth()
 
 // 判断是否显示底部导航栏的页面
 const showTabBar = computed(() => {
@@ -70,6 +72,8 @@ const checkInactiveStatus = () => {
 
 onMounted(() => {
   console.log('App Launch')
+  // 初始化认证状态
+  initAuth()
   recordActiveTime()
   checkInactiveStatus()
 })

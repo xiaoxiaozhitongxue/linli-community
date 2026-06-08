@@ -122,7 +122,7 @@ export interface InterestGroup {
   is_joined: boolean
 }
 
-const MOCK_MODE = false
+const MOCK_MODE = true
 
 const mockUsers: User[] = [
   {
@@ -452,9 +452,24 @@ export const authApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
+          // 根据传入的昵称和社区创建一个新用户，或者使用已有用户
+          const user: User = {
+            id: 'demo-user-' + Date.now(),
+            phone: data.phone,
+            nickname: data.nickname || '邻里用户',
+            avatar: '',
+            community: data.community || '阳光社区',
+            bio: '热爱社区，乐于助人',
+            role: 'resident',
+            credit_score: 100,
+            is_verified: true,
+            created_at: Date.now(),
+            updated_at: Date.now(),
+            last_active_at: Date.now()
+          }
           resolve({
             token: 'mock-token-' + Date.now(),
-            user: mockUsers[0]
+            user
           })
         }, 500)
       })
