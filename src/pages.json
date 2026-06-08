@@ -168,14 +168,13 @@
         "pagePath": "pages/index/index",
         "text": "首页"
       },
-
       {
         "pagePath": "pages/ai-helper/index",
         "text": "互助"
       },
       {
-        "pagePath": "pages/elderly/index",
-        "text": "关怀"
+        "pagePath": "pages/messages/index",
+        "text": "消息"
       },
       {
         "pagePath": "pages/profile/index",

@@ -151,7 +151,7 @@ const handleMenuItemClick = (item: { id: string }) => {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
@@ -209,7 +209,7 @@ const handleMenuItemClick = (item: { id: string }) => {
 
 .menu-label {
   font-size: var(--font-size-sm);
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
 }
 
@@ -217,7 +217,7 @@ const handleMenuItemClick = (item: { id: string }) => {
   width: var(--fab-size);
   height: var(--fab-size);
   border-radius: 50%;
-  background: var(--primary-gradient);
+  background: var(--color-primary-gradient);
   display: flex;
   align-items: center;
   justify-content: center;

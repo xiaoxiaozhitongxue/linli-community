@@ -27,7 +27,7 @@ const showFloatingPublishButton = computed(() => {
     '/pages/index/index',
     '/pages/ai-helper/index'
   ]
-  return showPages.some(showPath => path.startsWith(showPath))
+  return showPages.some(showPath => path === showPath)
 })
 
 // 处理发布动态

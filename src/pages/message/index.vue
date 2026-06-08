@@ -79,7 +79,7 @@ const openChat = (msg: any) => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 .header {
@@ -112,7 +112,7 @@ const openChat = (msg: any) => {
   display: flex;
   align-items: center;
   padding: var(--spacing-md);
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-sm);
   cursor: pointer;
@@ -120,7 +120,7 @@ const openChat = (msg: any) => {
 }
 
 .message-item:hover {
-  background: var(--bg-color);
+  background: var(--color-bg-tertiary);
 }
 
 .message-avatar-wrapper {
@@ -166,17 +166,17 @@ const openChat = (msg: any) => {
 .message-name {
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .message-time {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .message-preview {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -198,6 +198,6 @@ const openChat = (msg: any) => {
 
 .empty-text {
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 </style>

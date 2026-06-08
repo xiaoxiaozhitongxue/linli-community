@@ -19,7 +19,6 @@ const TAB_BAR_PAGES = [
   '/pages/index/index',
   '/pages/ai-helper/index',
   '/pages/messages/index',
-  '/pages/messages/chat',
   '/pages/profile/index'
 ]
 

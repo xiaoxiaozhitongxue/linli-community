@@ -507,11 +507,11 @@ const goToStoryDetail = (story: any) => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 .header {
-  background: var(--primary-gradient);
+  background: var(--color-primary-gradient);
   padding: var(--spacing-lg);
   padding-bottom: var(--spacing-xl);
   padding-top: calc(var(--spacing-lg) + 20px);
@@ -545,7 +545,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .shop-card {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-md);
@@ -577,7 +577,7 @@ const goToStoryDetail = (story: any) => {
 .shop-info .shop-name {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: var(--spacing-xs);
 }
@@ -589,7 +589,7 @@ const goToStoryDetail = (story: any) => {
 
 .shop-stat {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .shop-actions {
@@ -605,12 +605,12 @@ const goToStoryDetail = (story: any) => {
 }
 
 .shop-btn.edit {
-  background: var(--bg-color);
-  color: var(--text-secondary);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .shop-btn.manage {
-  background: var(--primary-color);
+  background: var(--color-primary);
   color: white;
 }
 
@@ -621,7 +621,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .open-shop-content {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   padding: var(--spacing-xxl);
   text-align: center;
@@ -637,20 +637,20 @@ const goToStoryDetail = (story: any) => {
 .open-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: var(--spacing-sm);
 }
 
 .open-desc {
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   display: block;
   margin-bottom: var(--spacing-lg);
 }
 
 .open-btn {
-  background: var(--primary-gradient);
+  background: var(--color-primary-gradient);
   color: white;
   padding: var(--spacing-md) var(--spacing-xxl);
   border-radius: 25px;
@@ -664,7 +664,7 @@ const goToStoryDetail = (story: any) => {
   display: flex;
   justify-content: space-around;
   padding: var(--spacing-lg);
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   margin: 0 var(--spacing-lg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -690,7 +690,7 @@ const goToStoryDetail = (story: any) => {
 
 .action-text {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 /* 分类 */
@@ -713,15 +713,15 @@ const goToStoryDetail = (story: any) => {
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 14px;
-  background: var(--card-bg);
-  color: var(--text-secondary);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .category-item.active {
-  background: var(--primary-color);
+  background: var(--color-primary);
   color: white;
 }
 
@@ -740,12 +740,12 @@ const goToStoryDetail = (story: any) => {
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .section-more {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   cursor: pointer;
 }
 
@@ -757,7 +757,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .product-card {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
@@ -785,7 +785,7 @@ const goToStoryDetail = (story: any) => {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: #F44336;
+  background: var(--color-error);
   color: white;
   padding: 2px 8px;
   border-radius: 10px;
@@ -799,7 +799,7 @@ const goToStoryDetail = (story: any) => {
 .product-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 4px;
 }
@@ -813,12 +813,12 @@ const goToStoryDetail = (story: any) => {
 
 .shop-tag {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .shop-distance {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .product-footer {
@@ -830,12 +830,12 @@ const goToStoryDetail = (story: any) => {
 .product-price {
   font-size: 16px;
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--color-primary);
 }
 
 .product-sales {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 /* 附近小店 */
@@ -846,7 +846,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .shop-item {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   padding: var(--spacing-lg);
   border-radius: var(--radius-md);
   display: flex;
@@ -882,14 +882,14 @@ const goToStoryDetail = (story: any) => {
 .shop-name-text {
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 2px;
 }
 
 .shop-desc {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   display: block;
   margin-bottom: 4px;
   overflow: hidden;
@@ -904,7 +904,7 @@ const goToStoryDetail = (story: any) => {
 
 .shop-meta span {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 /* 订单列表 */
@@ -915,7 +915,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .order-item {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-md);
   display: flex;
@@ -932,13 +932,13 @@ const goToStoryDetail = (story: any) => {
 .order-product {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin-bottom: 2px;
 }
 
 .order-buyer {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .order-right {
@@ -950,7 +950,7 @@ const goToStoryDetail = (story: any) => {
 .order-price {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin-bottom: 2px;
 }
 
@@ -988,7 +988,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .story-card {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
@@ -1016,14 +1016,14 @@ const goToStoryDetail = (story: any) => {
 .story-title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 4px;
 }
 
 .story-excerpt {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   display: -webkit-box;
   margin-bottom: var(--spacing-sm);
   overflow: hidden;
@@ -1047,7 +1047,7 @@ const goToStoryDetail = (story: any) => {
 
 .story-author {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .safe-area-bottom {

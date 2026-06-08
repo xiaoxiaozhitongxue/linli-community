@@ -22,7 +22,11 @@ const router = createRouter({
       component: () => import('./pages/health/index.vue'),
       meta: { title: '健康打卡', tabBar: false }
     },
-
+    {
+      path: '/pages/activities/index',
+      component: () => import('./pages/activities/index.vue'),
+      meta: { title: '活动中心', requiresAuth: false }
+    },
     {
       path: '/pages/ai-helper/index',
       component: () => import('./pages/ai-helper/index.vue'),
@@ -42,6 +46,11 @@ const router = createRouter({
       path: '/pages/elderly/index',
       component: () => import('./pages/elderly/index.vue'),
       meta: { title: '养老服务', tabBar: false }
+    },
+    {
+      path: '/pages/messages/index',
+      component: () => import('./pages/messages/index.vue'),
+      meta: { title: '消息', tabBar: true }
     },
     {
       path: '/pages/messages/chat',
@@ -122,11 +131,6 @@ const router = createRouter({
       path: '/pages/activities/detail',
       component: () => import('./pages/activities/detail.vue'),
       meta: { title: '活动详情', requiresAuth: false }
-    },
-    {
-      path: '/pages/activities/index',
-      component: () => import('./pages/activities/index.vue'),
-      meta: { title: '活动中心', requiresAuth: false }
     }
   ],
   // 页面切换的滚动行为

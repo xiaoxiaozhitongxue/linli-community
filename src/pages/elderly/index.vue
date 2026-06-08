@@ -388,7 +388,7 @@ const getStatusName = (status: string) => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 .header {
@@ -467,7 +467,7 @@ const getStatusName = (status: string) => {
 
 .emergency-hint {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 /* 服务网格 */
@@ -479,7 +479,7 @@ const getStatusName = (status: string) => {
 }
 
 .service-card {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
   padding: var(--spacing-lg);
   text-align: center;
@@ -506,14 +506,14 @@ const getStatusName = (status: string) => {
 .service-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 2px;
 }
 
 .service-desc {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 /* 区块 */
@@ -531,12 +531,12 @@ const getStatusName = (status: string) => {
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .section-more {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   cursor: pointer;
 }
 
@@ -548,7 +548,7 @@ const getStatusName = (status: string) => {
 }
 
 .record-item {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-md);
   display: flex;
@@ -574,14 +574,14 @@ const getStatusName = (status: string) => {
 .record-type {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 2px;
 }
 
 .record-date {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .record-status {
@@ -674,7 +674,7 @@ const getStatusName = (status: string) => {
 
 /* 探访计划 */
 .visit-plan {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
@@ -685,7 +685,7 @@ const getStatusName = (status: string) => {
   align-items: center;
   margin-bottom: var(--spacing-lg);
   padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .elder-avatar {
@@ -704,14 +704,14 @@ const getStatusName = (status: string) => {
 .elder-name {
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 2px;
 }
 
 .elder-info-text {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .visit-status {
@@ -720,7 +720,7 @@ const getStatusName = (status: string) => {
 
 .visit-next {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   display: block;
 }
 
@@ -745,7 +745,7 @@ const getStatusName = (status: string) => {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--border-color);
+  background: var(--color-border-light);
   margin-right: var(--spacing-md);
   flex-shrink: 0;
 }
@@ -760,13 +760,13 @@ const getStatusName = (status: string) => {
 
 .schedule-title {
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
 }
 
 .schedule-date {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .schedule-status {
@@ -782,7 +782,7 @@ const getStatusName = (status: string) => {
 }
 
 .tip-card {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
   display: flex;
@@ -819,14 +819,14 @@ const getStatusName = (status: string) => {
 .tip-title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 2px;
 }
 
 .tip-desc {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -840,7 +840,7 @@ const getStatusName = (status: string) => {
 }
 
 .volunteer-card {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
   text-align: center;
@@ -858,14 +858,14 @@ const getStatusName = (status: string) => {
 .volunteer-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 2px;
 }
 
 .volunteer-hours {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   display: block;
   margin-bottom: var(--spacing-xs);
 }
