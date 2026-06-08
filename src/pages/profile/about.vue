@@ -80,35 +80,44 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { navigateBackSmart } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBackSmart()
 }
 </script>
 
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 .header {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: var(--color-primary-gradient);
 }
 
 .header-content {
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-lg);
-  color: white;
+  color: var(--color-text-white);
 }
 
 .back-btn {
   font-size: 28px;
   font-weight: 300;
   margin-right: var(--spacing-md);
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+  padding: 4px;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .header-title {
@@ -121,8 +130,8 @@ const goBack = () => {
 }
 
 .about-card {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   padding: var(--spacing-xl);
   text-align: center;
   box-shadow: var(--shadow-sm);
@@ -132,8 +141,8 @@ const goBack = () => {
 .app-logo {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  border-radius: 20px;
+  background: var(--color-primary-gradient);
+  border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -147,19 +156,19 @@ const goBack = () => {
 .app-name {
   font-size: 22px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin-bottom: var(--spacing-xs);
 }
 
 .app-version {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   margin-bottom: var(--spacing-md);
 }
 
 .app-desc {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
@@ -170,14 +179,14 @@ const goBack = () => {
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   margin-bottom: var(--spacing-md);
   padding-left: var(--spacing-xs);
 }
 
 .feature-list {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
@@ -186,7 +195,12 @@ const goBack = () => {
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color var(--transition-fast);
+}
+
+.feature-item:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .feature-item:last-child {
@@ -206,18 +220,18 @@ const goBack = () => {
 .feature-name {
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin-bottom: 2px;
 }
 
 .feature-desc {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .contact-list {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
@@ -226,7 +240,12 @@ const goBack = () => {
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color var(--transition-fast);
+}
+
+.contact-item:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .contact-item:last-child {
@@ -240,13 +259,13 @@ const goBack = () => {
 
 .contact-text {
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .copyright {
   text-align: center;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   padding: var(--spacing-lg) 0;
 }
 </style>

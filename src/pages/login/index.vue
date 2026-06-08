@@ -11,46 +11,61 @@
       </div>
 
       <!-- 登录表单 -->
-      <div class="form-section">
-        <div class="input-group">
+      <div class="form-section" :class="{ shake: isShaking }">
+        <!-- 手机号输入 -->
+        <div class="input-group" :class="{ error: phoneError }">
           <div class="input-label">手机号</div>
-          <div class="input-row">
+          <div class="input-row" :class="{ focused: phoneFocused }">
             <input 
               class="input-field" 
-              type="number" 
+              type="tel" 
               v-model="phone" 
               placeholder="请输入手机号"
               maxlength="11"
+              @focus="onPhoneFocus"
+              @blur="onPhoneBlur"
+              @input="onPhoneInput"
             />
+            <span class="input-icon" :class="{ valid: phoneValid }">✓</span>
           </div>
+          <div class="error-text" v-if="phoneError">{{ phoneError }}</div>
         </div>
 
-        <div class="input-group">
+        <!-- 验证码输入 -->
+        <div class="input-group" :class="{ error: codeError }">
           <div class="input-label">验证码</div>
-          <div class="input-row">
+          <div class="input-row" :class="{ focused: codeFocused }">
             <input 
               class="input-field" 
-              type="number" 
+              type="tel" 
               v-model="code" 
               placeholder="请输入验证码"
               maxlength="6"
+              @focus="onCodeFocus"
+              @blur="onCodeBlur"
+              @input="onCodeInput"
             />
+            <span class="input-icon" :class="{ valid: codeValid }">✓</span>
+          </div>
+          <div class="code-row">
+            <div class="error-text" v-if="codeError">{{ codeError }}</div>
             <div 
               class="code-btn" 
-              :class="{ disabled: counting }"
+              :class="{ disabled: counting || !phoneValid, loading: counting }"
               @click="sendCode"
             >
-              {{ counting ? `${countdown}s` : '获取验证码' }}
+              <span v-if="!counting">获取验证码</span>
+              <span v-else class="countdown">{{ countdown }}s</span>
             </div>
           </div>
         </div>
 
         <!-- 协议 -->
-        <div class="agreement">
+        <div class="agreement" :class="{ error: agreementError }">
           <div 
             class="agreement-check" 
-            :class="{ checked: agreed }"
-            @click="agreed = !agreed"
+            :class="{ checked: agreed, bounce: agreementBounce }"
+            @click="toggleAgreement"
           >
             <span v-if="agreed">✓</span>
           </div>
@@ -59,10 +74,19 @@
             和<span class="agreement-link" @click.stop="showPrivacy">《隐私政策》</span>
           </span>
         </div>
+        <div class="error-text agreement-error" v-if="agreementError">{{ agreementError }}</div>
 
         <!-- 登录按钮 -->
-        <div class="login-btn" @click="handleLogin">
-          <span>登录</span>
+        <div 
+          class="login-btn" 
+          :class="{ loading: isLoading, disabled: !canLogin }"
+          @click="handleLogin"
+        >
+          <span v-if="!isLoading">登录</span>
+          <span v-else class="loading-text">
+            <span class="spinner"></span>
+            登录中...
+          </span>
         </div>
 
         <!-- 演示账号快捷登录 -->
@@ -72,7 +96,7 @@
             <span class="divider-text">演示账号</span>
             <div class="divider-line"></div>
           </div>
-          <div class="demo-btn" @click="demoLogin">
+          <div class="demo-btn" @click="demoLogin" :class="{ disabled: isLoading }">
             <span class="demo-icon">🚀</span>
             <span class="demo-text">一键体验（免登录）</span>
           </div>
@@ -80,85 +104,209 @@
             手机号：13800138000 | 验证码：123456
           </div>
         </div>
-
-        <!-- 其他登录方式 -->
-        <div class="divider">
-          <div class="divider-line"></div>
-          <span class="divider-text">其他登录方式</span>
-          <div class="divider-line"></div>
-        </div>
-
-        <div class="third-party">
-          <div class="third-party-btn" @click="loginWithWechat">
-            <span class="third-party-icon">💬</span>
-            <span>微信</span>
-          </div>
-        </div>
       </div>
+
+      <!-- 全局错误提示 -->
+      <Transition name="toast">
+        <div v-if="globalError" class="global-error">
+          <span class="error-icon">⚠️</span>
+          {{ globalError }}
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
-import { navigateTo, switchTab } from '../../utils/router'
+import { navigateTo, switchTab, redirectTo } from '../../utils/router'
 import { showLoading, hideLoading } from '../../utils/ui'
 import { useAuth } from '../../store'
 import { authApi } from '../../utils/api'
+import { getAndClearLoginRedirect } from '../../utils/auth'
 
 const { setUser } = useAuth()
+
+// 表单数据
 const phone = ref('')
 const code = ref('')
 const agreed = ref(false)
+
+// UI状态
 const counting = ref(false)
 const countdown = ref(60)
+const isLoading = ref(false)
+const isShaking = ref(false)
+const agreementBounce = ref(false)
 
+// 聚焦状态
+const phoneFocused = ref(false)
+const codeFocused = ref(false)
+
+// 错误状态
+const phoneError = ref('')
+const codeError = ref('')
+const agreementError = ref('')
+const globalError = ref('')
+
+let countdownTimer: number | null = null
+let shakeTimer: number | null = null
+let globalErrorTimer: number | null = null
+
+// 清理定时器
+onUnmounted(() => {
+  if (countdownTimer) clearInterval(countdownTimer)
+  if (shakeTimer) clearTimeout(shakeTimer)
+  if (globalErrorTimer) clearTimeout(globalErrorTimer)
+})
+
+// 验证状态
+const phoneValid = computed(() => phone.value.length === 11 && /^1[3-9]\d{9}$/.test(phone.value))
+const codeValid = computed(() => code.value.length === 6)
+const canLogin = computed(() => phoneValid.value && codeValid.value && agreed.value && !isLoading.value)
+
+// 聚焦/失焦处理
+const onPhoneFocus = () => { phoneFocused.value = true }
+const onPhoneBlur = () => { 
+  phoneFocused.value = false
+  validatePhone()
+}
+const onCodeFocus = () => { codeFocused.value = true }
+const onCodeBlur = () => { 
+  codeFocused.value = false
+  validateCode()
+}
+
+// 输入处理
+const onPhoneInput = () => {
+  // 只允许数字
+  phone.value = phone.value.replace(/\D/g, '')
+  // 清除错误
+  if (phoneError.value) phoneError.value = ''
+}
+
+const onCodeInput = () => {
+  // 只允许数字
+  code.value = code.value.replace(/\D/g, '')
+  // 清除错误
+  if (codeError.value) codeError.value = ''
+}
+
+// 验证
+const validatePhone = () => {
+  if (!phone.value) {
+    phoneError.value = '请输入手机号'
+    return false
+  }
+  if (phone.value.length !== 11) {
+    phoneError.value = '手机号格式不正确'
+    return false
+  }
+  if (!/^1[3-9]\d{9}$/.test(phone.value)) {
+    phoneError.value = '手机号格式不正确'
+    return false
+  }
+  phoneError.value = ''
+  return true
+}
+
+const validateCode = () => {
+  if (!code.value) {
+    codeError.value = '请输入验证码'
+    return false
+  }
+  if (code.value.length !== 6) {
+    codeError.value = '验证码为6位数字'
+    return false
+  }
+  codeError.value = ''
+  return true
+}
+
+// 触发shake动画
+const triggerShake = () => {
+  isShaking.value = true
+  if (shakeTimer) clearTimeout(shakeTimer)
+  shakeTimer = window.setTimeout(() => {
+    isShaking.value = false
+  }, 500)
+}
+
+// 显示全局错误
+const showGlobalError = (message: string) => {
+  globalError.value = message
+  if (globalErrorTimer) clearTimeout(globalErrorTimer)
+  globalErrorTimer = window.setTimeout(() => {
+    globalError.value = ''
+  }, 3000)
+}
+
+// 发送验证码
 const sendCode = () => {
-  if (counting.value) return
+  if (counting.value || !phoneValid.value) return
   
-  if (!phone.value || phone.value.length !== 11) {
-    toastError('请输入正确的手机号')
+  if (!validatePhone()) {
+    triggerShake()
     return
   }
   
   counting.value = true
   countdown.value = 60
   
-  const timer = setInterval(() => {
+  toastSuccess('验证码已发送（测试验证码：123456）')
+  
+  countdownTimer = window.setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
       counting.value = false
-      clearInterval(timer)
+      if (countdownTimer) clearInterval(countdownTimer)
+      countdownTimer = null
     }
   }, 1000)
-  
-  toastSuccess('验证码已发送（测试验证码：123456）')
 }
 
-const handleLogin = async () => {
-  if (!phone.value || phone.value.length !== 11) {
-    toastError('请输入正确的手机号')
-    return
+// 切换协议
+const toggleAgreement = () => {
+  agreed.value = !agreed.value
+  if (agreed.value) {
+    agreementError.value = ''
+    // 添加点击反馈动画
+    agreementBounce.value = true
+    setTimeout(() => {
+      agreementBounce.value = false
+    }, 300)
   }
+}
+
+// 处理登录
+const handleLogin = async () => {
+  // 清除之前的错误
+  phoneError.value = ''
+  codeError.value = ''
+  agreementError.value = ''
   
-  if (!code.value || code.value.length !== 6) {
-    toastError('请输入6位验证码')
+  // 验证
+  if (!validatePhone() || !validateCode()) {
+    triggerShake()
     return
   }
   
   if (!agreed.value) {
-    toastError('请先同意用户协议')
+    agreementError.value = '请先同意用户协议'
+    triggerShake()
     return
   }
   
   // 验证测试验证码
   if (code.value !== '123456') {
-    toastError('验证码不正确，请使用 123456 进行测试')
+    codeError.value = '验证码不正确，请使用 123456'
+    triggerShake()
     return
   }
   
   try {
+    isLoading.value = true
     showLoading('登录中...')
     
     const result: any = await authApi.login({ code: code.value })
@@ -167,17 +315,28 @@ const handleLogin = async () => {
     hideLoading()
     toastSuccess('登录成功')
     
+    // 登录成功后，检查是否有重定向路径
     setTimeout(() => {
-      switchTab('/pages/index/index')
-    }, 1000)
+      const redirectPath = getAndClearLoginRedirect()
+      if (redirectPath) {
+        // 回到原页面
+        redirectTo(redirectPath)
+      } else {
+        switchTab('/pages/index/index')
+      }
+    }, 800)
   } catch (error) {
     hideLoading()
-    toastError('登录失败，请重试')
+    isLoading.value = false
+    showGlobalError('登录失败，请重试')
     console.error('Login error:', error)
   }
 }
 
+// 演示账号登录
 const demoLogin = () => {
+  if (isLoading.value) return
+  
   showLoading('登录中...')
   
   const demoUser = {
@@ -200,14 +359,16 @@ const demoLogin = () => {
   setTimeout(() => {
     hideLoading()
     toastSuccess('欢迎回来，邻里小明！')
+    
     setTimeout(() => {
-      switchTab('/pages/index/index')
-    }, 800)
+      const redirectPath = getAndClearLoginRedirect()
+      if (redirectPath) {
+        redirectTo(redirectPath)
+      } else {
+        switchTab('/pages/index/index')
+      }
+    }, 500)
   }, 500)
-}
-
-const loginWithWechat = () => {
-  toastError('微信登录功能开发中')
 }
 
 const showAgreement = () => {
@@ -222,111 +383,278 @@ const showPrivacy = () => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #FFF8F0 0%, #FFFFFF 100%);
+  background: var(--color-primary-gradient-soft);
 }
 
 .login-container {
   padding: var(--spacing-lg);
   padding-top: 60px;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 /* Logo区域 */
 .logo-section {
   text-align: center;
-  margin-bottom: var(--spacing-xxl);
+  margin-bottom: var(--spacing-2xl);
+  animation: fadeInDown var(--transition-slow) ease-out;
 }
 
 .logo {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  border-radius: 20px;
+  width: 88px;
+  height: 88px;
+  background: var(--color-primary-gradient);
+  border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto var(--spacing-md);
-  box-shadow: 0 8px 24px rgba(255, 140, 66, 0.3);
+  box-shadow: var(--shadow-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.logo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 3s ease-in-out infinite;
 }
 
 .logo-emoji {
-  font-size: 40px;
+  font-size: 44px;
+  position: relative;
+  z-index: 1;
 }
 
 .app-name {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
   display: block;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+  letter-spacing: -0.02em;
 }
 
 .app-slogan {
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
 }
 
 /* 表单区域 */
 .form-section {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   padding: var(--spacing-xl);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
+  animation: fadeInUp var(--transition-slow) ease-out 0.1s both;
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
+.form-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.form-section:hover::before {
+  opacity: 1;
+}
+
+/* Shake动画 */
+.form-section.shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* 输入组 */
 .input-group {
   margin-bottom: var(--spacing-lg);
+  transition: transform var(--transition-fast);
+}
+
+.input-group.error {
+  animation: inputShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
 .input-label {
-  font-size: 14px;
-  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
   margin-bottom: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .input-row {
   display: flex;
   align-items: center;
-  background: var(--bg-color);
+  background: var(--color-bg-tertiary);
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
+  border: 2px solid transparent;
+  transition: all var(--transition-smooth);
+}
+
+.input-row.focused {
+  border-color: var(--color-primary);
+  background: var(--color-bg-secondary);
+  box-shadow: 0 0 0 4px var(--color-primary-soft), var(--shadow-sm);
+}
+
+.input-group.error .input-row {
+  border-color: var(--color-error);
+  background: var(--color-error-soft);
 }
 
 .input-field {
   flex: 1;
-  font-size: 15px;
-  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
   border: none;
   background: transparent;
   outline: none;
 }
 
+.input-field::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.input-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: white;
+  background: var(--color-text-muted);
+  opacity: 0;
+  transform: scale(0);
+  transition: all var(--transition-smooth);
+}
+
+.input-icon.valid {
+  opacity: 1;
+  transform: scale(1);
+  background: var(--color-success);
+  animation: iconPop 0.3s var(--transition-spring);
+}
+
+/* 错误文本 */
+.error-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  margin-top: var(--spacing-xs);
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all var(--transition-normal);
+}
+
+.input-group.error .error-text,
+.agreement-error {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 验证码行 */
+.code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--spacing-xs);
+}
+
+.code-row .error-text {
+  flex: 1;
+  margin-top: 0;
+  margin-right: var(--spacing-md);
+}
+
 .code-btn {
   padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--primary-color);
+  background: var(--color-primary-gradient);
   color: white;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: 13px;
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all var(--transition-smooth);
+  min-width: 90px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.code-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left var(--transition-slow);
+}
+
+.code-btn:hover:not(.disabled)::before {
+  left: 100%;
+}
+
+.code-btn:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.35);
+}
+
+.code-btn:active:not(.disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.25);
 }
 
 .code-btn.disabled {
-  background: var(--text-muted);
+  background: var(--color-text-muted);
   cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.code-btn.loading {
+  pointer-events: none;
+}
+
+.countdown {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 协议 */
 .agreement {
   display: flex;
   align-items: flex-start;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.agreement.error {
+  margin-bottom: 0;
 }
 
 .agreement-check {
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--border-color);
-  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border-medium);
+  border-radius: var(--radius-sm);
   margin-right: var(--spacing-sm);
   display: flex;
   align-items: center;
@@ -334,91 +662,133 @@ const showPrivacy = () => {
   font-size: 12px;
   color: white;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 1px;
   cursor: pointer;
+  transition: all var(--transition-smooth);
 }
 
 .agreement-check.checked {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
+  background: var(--color-primary-gradient);
+  border-color: var(--color-primary);
+  transform: scale(1);
+}
+
+.agreement-check.bounce {
+  animation: checkBounce 0.3s var(--transition-spring);
 }
 
 .agreement-text {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.5;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: 1.6;
 }
 
 .agreement-link {
-  color: var(--primary-color);
+  color: var(--color-primary);
   cursor: pointer;
+  transition: color var(--transition-fast);
+  font-weight: var(--font-weight-medium);
+}
+
+.agreement-link:hover {
+  color: var(--color-primary-dark);
+}
+
+.agreement-error {
+  margin-top: var(--spacing-xs);
 }
 
 /* 登录按钮 */
 .login-btn {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: var(--color-primary-gradient);
   color: white;
   padding: var(--spacing-md);
   border-radius: var(--radius-md);
   text-align: center;
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--spacing-lg);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
 }
 
-.login-btn:hover {
+.login-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: left var(--transition-slow);
+}
+
+.login-btn:hover:not(.disabled):not(.loading)::before {
+  left: 100%;
+}
+
+.login-btn:hover:not(.disabled):not(.loading) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+}
+
+.login-btn:active:not(.disabled):not(.loading) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.25);
+}
+
+.login-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--color-text-muted);
+  box-shadow: none;
+}
+
+.login-btn.loading {
+  pointer-events: none;
+}
+
+.loading-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 /* 分隔符 */
 .divider {
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+  margin: var(--spacing-lg) 0;
 }
 
 .divider-line {
   flex: 1;
   height: 1px;
-  background: var(--border-color);
+  background: var(--color-border-light);
 }
 
 .divider-text {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
   padding: 0 var(--spacing-md);
-}
-
-/* 第三方登录 */
-.third-party {
-  display: flex;
-  justify-content: center;
-}
-
-.third-party-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--spacing-md);
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.third-party-btn:hover {
-  transform: scale(1.05);
-}
-
-.third-party-icon {
-  font-size: 32px;
-  margin-bottom: var(--spacing-xs);
 }
 
 /* 演示账号 */
 .demo-section {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: 0;
 }
 
 .demo-btn {
@@ -426,34 +796,178 @@ const showPrivacy = () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #4CAF50, #45a049);
+  background: linear-gradient(135deg, var(--color-success), #22c55e);
   color: white;
   padding: 14px;
   border-radius: var(--radius-md);
-  font-size: 16px;
-  font-weight: 500;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all var(--transition-smooth);
   margin-bottom: var(--spacing-sm);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+  position: relative;
+  overflow: hidden;
 }
 
-.demo-btn:hover {
+.demo-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: left var(--transition-slow);
+}
+
+.demo-btn:hover:not(.disabled)::before {
+  left: 100%;
+}
+
+.demo-btn:hover:not(.disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+
+.demo-btn:active:not(.disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+}
+
+.demo-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .demo-icon {
-  font-size: 20px;
-}
-
-.demo-text {
-  font-size: 15px;
+  font-size: 18px;
 }
 
 .demo-hint {
   text-align: center;
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
   padding: 4px 0;
+}
+
+/* 全局错误提示 */
+.global-error {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-error);
+  color: white;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--shadow-xl);
+  z-index: 10000;
+  max-width: 90%;
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+/* Toast过渡动画 */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all var(--transition-smooth);
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
+
+/* 动画 */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+  20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes checkBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes iconPop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* 响应式布局 */
+@media (max-width: 480px) {
+  .login-container {
+    padding-top: 40px;
+  }
+  
+  .logo {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-lg);
+  }
+  
+  .logo-emoji {
+    font-size: 36px;
+  }
+  
+  .app-name {
+    font-size: 24px;
+  }
+  
+  .form-section {
+    padding: var(--spacing-lg);
+  }
 }
 </style>

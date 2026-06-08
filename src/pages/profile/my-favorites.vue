@@ -92,7 +92,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { userApi } from '../../utils/api'
-import { navigateBack } from '../../utils/router'
+import { navigateBackSmart } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
@@ -144,7 +144,7 @@ onMounted(() => {
 })
 
 const goBack = () => {
-  navigateBack()
+  navigateBackSmart()
 }
 
 const loadFavorites = async (isRefresh = false) => {
@@ -227,12 +227,12 @@ const getCategoryIcon = (category: string) => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 /* 导航栏 */
 .navbar {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -255,12 +255,18 @@ const getCategoryIcon = (category: string) => {
   justify-content: center;
   font-size: 24px;
   cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+}
+
+.back-btn:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .navbar-title {
   font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .placeholder {
@@ -288,7 +294,7 @@ const getCategoryIcon = (category: string) => {
 
 .empty-text {
   font-size: 16px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 /* 收藏列表 */
@@ -297,11 +303,12 @@ const getCategoryIcon = (category: string) => {
 }
 
 .favorite-card {
-  background: var(--card-bg);
-  border-radius: 16px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   padding: 16px;
   margin-bottom: 12px;
   box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal);
 }
 
 .favorite-header {
@@ -313,7 +320,7 @@ const getCategoryIcon = (category: string) => {
 
 .type-tag {
   padding: 4px 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 500;
 }
@@ -335,12 +342,12 @@ const getCategoryIcon = (category: string) => {
 
 .favorite-time {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .favorite-content {
   padding-top: 12px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border-light);
 }
 
 /* 动态预览 */
@@ -349,7 +356,7 @@ const getCategoryIcon = (category: string) => {
 
 .post-preview-text {
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -367,8 +374,8 @@ const getCategoryIcon = (category: string) => {
 .preview-image {
   width: 80px;
   height: 80px;
-  border-radius: 8px;
-  background: var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-tertiary);
   object-fit: cover;
 }
 
@@ -389,7 +396,7 @@ const getCategoryIcon = (category: string) => {
 
 .meta-text {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 /* 活动预览 */
@@ -401,7 +408,7 @@ const getCategoryIcon = (category: string) => {
 .preview-cover {
   width: 80px;
   height: 80px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -418,7 +425,7 @@ const getCategoryIcon = (category: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--border-color);
+  background: var(--color-bg-tertiary);
   font-size: 32px;
 }
 
@@ -433,7 +440,7 @@ const getCategoryIcon = (category: string) => {
 .preview-title {
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
@@ -442,7 +449,7 @@ const getCategoryIcon = (category: string) => {
 
 .preview-desc {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -453,7 +460,7 @@ const getCategoryIcon = (category: string) => {
 .no-more {
   text-align: center;
   padding: 24px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   font-size: 14px;
 }
 </style>

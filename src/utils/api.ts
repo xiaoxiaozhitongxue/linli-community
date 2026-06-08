@@ -1016,41 +1016,4 @@ export const tasksApi = {
   }
 }
 
-export const neighborhoodApi = {
-  getTopics: (): Promise<Topic[]> => {
-    return Promise.resolve([
-      { id: '1', name: '遛狗心得', posts: 156, participants: 89, emoji: '🐕' },
-      { id: '2', name: '美食分享', posts: 234, participants: 123, emoji: '🍜' },
-      { id: '3', name: '带娃经验', posts: 189, participants: 67, emoji: '👶' },
-      { id: '4', name: '二手闲置', posts: 456, participants: 234, emoji: '📦' }
-    ])
-  },
 
-  getChatRooms: (): Promise<ChatRoom[]> => {
-    return Promise.resolve([
-      { id: '1', name: '宝爸宝妈群', emoji: '👶', description: '育儿经验分享', members: 234, today_messages: 89, bg_color: '#FFE0B2' },
-      { id: '2', name: '宠物交流群', emoji: '🐕', description: '遛狗、宠物用品', members: 189, today_messages: 67, bg_color: '#C8E6C9' },
-      { id: '3', name: '美食烹饪群', emoji: '🍳', description: '私房菜、烘焙', members: 312, today_messages: 123, bg_color: '#BBDEFB' },
-      { id: '4', name: '运动健身群', emoji: '🏃', description: '跑步、瑜伽、健身', members: 145, today_messages: 45, bg_color: '#F8BBD9' }
-    ])
-  },
-
-  getInterestGroups: (): Promise<InterestGroup[]> => {
-    return Promise.resolve([
-      { id: '1', name: '萌宠联盟', members: 234, emoji: '🐕', bg_color: '#E8F5E9', is_joined: true },
-      { id: '2', name: '美食烹饪', members: 456, emoji: '🍳', bg_color: '#FFF3E0', is_joined: false },
-      { id: '3', name: '运动健身', members: 189, emoji: '🏃', bg_color: '#E3F2FD', is_joined: true },
-      { id: '4', name: '读书会', members: 123, emoji: '📚', bg_color: '#FCE4EC', is_joined: false },
-      { id: '5', name: '手工DIY', members: 167, emoji: '🎨', bg_color: '#F3E5F5', is_joined: false },
-      { id: '6', name: '绿植养护', members: 98, emoji: '🌱', bg_color: '#E0F2F1', is_joined: false }
-    ])
-  },
-
-  joinGroup: (groupId: string): Promise<{ success: boolean }> => {
-    return Promise.resolve({ success: true })
-  },
-
-  leaveGroup: (groupId: string): Promise<{ success: boolean }> => {
-    return Promise.resolve({ success: true })
-  }
-}

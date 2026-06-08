@@ -1,13 +1,5 @@
 <template>
-  <!-- 功能暂未开放提示 -->
-  <div class="blocked-overlay" v-if="isBlocked">
-    <div class="blocked-content">
-      <span class="blocked-icon">🔒</span>
-      <span class="blocked-text">此功能暂未开放，敬请期待</span>
-    </div>
-  </div>
-
-  <div class="page" v-else>
+  <div class="page">
     <div class="status-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
       <div class="status-content">
         <div class="location" @click="chooseLocation">
@@ -22,7 +14,6 @@
       </div>
     </div>
 
-    <!-- 下拉刷新指示器 -->
     <div v-if="showRefreshIndicator" class="refresh-indicator" :style="{ top: (statusBarHeight + 60) + 'px' }">
       <div class="refresh-content">
         <div class="loading-spinner" :class="{ spinning: refreshing }"></div>
@@ -30,181 +21,168 @@
       </div>
     </div>
 
-    <div
-      class="content"
-      :style="{ paddingTop: (statusBarHeight + 60) + 'px' }"
-      @touchstart="onTouchStart"
-      @touchmove="onTouchMove"
-      @touchend="onTouchEnd"
-    >
-      <div class="banner-section">
-        <div class="banner-swiper" @touchstart="onBannerTouchStart" @touchmove="onBannerTouchMove" @touchend="onBannerTouchEnd">
-          <div
-            class="banner-item"
-            v-for="(banner, index) in banners"
-            :key="index"
-            :class="{ active: currentBanner === index, prev: currentBanner === (index + 1) % banners.length, next: currentBanner === (index - 1 + banners.length) % banners.length }"
-            :style="{ background: banner.bgColor, transform: getBannerTransform(index) }"
-          >
-            <div class="banner-content">
-              <span class="banner-title">{{ banner.title }}</span>
-              <span class="banner-desc">{{ banner.desc }}</span>
-            </div>
-          </div>
-          <!-- 轮播指示器 -->
-          <div class="banner-dots">
-            <div
-              v-for="(banner, index) in banners"
-              :key="index"
-              class="banner-dot"
-              :class="{ active: currentBanner === index }"
-              @click.stop="goToBanner(index)"
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="quick-actions">
-        <div
-          class="quick-item"
-          v-for="action in quickActions"
-          :key="action.id"
-          @click="handleQuickAction(action)"
-        >
-          <div class="quick-icon" :style="{ background: action.bgColor }">
-            <span>{{ action.icon }}</span>
-          </div>
-          <span class="quick-text">{{ action.name }}</span>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">
-          <span class="section-title">🔥 热门活动</span>
-          <span class="section-more" @click="goToActivities">查看更多 ›</span>
-        </div>
-        <div class="activity-scroll">
-          <div
-            class="activity-card"
-            v-for="activity in hotActivities"
-            :key="activity.id"
-            @click="goToActivityDetail(activity.id)"
-          >
-            <div class="activity-cover" :style="{ background: activity.coverBg }">
-              <span class="activity-emoji">{{ activity.emoji }}</span>
-            </div>
-            <div class="activity-info">
-              <span class="activity-name">{{ activity.name }}</span>
-              <div class="activity-meta">
-                <span class="activity-time">{{ activity.time }}</span>
-                <span class="activity-join">{{ activity.joined }}人参与</span>
+    <div class="content" :style="{ paddingTop: (statusBarHeight + 60) + 'px' }" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
+      <div class="page-wrapper">
+        <div class="banner-section">
+          <div class="banner-swiper" @touchstart="onBannerTouchStart" @touchmove="onBannerTouchMove" @touchend="onBannerTouchEnd">
+            <div class="banner-item" v-for="(banner, index) in banners" :key="index" :class="{ active: currentBanner === index, prev: currentBanner === (index + 1) % banners.length, next: currentBanner === (index - 1 + banners.length) % banners.length }" :style="{ background: banner.bgColor, transform: getBannerTransform(index) }">
+              <div class="banner-content">
+                <span class="banner-title">{{ banner.title }}</span>
+                <span class="banner-desc">{{ banner.desc }}</span>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">
-          <span class="section-title">📖 邻里动态</span>
-        </div>
-
-        <div v-if="loading && feedList.length === 0" class="loading-container">
-          <div class="skeleton-card" v-for="i in 3" :key="i">
-            <div class="skeleton-header">
-              <div class="skeleton-avatar"></div>
-              <div class="skeleton-lines">
-                <div class="skeleton-line short"></div>
-                <div class="skeleton-line tiny"></div>
-              </div>
+            <div class="banner-dots">
+              <div v-for="(banner, index) in banners" :key="index" class="banner-dot" :class="{ active: currentBanner === index }" @click.stop="goToBanner(index)"></div>
             </div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line medium"></div>
           </div>
         </div>
 
-        <div v-else-if="error && feedList.length === 0" class="error-container">
-          <span class="error-icon">😢</span>
-          <span class="error-text">{{ error }}</span>
-          <div class="retry-btn" @click="onRefresh">
-            <span>重试</span>
+        <div class="quick-actions">
+          <div class="quick-item" v-for="action in quickActions" :key="action.id" @click="handleQuickAction(action)">
+            <div class="quick-icon" :style="{ background: action.bgColor }">
+              <span>{{ action.icon }}</span>
+            </div>
+            <span class="quick-text">{{ action.name }}</span>
           </div>
         </div>
 
-        <div v-else class="feed-list">
-          <div
-            class="feed-card animate-fadeIn"
-            v-for="(post, index) in feedList"
-            :key="post.id"
-            :style="{ animationDelay: (index * 0.1) + 's' }"
-          >
-            <div class="feed-header">
-              <img
-                class="feed-avatar"
-                :src="post.user?.avatar || 'https://via.placeholder.com/40'"
-              />
-              <div class="feed-user-info">
-                <span class="feed-username">{{ post.user?.nickname || '邻居' }}</span>
-                <div class="feed-meta">
-                  <span class="feed-time">{{ formatTime(post.created_at) }}</span>
-                  <span v-if="post.location" class="feed-location">• {{ post.location }}</span>
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">🔥 热门活动</span>
+            <span class="section-more" @click="goToActivities">查看更多 ›</span>
+          </div>
+          <div class="activity-scroll">
+            <div class="activity-card" v-for="activity in hotActivities" :key="activity.id" @click="goToActivityDetail(activity.id)">
+              <div class="activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
+                <span class="activity-emoji">{{ getActivityEmoji(activity.category) }}</span>
+              </div>
+              <div class="activity-info">
+                <span class="activity-name">{{ activity.title }}</span>
+                <div class="activity-meta">
+                  <span class="activity-time">{{ formatShortTime(activity.start_time) }}</span>
+                  <span class="activity-join">{{ activity.current_participants }}人参与</span>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div class="feed-content">
-              <span class="feed-text">{{ post.content }}</span>
-              <div v-if="post.images && post.images.length > 0" class="feed-images" :class="'images-' + post.images.length">
-                <img
-                  class="feed-image"
-                  v-for="(img, imgIndex) in post.images"
-                  :key="imgIndex"
-                  :src="img"
-                  @click="previewImage(post.images, imgIndex)"
-                />
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">🎯 近期活动</span>
+            <span class="section-more" @click="goToActivities">查看更多 ›</span>
+          </div>
+          <div class="recent-activity-scroll">
+            <div class="recent-activity-card" v-for="activity in recentActivities" :key="activity.id" @click="goToActivityDetail(activity.id)">
+              <div class="recent-activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
+                <span class="recent-activity-icon">{{ getActivityEmoji(activity.category) }}</span>
+                <div class="recent-activity-badge">即将开始</div>
               </div>
-            </div>
-
-            <div class="feed-actions">
-              <div
-                class="feed-action"
-                :class="{ liked: post.is_liked }"
-                @click="likePost(post, $event)"
-              >
-                <span class="action-icon" :class="{ 'heart-beat': post.is_liked }">{{ post.is_liked ? '❤️' : '🤍' }}</span>
-                <span class="action-count">{{ post.like_count || 0 }}</span>
-              </div>
-              <div class="feed-action" @click="showComments(post)">
-                <span class="action-icon">💬</span>
-                <span class="action-count">{{ post.comment_count || 0 }}</span>
-              </div>
-              <div class="feed-action" @click="sharePost(post)">
-                <span class="action-icon">🔗</span>
-                <span class="action-count">分享</span>
+              <div class="recent-activity-content">
+                <span class="recent-activity-name">{{ activity.title }}</span>
+                <div class="recent-activity-info">
+                  <div class="recent-activity-info-item">
+                    <span class="info-icon">📅</span>
+                    <span class="info-text">{{ formatFullDate(activity.start_time) }}</span>
+                  </div>
+                </div>
+                <div class="recent-activity-info">
+                  <div class="recent-activity-info-item">
+                    <span class="info-icon">📍</span>
+                    <span class="info-text">{{ activity.location }}</span>
+                  </div>
+                </div>
+                <div class="recent-activity-footer">
+                  <div class="recent-activity-participants">
+                    <span class="participant-icon">👥</span>
+                    <span class="participant-count">{{ activity.current_participants }}人已报名</span>
+                  </div>
+                  <div class="recent-activity-join-btn">立即报名</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div v-if="hasMore && feedList.length > 0" class="load-more">
-          <span v-if="!loadingMore" @click="loadMorePosts">加载更多</span>
-          <div v-else class="loading-more">
-            <div class="loading-spinner small"></div>
-            <span>加载中...</span>
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">📖 邻里动态</span>
           </div>
-        </div>
 
-        <div v-if="!hasMore && feedList.length > 0" class="no-more">
-          <span>— 没有更多了 —</span>
-        </div>
+          <div v-if="loading && feedList.length === 0" class="loading-container">
+            <div class="skeleton-card" v-for="i in 3" :key="i">
+              <div class="skeleton-header">
+                <div class="skeleton-avatar"></div>
+                <div class="skeleton-lines">
+                  <div class="skeleton-line short"></div>
+                  <div class="skeleton-line tiny"></div>
+                </div>
+              </div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line medium"></div>
+            </div>
+          </div>
 
-        <div class="safe-area-bottom"></div>
+          <div v-else-if="error && feedList.length === 0" class="error-container">
+            <span class="error-icon">😢</span>
+            <span class="error-text">{{ error }}</span>
+            <div class="retry-btn" @click="onRefresh">
+              <span>重试</span>
+            </div>
+          </div>
+
+          <div v-else class="feed-list">
+            <div class="feed-card animate-fadeIn" v-for="(post, index) in feedList" :key="post.id" :style="{ animationDelay: (index * 0.1) + 's' }">
+              <div class="feed-header">
+                <img class="feed-avatar" :src="post.user?.avatar || 'https://via.placeholder.com/40'" />
+                <div class="feed-user-info">
+                  <span class="feed-username">{{ post.user?.nickname || '邻居' }}</span>
+                  <div class="feed-meta">
+                    <span class="feed-time">{{ formatTime(post.created_at) }}</span>
+                    <span v-if="post.location" class="feed-location">• {{ post.location }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="feed-content">
+                <span class="feed-text">{{ post.content }}</span>
+                <div v-if="post.images && post.images.length > 0" class="feed-images" :class="'images-' + post.images.length">
+                  <img class="feed-image" v-for="(img, imgIndex) in post.images" :key="imgIndex" :src="img" @click="previewImage(post.images, imgIndex)" />
+                </div>
+              </div>
+
+              <div class="feed-actions">
+                <div class="feed-action" :class="{ liked: post.is_liked }" @click="likePost(post, $event)">
+                  <span class="action-icon" :class="{ 'heart-beat': post.is_liked }">{{ post.is_liked ? '❤️' : '🤍' }}</span>
+                  <span class="action-count">{{ post.like_count || 0 }}</span>
+                </div>
+                <div class="feed-action" @click="showComments(post)">
+                  <span class="action-icon">💬</span>
+                  <span class="action-count">{{ post.comment_count || 0 }}</span>
+                </div>
+                <div class="feed-action" @click="sharePost(post)">
+                  <span class="action-icon">🔗</span>
+                  <span class="action-count">分享</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="hasMore && feedList.length > 0" class="load-more">
+            <span v-if="!loadingMore" @click="loadMorePosts">加载更多</span>
+            <div v-else class="loading-more">
+              <div class="loading-spinner small"></div>
+              <span>加载中...</span>
+            </div>
+          </div>
+
+          <div v-if="!hasMore && feedList.length > 0" class="no-more">
+            <span>— 没有更多了 —</span>
+          </div>
+
+          <div class="safe-area-bottom"></div>
+        </div>
       </div>
-    </div>
-
-    <div class="fab-btn" @click="goToCreate">
-      <span class="fab-icon">✏️</span>
-      <span class="fab-text">发布</span>
     </div>
 
     <div v-if="showCommentModal" class="comment-mask" @click="hideComments">
@@ -223,10 +201,7 @@
             <span class="empty-text">暂无评论，快来抢沙发吧！</span>
           </div>
           <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
-            <img
-              class="comment-avatar"
-              :src="comment.user?.avatar || 'https://via.placeholder.com/32'"
-            />
+            <img class="comment-avatar" :src="comment.user?.avatar || 'https://via.placeholder.com/36'" />
             <div class="comment-content">
               <span class="comment-user">{{ comment.user?.nickname || '邻居' }}</span>
               <span class="comment-text">{{ comment.content }}</span>
@@ -236,21 +211,25 @@
         </div>
 
         <div class="comment-input-wrapper">
-          <input
-            class="comment-input"
-            v-model="commentText"
-            placeholder="说点什么..."
-            :disabled="!isLoggedIn"
-            @keyup.enter="submitComment"
-          />
-          <div
-            class="comment-submit"
-            :class="{ disabled: !commentText.trim() || !isLoggedIn }"
-            @click="submitComment"
-          >
+          <input class="comment-input" v-model="commentText" placeholder="说点什么..." :disabled="!isLoggedIn" @keyup.enter="submitComment" />
+          <div class="comment-submit" :class="{ disabled: !commentText.trim() || !isLoggedIn }" @click="submitComment">
             <span>发送</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div v-if="showImagePreview" class="image-preview-mask" @click="closeImagePreview">
+      <div class="image-preview-container" @click.stop>
+        <div class="image-preview-close" @click="closeImagePreview">✕</div>
+        <div class="image-preview-swiper" @touchstart="onImagePreviewTouchStart" @touchmove="onImagePreviewTouchMove" @touchend="onImagePreviewTouchEnd">
+          <div class="image-preview-wrapper" :style="{ transform: 'translateX(' + (-currentPreviewIndex * 100) + '%)' }">
+            <div v-for="(img, index) in previewImages" :key="index" class="image-preview-item">
+              <img :src="img" class="image-preview-img" />
+            </div>
+          </div>
+        </div>
+        <div class="image-preview-counter">{{ currentPreviewIndex + 1 }} / {{ previewImages.length }}</div>
       </div>
     </div>
   </div>
@@ -258,13 +237,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { postsApi, type Post, type Comment } from '../../utils/api'
+import { postsApi, activitiesApi, type Post, type Comment, type Activity } from '../../utils/api'
 import { useAuth } from '../../store'
 import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
-
-// 该页面已被屏蔽
-const isBlocked = true
+import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
 
 const { initAuth, isLoggedIn } = useAuth()
 
@@ -280,46 +257,33 @@ const currentBanner = ref(0)
 let bannerTimer: any = null
 const showRefreshIndicator = ref(false)
 
-// 下拉刷新相关
 let touchStartY = 0
 let touchMoveY = 0
 let pullDistance = 0
 
-// 轮播图滑动相关
 let bannerTouchStartX = 0
 let bannerTouchMoveX = 0
 
+const showImagePreview = ref(false)
+const previewImages = ref<string[]>([])
+const currentPreviewIndex = ref(0)
+let imagePreviewTouchStartX = 0
+let imagePreviewTouchMoveX = 0
+
 const banners = ref([
-  {
-    title: '周末邻里集市',
-    desc: '欢迎来摆摊、淘宝、串门',
-    bgColor: 'linear-gradient(135deg, #FF8C42, #FFB380)'
-  },
-  {
-    title: '老人关怀计划',
-    desc: '志愿者招募中，邀请您加入',
-    bgColor: 'linear-gradient(135deg, #4CAF50, #81C784)'
-  },
-  {
-    title: '社区创业沙龙',
-    desc: '把兴趣变成生意，邻居先成为客户',
-    bgColor: 'linear-gradient(135deg, #2196F3, #64B5F6)'
-  }
+  { title: '周末邻里集市', desc: '欢迎来摆摊、淘宝、串门', bgColor: 'linear-gradient(135deg, #FF8C42, #FFB380)' },
+  { title: '老人关怀计划', desc: '志愿者招募中，邀请您加入', bgColor: 'linear-gradient(135deg, #4CAF50, #81C784)' },
+  { title: '社区创业沙龙', desc: '把兴趣变成生意，邻居先成为客户', bgColor: 'linear-gradient(135deg, #2196F3, #64B5F6)' }
 ])
 
 const quickActions = ref([
-  { id: 'neighbor', name: '社区客厅', icon: '🏠', bgColor: '#FFF3E0', path: '/pages/neighborhood/index' },
-  { id: 'help', name: 'AI互助', icon: '🤝', bgColor: '#E8F5E9', path: '/pages/ai-helper/index' },
-  { id: 'business', name: '创业', icon: '💰', bgColor: '#E3F2FD', path: '/pages/business/index' },
-  { id: 'elderly', name: '老人关怀', icon: '👴', bgColor: '#FCE4EC', path: '/pages/elderly/index' }
+  { id: 'health', name: '健康打卡', icon: '❤️', bgColor: '#E8F5E9', path: '/pages/health/index' },
+  { id: 'help', name: '互助', icon: '🤝', bgColor: '#FFF3E0', path: '/pages/ai-helper/index' }
 ])
 
-const hotActivities = ref([
-  { id: '1', name: '周末亲子烘焙', emoji: '🧁', time: '本周六 14:00', joined: 23, coverBg: '#FFE0B2' },
-  { id: '2', name: '邻里足球赛', emoji: '⚽', time: '本周日 09:00', joined: 45, coverBg: '#C8E6C9' },
-  { id: '3', name: '便民义诊', emoji: '🏥', time: '下周三 08:00', joined: 67, coverBg: '#BBDEFB' },
-  { id: '4', name: '广场舞活动', emoji: '💃', time: '每天 19:00', joined: 89, coverBg: '#F8BBD9' }
-])
+const activities = ref<Activity[]>([])
+const hotActivities = ref<Activity[]>([])
+const recentActivities = ref<Activity[]>([])
 
 const feedList = ref<Post[]>([])
 
@@ -329,7 +293,6 @@ const comments = ref<Comment[]>([])
 const commentText = ref('')
 const commentLoading = ref(false)
 
-// 轮播图变换
 function getBannerTransform(index: number) {
   const diff = index - currentBanner.value
   return `translateX(${diff * 100}%)`
@@ -354,17 +317,14 @@ function onBannerTouchEnd() {
   const diff = bannerTouchStartX - bannerTouchMoveX
   if (Math.abs(diff) > 50) {
     if (diff > 0) {
-      // 左滑 - 下一张
       currentBanner.value = (currentBanner.value + 1) % banners.value.length
     } else {
-      // 右滑 - 上一张
       currentBanner.value = (currentBanner.value - 1 + banners.value.length) % banners.value.length
     }
   }
   startBannerAutoPlay()
 }
 
-// 下拉刷新触摸事件
 function onTouchStart(e: TouchEvent) {
   touchStartY = e.touches[0].clientY
   touchMoveY = touchStartY
@@ -374,7 +334,6 @@ function onTouchMove(e: TouchEvent) {
   touchMoveY = e.touches[0].clientY
   pullDistance = touchMoveY - touchStartY
 
-  // 只有顶部区域下拉才显示刷新指示器
   if (pullDistance > 30 && !refreshing.value) {
     showRefreshIndicator.value = true
   }
@@ -421,12 +380,29 @@ async function fetchPosts(page: number = 1, isRefresh: boolean = false) {
   }
 }
 
+async function fetchActivities() {
+  try {
+    const response = await activitiesApi.getActivities({ limit: 20 })
+    activities.value = response.items
+    
+    hotActivities.value = [...activities.value]
+      .sort((a, b) => b.current_participants - a.current_participants)
+      .slice(0, 4)
+    
+    recentActivities.value = [...activities.value]
+      .sort((a, b) => a.start_time - b.start_time)
+      .slice(0, 3)
+  } catch (err) {
+    console.error('获取活动失败:', err)
+  }
+}
+
 async function onRefresh() {
   refreshing.value = true
   showRefreshIndicator.value = true
   currentPage.value = 1
   hasMore.value = true
-  await fetchPosts(1, true)
+  await Promise.all([fetchPosts(1, true), fetchActivities()])
 }
 
 async function loadMorePosts() {
@@ -438,7 +414,8 @@ async function loadMorePosts() {
 
 async function likePost(post: Post, event?: MouseEvent) {
   if (!isLoggedIn.value) {
-    toastError('请先登录')
+    setLoginRedirect(window.location.hash.replace('#', '') || '/pages/index/index')
+    showLoginGuide()
     return
   }
 
@@ -448,7 +425,6 @@ async function likePost(post: Post, event?: MouseEvent) {
   const originalLiked = post.is_liked
   const originalCount = post.like_count
 
-  // 乐观更新
   feedList.value[index].is_liked = !originalLiked
   feedList.value[index].like_count = originalCount + (!originalLiked ? 1 : -1)
 
@@ -457,7 +433,6 @@ async function likePost(post: Post, event?: MouseEvent) {
     feedList.value[index].is_liked = response.liked
     feedList.value[index].like_count = response.like_count
   } catch (err) {
-    // 回滚
     feedList.value[index].is_liked = originalLiked
     feedList.value[index].like_count = originalCount
     toastError('操作失败')
@@ -492,10 +467,11 @@ async function loadComments(postId: string) {
 }
 
 async function submitComment() {
-  if (!commentText.value.trim() || !isLoggedIn.value || !currentPost.value) return
+  if (!commentText.value.trim() || !currentPost.value) return
 
   if (!isLoggedIn.value) {
-    toastError('请先登录')
+    setLoginRedirect(window.location.hash.replace('#', '') || '/pages/index/index')
+    showLoginGuide()
     return
   }
 
@@ -544,6 +520,66 @@ function formatTime(timestamp: number | string): string {
   }
 }
 
+function formatShortTime(timestamp: number) {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diff = date.getTime() - now.getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  
+  if (days === 0) {
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `今天 ${hours}:${minutes}`
+  } else if (days === 1) {
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `明天 ${hours}:${minutes}`
+  } else if (days > 0 && days < 7) {
+    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${weekdays[date.getDay()]} ${hours}:${minutes}`
+  } else {
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${month}月${day}日`
+  }
+}
+
+function formatFullDate(timestamp: number) {
+  const date = new Date(timestamp)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  const weekday = weekdays[date.getDay()]
+  return `${year}年${month}月${day}日 ${weekday} ${hours}:${minutes}`
+}
+
+function getActivityEmoji(category: string) {
+  const map: Record<string, string> = {
+    sports: '⚽',
+    culture: '🎨',
+    charity: '💝',
+    party: '🎉',
+    other: '📌'
+  }
+  return map[category] || '📌'
+}
+
+function getActivityCoverBg(category: string) {
+  const map: Record<string, string> = {
+    sports: '#C8E6C9',
+    culture: '#F3E5F5',
+    charity: '#E8F5E9',
+    party: '#FFE0B2',
+    other: '#E3F2FD'
+  }
+  return map[category] || '#F5F5F0'
+}
+
 function chooseLocation() {
   toastInfo('选择位置功能开发中')
 }
@@ -553,15 +589,19 @@ function goToSearch() {
 }
 
 function handleQuickAction(action: any) {
-  switchTab(action.path)
+  if (action.path === '/pages/health/index') {
+    navigateTo(action.path)
+  } else {
+    switchTab(action.path)
+  }
 }
 
 function goToActivityDetail(id: string) {
-  toastInfo('活动详情开发中')
+  navigateTo(`/pages/activities/detail?id=${id}`)
 }
 
 function goToActivities() {
-  switchTab('/pages/neighborhood/index')
+  navigateTo('/pages/activities/index')
 }
 
 function sharePost(post: Post) {
@@ -581,11 +621,107 @@ function sharePost(post: Post) {
 }
 
 function previewImage(images: string[], index: number) {
-  toastInfo('预览图片功能开发中')
+  previewImages.value = images
+  currentPreviewIndex.value = index
+  showImagePreview.value = true
+  document.body.style.overflow = 'hidden'
 }
 
-function goToCreate() {
-  navigateTo('/pages/post/create')
+function closeImagePreview() {
+  showImagePreview.value = false
+  document.body.style.overflow = ''
+}
+
+function onImagePreviewTouchStart(e: TouchEvent) {
+  imagePreviewTouchStartX = e.touches[0].clientX
+}
+
+function onImagePreviewTouchMove(e: TouchEvent) {
+  imagePreviewTouchMoveX = e.touches[0].clientX
+}
+
+function onImagePreviewTouchEnd() {
+  const diff = imagePreviewTouchStartX - imagePreviewTouchMoveX
+  if (Math.abs(diff) > 50) {
+    if (diff > 0) {
+      if (currentPreviewIndex.value < previewImages.value.length - 1) {
+        currentPreviewIndex.value++
+      }
+    } else {
+      if (currentPreviewIndex.value > 0) {
+        currentPreviewIndex.value--
+      }
+    }
+  }
+}
+
+const communities = [
+  { id: 1, name: '阳光社区', lat: 31.2304, lng: 121.4737 },
+  { id: 2, name: '幸福家园', lat: 31.2345, lng: 121.4821 },
+  { id: 3, name: '和谐里', lat: 31.2289, lng: 121.4654 },
+  { id: 4, name: '温馨苑', lat: 31.2387, lng: 121.4912 },
+  { id: 5, name: '美好社区', lat: 31.2412, lng: 121.4589 },
+  { id: 6, name: '康乐家园', lat: 31.2256, lng: 121.4798 }
+]
+
+function getLocation() {
+  if ('geolocation' in navigator) {
+    toastInfo('正在定位...')
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        console.log('定位成功:', position)
+        const nearestCommunity = findNearestCommunity(position.coords.latitude, position.coords.longitude)
+        communityName.value = nearestCommunity.name
+        toastSuccess(`已定位到${nearestCommunity.name}`)
+      },
+      (error) => {
+        console.error('定位失败:', error)
+        let errorMsg = '定位失败'
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMsg = '请允许获取位置信息'
+            break
+          case error.POSITION_UNAVAILABLE:
+            errorMsg = '无法获取位置信息'
+            break
+          case error.TIMEOUT:
+            errorMsg = '获取位置超时'
+            break
+        }
+        toastInfo(errorMsg)
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
+  } else {
+    toastInfo('您的浏览器不支持定位功能')
+  }
+}
+
+function findNearestCommunity(lat: number, lng: number) {
+  let nearest = communities[0]
+  let minDistance = Infinity
+  
+  for (const community of communities) {
+    const distance = getDistance(lat, lng, community.lat, community.lng)
+    if (distance < minDistance) {
+      minDistance = distance
+      nearest = community
+    }
+  }
+  
+  return nearest
+}
+
+function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLng/2) * Math.sin(dLng/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c
 }
 
 function startBannerAutoPlay() {
@@ -606,49 +742,23 @@ onMounted(() => {
   initAuth()
   statusBarHeight.value = 20
   loading.value = true
-  fetchPosts(1, true)
+  Promise.all([fetchPosts(1, true), fetchActivities()])
   startBannerAutoPlay()
+  getLocation()
 })
 
 onUnmounted(() => {
   stopBannerAutoPlay()
+  if (showImagePreview.value) {
+    document.body.style.overflow = ''
+  }
 })
 </script>
 
 <style scoped>
-/* 屏蔽提示样式 */
-.blocked-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--bg-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.blocked-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.blocked-icon {
-  font-size: 64px;
-}
-
-.blocked-text {
-  font-size: 16px;
-  color: var(--text-secondary);
-}
-
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 .status-bar {
@@ -656,20 +766,25 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
-  background: linear-gradient(135deg, #0066CC, #0052A3);
+  z-index: var(--z-fixed);
+  background: var(--color-primary-gradient);
   padding-bottom: 12px;
 }
 
 .status-content {
   padding: 0 var(--spacing-lg);
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .location {
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-sm);
   cursor: pointer;
+  min-height: 44px;
 }
 
 .location-icon {
@@ -677,9 +792,9 @@ onUnmounted(() => {
 }
 
 .location-text {
-  color: white;
+  color: var(--color-text-white);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   margin-left: 4px;
 }
 
@@ -693,9 +808,16 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   background: rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   padding: 10px 16px;
   cursor: pointer;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  min-height: var(--touch-min-size);
+}
+
+.search-bar:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .search-icon {
@@ -708,12 +830,11 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
-/* 下拉刷新指示器 */
 .refresh-indicator {
   position: fixed;
   left: 0;
   right: 0;
-  z-index: 99;
+  z-index: var(--z-fixed);
   display: flex;
   justify-content: center;
   padding: 12px 0;
@@ -736,9 +857,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   background: rgba(0, 0, 0, 0.7);
-  color: white;
+  color: var(--color-text-white);
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: 13px;
 }
 
@@ -746,7 +867,7 @@ onUnmounted(() => {
   width: 20px;
   height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border-top-color: var(--color-text-white);
   border-radius: 50%;
 }
 
@@ -761,17 +882,25 @@ onUnmounted(() => {
 .content {
   min-height: 100vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.page-wrapper {
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .banner-section {
   padding: var(--spacing-lg);
+  padding-bottom: var(--spacing-xl);
 }
 
 .banner-swiper {
-  height: 120px;
-  border-radius: var(--radius-lg);
+  height: 140px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   position: relative;
 }
 
@@ -780,11 +909,11 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   width: 100%;
-  height: 120px;
+  height: 140px;
   padding: var(--spacing-xl);
   display: flex;
   align-items: center;
-  transition: transform 0.4s ease;
+  transition: transform 0.4s var(--transition-spring);
 }
 
 .banner-content {
@@ -793,9 +922,9 @@ onUnmounted(() => {
 }
 
 .banner-title {
-  color: white;
+  color: var(--color-text-white);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: var(--font-weight-bold);
   margin-bottom: var(--spacing-xs);
 }
 
@@ -804,7 +933,6 @@ onUnmounted(() => {
   font-size: 13px;
 }
 
-/* 轮播指示器 */
 .banner-dots {
   position: absolute;
   bottom: 10px;
@@ -820,24 +948,46 @@ onUnmounted(() => {
   height: 6px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.5);
-  transition: all 0.3s;
+  transition: all 0.3s var(--transition-smooth);
   cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.banner-dot.active {
+.banner-dot::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s var(--transition-smooth);
+}
+
+.banner-dot.active::after {
   width: 18px;
-  border-radius: 3px;
-  background: white;
+  border-radius: var(--radius-full);
+  background: var(--color-text-white);
 }
 
 .quick-actions {
   display: flex;
-  justify-content: space-around;
-  padding: var(--spacing-lg);
-  background: var(--card-bg);
+  justify-content: center;
+  gap: var(--spacing-2xl);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  background: var(--color-bg-secondary);
   margin: 0 var(--spacing-lg);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-xl);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+}
+
+.quick-actions:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
 }
 
 .quick-item {
@@ -845,7 +995,8 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s var(--transition-smooth);
+  min-height: var(--touch-min-size);
 }
 
 .quick-item:active {
@@ -862,42 +1013,67 @@ onUnmounted(() => {
   font-size: 26px;
   margin-bottom: var(--spacing-sm);
   box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-spring);
+}
+
+.quick-item:hover .quick-icon {
+  transform: scale(1.08);
 }
 
 .quick-text {
   font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
 .section {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.section:first-of-type {
+  padding-top: 0;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  padding: 0 var(--spacing-lg);
+  box-sizing: content-box;
 }
 
 .section-title {
   font-size: 17px;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
 }
 
 .section-more {
   font-size: 14px;
-  color: #0066CC;
+  color: var(--color-primary);
   cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.section-more:hover {
+  color: var(--color-primary-dark);
 }
 
 .activity-scroll {
   overflow-x: auto;
   white-space: nowrap;
-  padding-bottom: 4px;
+  padding-bottom: var(--spacing-md);
   -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding-left: var(--spacing-lg);
+  padding-right: var(--spacing-lg);
 }
 
 .activity-scroll::-webkit-scrollbar {
@@ -906,14 +1082,21 @@ onUnmounted(() => {
 
 .activity-card {
   display: inline-block;
-  width: 150px;
-  margin-right: var(--spacing-md);
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
+  width: 160px;
+  margin-right: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-md);
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+.activity-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-4px);
 }
 
 .activity-card:active {
@@ -929,6 +1112,11 @@ onUnmounted(() => {
 
 .activity-emoji {
   font-size: 40px;
+  transition: transform var(--transition-spring);
+}
+
+.activity-card:hover .activity-emoji {
+  transform: scale(1.15);
 }
 
 .activity-info {
@@ -937,8 +1125,8 @@ onUnmounted(() => {
 
 .activity-name {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 4px;
 }
@@ -950,38 +1138,180 @@ onUnmounted(() => {
 
 .activity-time {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .activity-join {
   font-size: 11px;
-  color: #0066CC;
-  font-weight: 500;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
-/* 骨架屏加载 */
+.recent-activity-scroll {
+  display: flex;
+  gap: var(--spacing-lg);
+  overflow-x: auto;
+  padding-bottom: var(--spacing-md);
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding-left: var(--spacing-lg);
+  padding-right: var(--spacing-lg);
+}
+
+.recent-activity-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.recent-activity-card {
+  flex-shrink: 0;
+  width: 220px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  scroll-snap-align: start;
+}
+
+.recent-activity-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-4px);
+}
+
+.recent-activity-card:active {
+  transform: scale(0.97);
+}
+
+.recent-activity-cover {
+  position: relative;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recent-activity-icon {
+  font-size: 48px;
+  transition: transform var(--transition-spring);
+}
+
+.recent-activity-card:hover .recent-activity-icon {
+  transform: scale(1.12);
+}
+
+.recent-activity-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--color-error);
+  color: var(--color-text-white);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+}
+
+.recent-activity-content {
+  padding: var(--spacing-md);
+}
+
+.recent-activity-name {
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: var(--spacing-sm);
+}
+
+.recent-activity-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.recent-activity-info-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.info-icon {
+  font-size: 12px;
+}
+
+.info-text {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.recent-activity-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.recent-activity-participants {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.participant-icon {
+  font-size: 14px;
+}
+
+.participant-count {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.recent-activity-join-btn {
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  transition: transform 0.15s, box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.recent-activity-join-btn:active {
+  transform: scale(0.95);
+  box-shadow: none;
+}
+
 .skeleton-card {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
 }
 
 .skeleton-header {
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
 }
 
 .skeleton-avatar {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.8s ease-in-out infinite;
   margin-right: var(--spacing-md);
+  flex-shrink: 0;
 }
 
 .skeleton-lines {
@@ -990,23 +1320,25 @@ onUnmounted(() => {
 
 .skeleton-line {
   height: 14px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 4px;
-  margin-bottom: 8px;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .skeleton-line.short {
-  width: 40%;
+  width: 45%;
+  height: 12px;
 }
 
 .skeleton-line.medium {
-  width: 60%;
+  width: 70%;
+  height: 16px;
 }
 
 .skeleton-line.tiny {
-  width: 30%;
+  width: 25%;
   height: 10px;
 }
 
@@ -1018,20 +1350,31 @@ onUnmounted(() => {
 .feed-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
+  padding: 0 var(--spacing-lg);
+  box-sizing: border-box;
 }
 
 .feed-card {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
   box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+}
+
+.feed-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.feed-card:active {
+  transform: scale(0.995);
 }
 
 .feed-header {
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
 }
 
 .feed-avatar {
@@ -1039,7 +1382,7 @@ onUnmounted(() => {
   height: 44px;
   border-radius: 50%;
   margin-right: var(--spacing-md);
-  background: #f0f0f0;
+  background: var(--color-bg-tertiary);
   object-fit: cover;
 }
 
@@ -1049,8 +1392,8 @@ onUnmounted(() => {
 
 .feed-username {
   font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 2px;
 }
@@ -1063,12 +1406,12 @@ onUnmounted(() => {
 
 .feed-time {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .feed-location {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .feed-content {
@@ -1077,7 +1420,7 @@ onUnmounted(() => {
 
 .feed-text {
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   line-height: 1.6;
 }
 
@@ -1113,14 +1456,19 @@ onUnmounted(() => {
   width: 100%;
   aspect-ratio: 1;
   border-radius: var(--radius-md);
-  background: #f0f0f0;
+  background: var(--color-bg-tertiary);
   object-fit: cover;
   cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.feed-image:hover {
+  transform: scale(1.02);
 }
 
 .feed-actions {
   display: flex;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border-light);
   padding-top: var(--spacing-md);
 }
 
@@ -1132,7 +1480,13 @@ onUnmounted(() => {
   gap: 6px;
   padding: 6px 0;
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: transform 0.15s, background-color var(--transition-fast);
+  border-radius: var(--radius-md);
+  min-height: var(--touch-min-size);
+}
+
+.feed-action:hover {
+  background-color: var(--color-primary-soft);
 }
 
 .feed-action:active {
@@ -1140,12 +1494,12 @@ onUnmounted(() => {
 }
 
 .feed-action.liked .action-icon {
-  color: #E63946;
+  color: var(--color-error);
 }
 
 .action-icon {
   font-size: 18px;
-  transition: transform 0.3s;
+  transition: transform 0.3s var(--transition-spring);
 }
 
 .action-icon.heart-beat {
@@ -1161,8 +1515,8 @@ onUnmounted(() => {
 
 .action-count {
   font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
 .loading-container,
@@ -1171,14 +1525,14 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xxl) 0;
+  padding: var(--spacing-2xl) 0;
 }
 
 .loading-spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid var(--border-color);
-  border-top-color: #0066CC;
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-primary-soft);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: var(--spacing-md);
@@ -1187,6 +1541,7 @@ onUnmounted(() => {
 .loading-spinner.small {
   width: 24px;
   height: 24px;
+  border-width: 2px;
 }
 
 .error-icon {
@@ -1196,32 +1551,54 @@ onUnmounted(() => {
 
 .error-text {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   margin-bottom: var(--spacing-lg);
 }
 
 .retry-btn {
   padding: var(--spacing-sm) var(--spacing-xl);
-  background: #0066CC;
-  color: white;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
   border-radius: var(--radius-lg);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  min-height: var(--touch-min-size);
+  display: flex;
+  align-items: center;
+}
+
+.retry-btn:active {
+  transform: scale(0.98);
+  box-shadow: none;
 }
 
 .load-more,
 .no-more {
   text-align: center;
-  padding: var(--spacing-lg);
-  color: var(--text-muted);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  color: var(--color-text-tertiary);
   font-size: 14px;
+}
+
+.safe-area-bottom {
+  height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
 }
 
 .load-more span {
   cursor: pointer;
-  color: #0066CC;
-  font-weight: 500;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  transition: color var(--transition-fast);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.load-more span:hover {
+  color: var(--color-primary-dark);
 }
 
 .loading-more {
@@ -1237,19 +1614,20 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 200;
+  background: var(--color-bg-overlay);
+  z-index: var(--z-modal);
   display: flex;
   align-items: flex-end;
 }
 
 .comment-panel {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   width: 100%;
   max-height: 70vh;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow-2xl);
 }
 
 .comment-header {
@@ -1257,20 +1635,30 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .comment-title {
   font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .comment-close {
   font-size: 20px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   padding: 4px;
   cursor: pointer;
+  transition: color var(--transition-fast);
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-close:hover {
+  color: var(--color-text-secondary);
 }
 
 .comment-list {
@@ -1290,7 +1678,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--spacing-xxl) 0;
+  padding: var(--spacing-2xl) 0;
 }
 
 .empty-icon {
@@ -1300,7 +1688,7 @@ onUnmounted(() => {
 
 .empty-text {
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .comment-item {
@@ -1313,7 +1701,7 @@ onUnmounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #f0f0f0;
+  background: var(--color-bg-tertiary);
   flex-shrink: 0;
   object-fit: cover;
 }
@@ -1324,15 +1712,15 @@ onUnmounted(() => {
 
 .comment-user {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 4px;
 }
 
 .comment-text {
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   line-height: 1.5;
   display: block;
   margin-bottom: 4px;
@@ -1340,59 +1728,68 @@ onUnmounted(() => {
 
 .comment-time {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .comment-input-wrapper {
   display: flex;
   gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--border-color);
-  padding-bottom: calc(var(--spacing-lg) + constant(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border-light);
   padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom));
 }
 
 .comment-input {
   flex: 1;
-  background: var(--bg-color);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: 14px;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 15px;
   border: none;
   outline: none;
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+  min-height: var(--touch-min-size);
+}
+
+.comment-input:focus {
+  background: var(--color-primary-soft);
+  box-shadow: 0 0 0 2px var(--color-primary-soft);
 }
 
 .comment-submit {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: #0066CC;
-  color: white;
-  border-radius: var(--radius-lg);
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  border-radius: var(--radius-xl);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: var(--font-weight-semibold);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  min-height: var(--touch-min-size);
 }
 
 .comment-submit:active {
   transform: scale(0.95);
+  box-shadow: none;
 }
 
 .comment-submit.disabled {
-  background: #B0C4DE;
+  background: var(--color-border-light);
   cursor: not-allowed;
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
+  animation: slideUp var(--transition-smooth) forwards;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -1400,33 +1797,311 @@ onUnmounted(() => {
   }
 }
 
-.fab-btn {
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.image-preview-mask {
   position: fixed;
-  right: var(--spacing-lg);
-  bottom: 90px;
-  z-index: 99;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, #FF8C42, #FF7733);
+  justify-content: center;
+}
+
+.image-preview-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
   color: white;
-  border-radius: 28px;
-  box-shadow: 0 4px 16px rgba(255, 140, 66, 0.4);
-  transition: all 0.2s;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  z-index: 1001;
+  transition: background-color 0.3s;
 }
 
-.fab-btn:active {
-  transform: scale(0.95);
+.image-preview-close:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
-.fab-icon {
-  font-size: 18px;
+.image-preview-swiper {
+  width: 100%;
+  height: 80vh;
+  overflow: hidden;
 }
 
-.fab-text {
-  font-size: 15px;
-  font-weight: 600;
+.image-preview-wrapper {
+  display: flex;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.image-preview-item {
+  min-width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.image-preview-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.image-preview-counter {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+/* ========================================
+   响应式优化
+   ======================================== */
+@media (min-width: 500px) {
+  .page-wrapper {
+    max-width: 500px;
+  }
+  
+  .status-content {
+    max-width: 500px;
+  }
+}
+
+@media (min-width: 768px) {
+  .page-wrapper {
+    max-width: 600px;
+  }
+  
+  .status-content {
+    max-width: 600px;
+  }
+  
+  .banner-section {
+    padding: var(--spacing-lg) var(--spacing-xl);
+  }
+  
+  .banner-swiper {
+    height: 160px;
+    border-radius: var(--radius-xl);
+  }
+  
+  .banner-item {
+    height: 160px;
+    padding: var(--spacing-2xl);
+  }
+  
+  .banner-title {
+    font-size: 22px;
+  }
+  
+  .banner-desc {
+    font-size: 15px;
+  }
+  
+  .quick-actions {
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    gap: var(--spacing-2xl);
+  }
+  
+  .quick-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 28px;
+  }
+  
+  .quick-text {
+    font-size: 13px;
+  }
+  
+  .section-header {
+    padding: 0;
+  }
+  
+  .activity-scroll {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-lg);
+    overflow-x: visible;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .activity-card {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+  
+  .activity-cover {
+    height: 100px;
+  }
+  
+  .activity-emoji {
+    font-size: 44px;
+  }
+  
+  .recent-activity-scroll {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-lg);
+    overflow-x: visible;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .recent-activity-card {
+    width: 100%;
+  }
+  
+  .section-title {
+    font-size: 18px;
+  }
+  
+  .feed-list {
+    padding: 0;
+  }
+  
+  .feed-card {
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-xl);
+  }
+  
+  .feed-avatar {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-wrapper {
+    max-width: 700px;
+  }
+  
+  .status-content {
+    max-width: 700px;
+  }
+  
+  .banner-section {
+    padding: var(--spacing-xl);
+  }
+  
+  .banner-swiper {
+    height: 180px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .quick-actions {
+    max-width: 700px;
+    margin: 0 auto var(--spacing-2xl);
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-2xl) var(--spacing-2xl);
+    gap: var(--spacing-3xl);
+  }
+  
+  .activity-scroll {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .recent-activity-scroll {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .section-header {
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .feed-list {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0;
+  }
+  
+  .feed-card {
+    padding: var(--spacing-2xl);
+  }
+}
+
+@media (min-width: 1440px) {
+  .page-wrapper {
+    max-width: 800px;
+  }
+  
+  .status-content {
+    max-width: 800px;
+  }
+  
+  .banner-swiper {
+    max-width: 800px;
+    height: 200px;
+  }
+  
+  .quick-actions {
+    max-width: 800px;
+    gap: var(--spacing-3xl);
+    padding: var(--spacing-2xl) var(--spacing-3xl);
+  }
+  
+  .section-header {
+    max-width: 800px;
+  }
+  
+  .activity-scroll {
+    max-width: 800px;
+  }
+  
+  .recent-activity-scroll {
+    max-width: 800px;
+  }
+  
+  .feed-list {
+    max-width: 800px;
+    padding: 0;
+  }
 }
 </style>

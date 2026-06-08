@@ -8,22 +8,28 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#FF8C42',
-          light: '#FFB380',
-          dark: '#E67730'
+          DEFAULT: '#FF6B35',
+          light: '#FF8A5C',
+          dark: '#E55A2B'
         },
         accent: {
-          DEFAULT: '#4CAF50',
-          light: '#81C784',
-          dark: '#388E3C'
+          DEFAULT: '#FFD93D',
+          light: '#FFE680',
+          dark: '#E6C21A'
         },
-        background: '#F5F5F0'
+        secondary: {
+          DEFAULT: '#4ECDC4',
+          light: '#6EDDD4',
+          dark: '#3BB5AD'
+        },
+        background: '#F8F9FD'
       },
       borderRadius: {
-        'sm': '8px',
-        'md': '12px',
+        'sm': '6px',
+        'md': '10px',
         'lg': '16px',
-        'xl': '24px'
+        'xl': '20px',
+        '2xl': '28px'
       }
     },
   },

@@ -13,13 +13,15 @@
         <div class="setting-list">
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">👁️</span>
+              <span class="setting-icon">👤</span>
               <div class="setting-text">
                 <span class="setting-name">个人资料可见</span>
                 <span class="setting-desc">允许其他用户查看您的个人资料</span>
               </div>
             </div>
-            <switch :checked="privacy.profileVisible" @change="(e: any) => privacy.profileVisible = e.detail.value" color="#FF8C42" />
+            <div class="toggle-switch" :class="{ active: privacy.profileVisible }" @click="privacy.profileVisible = !privacy.profileVisible">
+              <div class="toggle-thumb"></div>
+            </div>
           </div>
           <div class="setting-item">
             <div class="setting-info">
@@ -29,7 +31,9 @@
                 <span class="setting-desc">允许查看您的社区位置</span>
               </div>
             </div>
-            <switch :checked="privacy.locationVisible" @change="(e: any) => privacy.locationVisible = e.detail.value" color="#FF8C42" />
+            <div class="toggle-switch" :class="{ active: privacy.locationVisible }" @click="privacy.locationVisible = !privacy.locationVisible">
+              <div class="toggle-thumb"></div>
+            </div>
           </div>
           <div class="setting-item">
             <div class="setting-info">
@@ -39,7 +43,9 @@
                 <span class="setting-desc">允许其他用户查看您的任务完成记录</span>
               </div>
             </div>
-            <switch :checked="privacy.taskRecordVisible" @change="(e: any) => privacy.taskRecordVisible = e.detail.value" color="#FF8C42" />
+            <div class="toggle-switch" :class="{ active: privacy.taskRecordVisible }" @click="privacy.taskRecordVisible = !privacy.taskRecordVisible">
+              <div class="toggle-thumb"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -55,7 +61,9 @@
                 <span class="setting-desc">允许其他用户向您发送消息</span>
               </div>
             </div>
-            <switch :checked="privacy.allowContact" @change="(e: any) => privacy.allowContact = e.detail.value" color="#FF8C42" />
+            <div class="toggle-switch" :class="{ active: privacy.allowContact }" @click="privacy.allowContact = !privacy.allowContact">
+              <div class="toggle-thumb"></div>
+            </div>
           </div>
           <div class="setting-item">
             <div class="setting-info">
@@ -65,7 +73,9 @@
                 <span class="setting-desc">允许接收其他用户发布的任务邀请</span>
               </div>
             </div>
-            <switch :checked="privacy.acceptTaskInvite" @change="(e: any) => privacy.acceptTaskInvite = e.detail.value" color="#FF8C42" />
+            <div class="toggle-switch" :class="{ active: privacy.acceptTaskInvite }" @click="privacy.acceptTaskInvite = !privacy.acceptTaskInvite">
+              <div class="toggle-thumb"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -106,6 +116,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { toastSuccess, toastInfo } from '../../utils/toast'
+import { navigateBackSmart } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 
@@ -118,7 +129,7 @@ const privacy = ref({
 })
 
 const goBack = () => {
-  uni.navigateBack()
+  navigateBackSmart()
 }
 
 const clearCache = () => {
@@ -140,24 +151,63 @@ const saveSettings = () => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
+}
+
+/* 自定义开关 */
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: var(--color-border-light);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-smooth);
+  cursor: pointer;
+}
+
+.toggle-switch.active {
+  background: var(--color-primary);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background: var(--color-text-white);
+  border-radius: var(--radius-full);
+  transition: transform var(--transition-smooth);
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle-switch.active .toggle-thumb {
+  transform: translateX(22px);
 }
 
 .header {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: var(--color-primary-gradient);
 }
 
 .header-content {
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-lg);
-  color: white;
+  color: var(--color-text-white);
 }
 
 .back-btn {
   font-size: 28px;
   font-weight: 300;
   margin-right: var(--spacing-md);
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+  padding: 4px;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .header-title {
@@ -176,14 +226,14 @@ const saveSettings = () => {
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   margin-bottom: var(--spacing-md);
   padding-left: var(--spacing-xs);
 }
 
 .setting-list {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
@@ -193,7 +243,12 @@ const saveSettings = () => {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color var(--transition-fast);
+}
+
+.setting-item:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .setting-item:last-child {
@@ -222,29 +277,36 @@ const saveSettings = () => {
 
 .setting-name {
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin-bottom: 2px;
 }
 
 .setting-desc {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .setting-arrow {
   font-size: 18px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .save-btn {
-  background: var(--primary-color);
-  color: white;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
   padding: var(--spacing-md);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   text-align: center;
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
   margin-top: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-smooth);
+}
+
+.save-btn:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 </style>

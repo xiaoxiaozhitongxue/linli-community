@@ -1,13 +1,5 @@
 <template>
-  <!-- 功能暂未开放提示 -->
-  <div class="blocked-overlay" v-if="isBlocked">
-    <div class="blocked-content">
-      <span class="blocked-icon">🔒</span>
-      <span class="blocked-text">此功能暂未开放，敬请期待</span>
-    </div>
-  </div>
-
-  <div class="page" v-else>
+  <div class="page">
     <!-- 顶部区域 -->
     <div class="header">
       <div class="header-content">
@@ -236,9 +228,6 @@ import { ref, computed } from 'vue'
 import { navigateTo } from '../../utils/router'
 import { toastInfo, toastSuccess } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
-
-// 该页面已被屏蔽
-const isBlocked = true
 
 const hasShop = ref(true)
 const selectedCategory = ref('all')
@@ -516,43 +505,13 @@ const goToStoryDetail = (story: any) => {
 </script>
 
 <style scoped>
-/* 屏蔽提示样式 */
-.blocked-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--bg-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.blocked-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.blocked-icon {
-  font-size: 64px;
-}
-
-.blocked-text {
-  font-size: 16px;
-  color: var(--text-secondary);
-}
-
 .page {
   min-height: 100vh;
   background-color: var(--bg-color);
 }
 
 .header {
-  background: linear-gradient(135deg, #2196F3, #64B5F6);
+  background: var(--primary-gradient);
   padding: var(--spacing-lg);
   padding-bottom: var(--spacing-xl);
   padding-top: calc(var(--spacing-lg) + 20px);
@@ -651,7 +610,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .shop-btn.manage {
-  background: #2196F3;
+  background: var(--primary-color);
   color: white;
 }
 
@@ -691,7 +650,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .open-btn {
-  background: linear-gradient(135deg, #2196F3, #1976D2);
+  background: var(--primary-gradient);
   color: white;
   padding: var(--spacing-md) var(--spacing-xxl);
   border-radius: 25px;
@@ -762,7 +721,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .category-item.active {
-  background: #2196F3;
+  background: var(--primary-color);
   color: white;
 }
 
@@ -871,7 +830,7 @@ const goToStoryDetail = (story: any) => {
 .product-price {
   font-size: 16px;
   font-weight: 600;
-  color: #F44336;
+  color: var(--primary-color);
 }
 
 .product-sales {

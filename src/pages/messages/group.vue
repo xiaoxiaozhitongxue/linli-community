@@ -279,15 +279,16 @@ onMounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 .nav-header {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   position: sticky;
   top: 0;
   z-index: 100;
   flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-content {
@@ -299,27 +300,43 @@ onMounted(() => {
 
 .nav-back {
   font-size: 28px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
   width: 60px;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-back:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .nav-group {
   flex: 1;
   text-align: center;
   cursor: pointer;
+  transition: background-color var(--transition-fast);
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+}
+
+.nav-group:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .nav-name {
   display: block;
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .nav-members {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .nav-right {
@@ -354,7 +371,7 @@ onMounted(() => {
 .chat-avatar {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -366,7 +383,7 @@ onMounted(() => {
 
 .message-sender {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   margin-bottom: 2px;
   margin-left: 12px;
 }
@@ -395,37 +412,39 @@ onMounted(() => {
 }
 
 .bubble-self .bubble-content {
-  background: var(--primary-color);
-  color: white;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
   border-bottom-right-radius: 4px;
+  box-shadow: var(--shadow-sm);
 }
 
 .bubble-other .bubble-content {
-  background: var(--card-bg);
-  color: var(--text-primary);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   border-bottom-left-radius: 4px;
   box-shadow: var(--shadow-sm);
 }
 
 .bubble-time {
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   margin-top: 2px;
 }
 
 .system-message {
   font-size: 12px;
-  color: var(--text-muted);
-  background: rgba(0,0,0,0.05);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-tertiary);
   padding: 4px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-full);
 }
 
 .input-area {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   padding: 12px 16px;
   flex-shrink: 0;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border-light);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .input-wrapper {
@@ -438,31 +457,42 @@ onMounted(() => {
   flex: 1;
   height: 40px;
   padding: 0 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-full);
   font-size: 15px;
   outline: none;
-  background: var(--bg-color);
+  background: var(--color-bg-tertiary);
+  transition: all var(--transition-normal);
 }
 
 .message-input:focus {
-  border-color: var(--primary-color);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+  background: var(--color-bg-secondary);
 }
 
 .send-btn {
   width: 64px;
   height: 40px;
-  background: var(--primary-color);
-  color: white;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
   border: none;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: 15px;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-smooth);
+}
+
+.send-btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .send-btn:disabled {
-  background: #ccc;
+  background: var(--color-text-muted);
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* 群成员弹窗 */
@@ -472,7 +502,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: var(--color-bg-overlay);
   z-index: 200;
   display: flex;
   align-items: flex-end;
@@ -481,9 +511,10 @@ onMounted(() => {
 .members-panel {
   width: 100%;
   max-height: 70vh;
-  background: var(--card-bg);
-  border-radius: 16px 16px 0 0;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   overflow: hidden;
+  box-shadow: var(--shadow-lg);
 }
 
 .panel-header {
@@ -491,19 +522,30 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .panel-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .panel-close {
   font-size: 28px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-fast);
+}
+
+.panel-close:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .members-list {
@@ -516,7 +558,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color var(--transition-fast);
+  margin: 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.member-item:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .member-item:last-child {
@@ -526,7 +576,7 @@ onMounted(() => {
 .member-avatar {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   object-fit: cover;
   margin-right: 12px;
 }
@@ -540,15 +590,15 @@ onMounted(() => {
 
 .member-name {
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .member-role {
   font-size: 10px;
-  background: var(--primary-color);
-  color: white;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .safe-area-bottom {

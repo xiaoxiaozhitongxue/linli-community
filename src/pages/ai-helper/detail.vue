@@ -1,16 +1,14 @@
 <template>
   <div class="page">
-    <!-- 顶部区域 -->
     <div class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
       <div class="header-nav">
         <span class="back-btn" @click="goBack">←</span>
         <span class="header-title">任务详情</span>
-        <span class="more-btn">⋮</span>
+        <span class="placeholder"></span>
       </div>
     </div>
 
-    <div class="content" style="overflow-y: auto; padding-bottom: 80px;">
-      <!-- 任务信息 -->
+    <div class="content" style="overflow-y: auto; padding-bottom: 100px;">
       <div class="task-card">
         <div class="task-type-tag" :class="'type-' + task.type">
           {{ getTypeName(task.type) }}
@@ -24,7 +22,6 @@
         </div>
       </div>
 
-      <!-- 发布者信息 -->
       <div class="section">
         <div class="section-title">发布者</div>
         <div class="creator-card">
@@ -39,7 +36,6 @@
         </div>
       </div>
 
-      <!-- 任务信息 -->
       <div class="section">
         <div class="section-title">任务信息</div>
         <div class="info-list">
@@ -68,11 +64,10 @@
         </div>
       </div>
 
-      <!-- 已响应的人 -->
-      <div class="section" v-if="task.responses > 0">
+      <div class="section" v-if="task.responses > 0 && task.status === 'open'">
         <div class="section-title">已响应 ({{ task.responses }})</div>
         <div class="responders-list">
-          <div class="responder-item" v-for="responder in responders" :key="responder.id">
+          <div v-for="responder in responders" :key="responder.id" class="responder-item">
             <img class="responder-avatar" :src="responder.avatar" />
             <div class="responder-info">
               <span class="responder-name">{{ responder.name }}</span>
@@ -84,7 +79,6 @@
       </div>
     </div>
 
-    <!-- 底部操作 -->
     <div class="bottom-action">
       <div class="action-buttons">
         <div class="contact-btn" @click="contactCreator">
@@ -95,8 +89,15 @@
           class="accept-btn"
           :class="{ completed: task.status === 'completed' }"
           @click="handleAction"
+          v-if="task.status !== 'completed' || isAccepted"
         >
           <span>{{ actionButtonText }}</span>
+        </div>
+        <div
+          class="accept-btn completed"
+          v-else
+        >
+          <span>任务已完成</span>
         </div>
       </div>
     </div>
@@ -110,6 +111,8 @@ import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 
 const STORAGE_KEY = 'ai_helper_tasks'
+const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
+const MY_ACCEPTED_TASKS_KEY = 'ai_helper_my_accepted_tasks'
 
 const route = useRoute()
 const statusBarHeight = ref(20)
@@ -148,7 +151,6 @@ const responders = ref([
   }
 ])
 
-// 是否已接单
 const isAccepted = ref(false)
 
 const actionButtonText = computed(() => {
@@ -157,40 +159,57 @@ const actionButtonText = computed(() => {
   return '接单'
 })
 
-function loadTasks(): any[] {
+function loadFromStorage(key: string, defaultValue: any[]) {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = localStorage.getItem(key)
     if (stored) {
       return JSON.parse(stored)
     }
   } catch (e) {
-    console.error('加载任务数据失败:', e)
+    console.error(`加载数据失败: ${key}`, e)
   }
-  return []
+  return [...defaultValue]
 }
 
-function saveTasks(tasks: any[]) {
+function saveToStorage(key: string, data: any) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
+    localStorage.setItem(key, JSON.stringify(data))
   } catch (e) {
-    console.error('保存任务数据失败:', e)
+    console.error(`保存数据失败: ${key}`, e)
+  }
+}
+
+function updateTaskStatus(taskId: string, newStatus: string) {
+  const tasks = loadFromStorage(STORAGE_KEY, [])
+  const index = tasks.findIndex((t: any) => t.id === taskId)
+  if (index !== -1) {
+    tasks[index].status = newStatus
+    saveToStorage(STORAGE_KEY, tasks)
+    task.value.status = newStatus
+  }
+}
+
+function updateMyTaskStatus(taskId: string, newStatus: string, storageKey: string) {
+  const myTasks = loadFromStorage(storageKey, [])
+  const index = myTasks.findIndex((t: any) => t.id === taskId)
+  if (index !== -1) {
+    myTasks[index].status = newStatus
+    myTasks[index].updateTime = newStatus === 'completed' ? '已完成' : '进行中'
+    saveToStorage(storageKey, myTasks)
   }
 }
 
 onMounted(() => {
-  // 从 URL 参数获取任务 ID
   const taskId = (route.query.id as string) || '1'
-
-  // 从 localStorage 加载任务数据
-  const tasks = loadTasks()
-  const found = tasks.find(t => t.id === taskId)
+  const tasks = loadFromStorage(STORAGE_KEY, [])
+  const found = tasks.find((t: any) => t.id === taskId)
   if (found) {
     task.value = { ...task.value, ...found }
   }
 })
 
 const goBack = () => {
-  navigateBack()
+  navigateBackSmart()
 }
 
 const getTypeName = (type: string) => {
@@ -198,7 +217,10 @@ const getTypeName = (type: string) => {
     delivery: '取快递',
     shopping: '帮买菜',
     pet: '代遛狗',
-    child: '接孩子'
+    child: '接孩子',
+    help: '帮忙',
+    companionship: '陪护',
+    other: '其他'
   }
   return map[type] || type
 }
@@ -218,7 +240,7 @@ const contactCreator = () => {
 
 const selectResponder = (responder: any) => {
   if (window.confirm(`确定选择 ${responder.name} 来完成此任务吗？`)) {
-    toastSuccess('已选择')
+    toastSuccess('已选择帮助者')
   }
 }
 
@@ -229,18 +251,13 @@ const handleAction = () => {
   }
 
   if (isAccepted.value) {
-    // 完成任务
     if (window.confirm('确定标记此任务为已完成吗？')) {
       task.value.status = 'completed'
       isAccepted.value = false
 
-      // 更新 localStorage 中的任务状态
-      const tasks = loadTasks()
-      const index = tasks.findIndex(t => t.id === task.value.id)
-      if (index !== -1) {
-        tasks[index].status = 'completed'
-        saveTasks(tasks)
-      }
+      updateTaskStatus(task.value.id, 'completed')
+      updateMyTaskStatus(task.value.id, 'completed', MY_CREATED_TASKS_KEY)
+      updateMyTaskStatus(task.value.id, 'completed', MY_ACCEPTED_TASKS_KEY)
 
       toastSuccess('任务已完成')
       setTimeout(() => {
@@ -248,20 +265,28 @@ const handleAction = () => {
       }, 1500)
     }
   } else {
-    // 接单
     if (window.confirm('确定要接下这个任务吗？')) {
       isAccepted.value = true
       task.value.status = 'ongoing'
       task.value.responses++
 
-      // 更新 localStorage 中的任务状态
-      const tasks = loadTasks()
-      const index = tasks.findIndex(t => t.id === task.value.id)
+      const tasks = loadFromStorage(STORAGE_KEY, [])
+      const index = tasks.findIndex((t: any) => t.id === task.value.id)
       if (index !== -1) {
         tasks[index].status = 'ongoing'
-        tasks[index].responses = task.value.responses
-        saveTasks(tasks)
+        tasks[index].responses++
+        saveToStorage(STORAGE_KEY, tasks)
       }
+
+      const myAcceptedTasks = loadFromStorage(MY_ACCEPTED_TASKS_KEY, [])
+      myAcceptedTasks.unshift({
+        id: task.value.id,
+        title: task.value.title,
+        reward: task.value.reward,
+        status: 'ongoing',
+        updateTime: '刚刚'
+      })
+      saveToStorage(MY_ACCEPTED_TASKS_KEY, myAcceptedTasks)
 
       toastSuccess('接单成功')
     }
@@ -272,15 +297,16 @@ const handleAction = () => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 .header {
-  background: var(--card-bg);
-  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  padding: 16px 20px;
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: var(--shadow-sm);
 }
 
 .header-nav {
@@ -290,57 +316,112 @@ const handleAction = () => {
 }
 
 .back-btn {
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+  margin-left: -8px;
+}
+
+.back-btn:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.back-btn:active {
+  background-color: var(--color-border-medium);
 }
 
 .header-title {
   font-size: 16px;
   font-weight: 500;
+  color: var(--color-text-primary);
 }
 
-.more-btn {
-  font-size: 18px;
-  cursor: pointer;
+.placeholder {
+  width: 20px;
 }
 
 .content {
   height: calc(100vh);
   overflow-y: auto;
+  padding: 20px;
 }
 
 .task-card {
-  background: var(--card-bg);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  padding: 24px;
+  border-radius: var(--radius-xl);
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal);
+}
+
+.task-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .task-type-tag {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
   font-size: 12px;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 16px;
+  font-weight: 500;
 }
 
 .type-delivery {
-  background: #E3F2FD;
-  color: #2196F3;
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+.type-shopping {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.type-pet {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.type-child {
+  background: var(--color-error-soft);
+  color: var(--color-error);
+}
+
+.type-help {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.type-companionship {
+  background: var(--color-accent-soft);
+  color: #f59e0b;
+}
+
+.type-other {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .task-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 12px;
 }
 
 .task-desc {
-  font-size: 14px;
-  color: var(--text-secondary);
+  font-size: 15px;
+  color: var(--color-text-secondary);
   display: block;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: 20px;
   line-height: 1.6;
 }
 
@@ -348,44 +429,51 @@ const handleAction = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-light);
 }
 
 .reward-label {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .reward-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: #F44336;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-error);
 }
 
 .section {
-  background: var(--card-bg);
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  padding: 20px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal);
+}
+
+.section:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-md);
+  color: var(--color-text-primary);
+  margin-bottom: 16px;
 }
 
 .creator-card {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .creator-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  margin-right: var(--spacing-md);
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
   object-fit: cover;
 }
 
@@ -394,28 +482,25 @@ const handleAction = () => {
 }
 
 .creator-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
   margin-bottom: 4px;
 }
 
 .creator-stats {
   display: flex;
-  gap: var(--spacing-md);
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.info-list {
+  gap: 16px;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
 }
 
 .info-item {
   display: flex;
   justify-content: space-between;
-  padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid var(--border-color);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .info-item:last-child {
@@ -424,45 +509,59 @@ const handleAction = () => {
 
 .info-label {
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .info-value {
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .status-badge.status-open {
-  color: #2196F3;
+  color: var(--color-info);
+  background: var(--color-info-soft);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
 }
 
 .status-badge.status-ongoing {
-  color: #FF9800;
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
 }
 
 .status-badge.status-completed {
-  color: #4CAF50;
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
 }
 
 .responders-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 12px;
 }
 
 .responder-item {
   display: flex;
   align-items: center;
-  padding: var(--spacing-md);
-  background: var(--bg-color);
-  border-radius: var(--radius-md);
+  padding: 14px;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
+}
+
+.responder-item:hover {
+  background: var(--color-bg-tertiary);
 }
 
 .responder-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: var(--spacing-md);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  margin-right: 12px;
   object-fit: cover;
 }
 
@@ -471,25 +570,32 @@ const handleAction = () => {
 }
 
 .responder-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .responder-stats {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: var(--color-text-tertiary);
 }
 
 .select-btn {
-  padding: 6px 16px;
-  background: var(--primary-color);
-  color: white;
-  border-radius: 20px;
+  padding: 8px 20px;
+  background: var(--color-primary);
+  color: var(--color-text-white);
+  border-radius: var(--radius-full);
   font-size: 13px;
   cursor: pointer;
+  font-weight: 500;
+  transition: all var(--transition-normal);
+}
+
+.select-btn:hover {
+  background: var(--color-primary-dark);
+  box-shadow: var(--shadow-md);
 }
 
 .bottom-action {
@@ -497,16 +603,15 @@ const handleAction = () => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--card-bg);
-  padding: var(--spacing-md) var(--spacing-lg);
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-  padding-bottom: calc(var(--spacing-md) + constant(safe-area-inset-bottom));
-  padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
+  background: var(--color-bg-secondary);
+  padding: 16px 20px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow-lg);
 }
 
 .action-buttons {
   display: flex;
-  gap: var(--spacing-md);
+  gap: 12px;
 }
 
 .contact-btn {
@@ -514,13 +619,19 @@ const handleAction = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  background: var(--bg-color);
-  border-radius: var(--radius-md);
+  gap: 6px;
+  padding: 14px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-lg);
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
+  font-weight: 500;
+  transition: all var(--transition-normal);
+}
+
+.contact-btn:hover {
+  background: var(--color-border-light);
 }
 
 .accept-btn {
@@ -528,17 +639,25 @@ const handleAction = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-color);
-  color: white;
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  padding: 14px;
+  border-radius: var(--radius-lg);
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.accept-btn:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .accept-btn.completed {
-  background: var(--text-muted);
+  background: var(--color-text-muted);
   cursor: default;
+  box-shadow: none;
 }
 </style>

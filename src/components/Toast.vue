@@ -28,7 +28,7 @@ interface Toast {
 const toasts = ref<Toast[]>([])
 let toastIdCounter = 0
 
-function show(message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 2000) {
+function show(message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 2500) {
   const id = ++toastIdCounter
   const icons = {
     success: '✓',
@@ -44,11 +44,15 @@ function show(message: string, type: 'success' | 'error' | 'info' = 'info', dura
   })
   
   setTimeout(() => {
-    const index = toasts.value.findIndex(t => t.id === id)
-    if (index !== -1) {
-      toasts.value.splice(index, 1)
-    }
+    removeToast(id)
   }, duration)
+}
+
+function removeToast(id: number) {
+  const index = toasts.value.findIndex(t => t.id === id)
+  if (index !== -1) {
+    toasts.value.splice(index, 1)
+  }
 }
 
 const toastApi = {
@@ -72,69 +76,86 @@ defineExpose(toastApi)
 <style scoped>
 .toast-container {
   position: fixed;
-  top: 20%;
+  top: calc(var(--spacing-xxl) + var(--safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
-  z-index: 9999;
+  z-index: var(--zindex-toast);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: var(--spacing-sm);
   pointer-events: none;
+  max-width: 90vw;
 }
 
 .toast {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  border-radius: 8px;
-  font-size: 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  animation: slideIn 0.3s ease-out;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  line-height: 1.4;
+  box-shadow: var(--shadow-toast);
+  word-break: break-word;
+  text-align: center;
 }
 
 .toast-success {
-  background: rgba(76, 175, 80, 0.9);
+  background: var(--success-gradient);
+  box-shadow: var(--shadow-toast-success);
 }
 
 .toast-error {
-  background: rgba(244, 67, 54, 0.9);
+  background: var(--error-gradient);
+  box-shadow: var(--shadow-toast-error);
 }
 
 .toast-info {
-  background: rgba(33, 150, 243, 0.9);
+  background: var(--info-gradient);
+  box-shadow: var(--shadow-toast-info);
 }
 
 .toast-icon {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .toast-message {
-  white-space: nowrap;
+  max-width: 280px;
 }
 
-.toast-enter-active,
+.toast-enter-active {
+  animation: toastIn var(--transition-bounce) var(--transition-ease-out);
+}
+
 .toast-leave-active {
-  transition: all 0.3s ease;
+  animation: toastOut var(--transition-duration) var(--transition-ease-in) forwards;
 }
 
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-
-@keyframes slideIn {
-  from {
+@keyframes toastIn {
+  0% {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(calc(-1 * var(--spacing-lg))) scale(0.9);
   }
-  to {
+  100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--spacing-sm))) scale(0.95);
   }
 }
 </style>

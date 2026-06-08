@@ -90,7 +90,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { userApi } from '../../utils/api'
-import { navigateBack } from '../../utils/router'
+import { navigateBackSmart } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
@@ -146,7 +146,7 @@ onMounted(() => {
 })
 
 const goBack = () => {
-  navigateBack()
+  navigateBackSmart()
 }
 
 const loadActivities = async (isRefresh = false) => {
@@ -237,12 +237,12 @@ const getStatusText = (status: string) => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 /* 导航栏 */
 .navbar {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -265,12 +265,18 @@ const getStatusText = (status: string) => {
   justify-content: center;
   font-size: 24px;
   cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+}
+
+.back-btn:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .navbar-title {
   font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .placeholder {
@@ -298,7 +304,7 @@ const getStatusText = (status: string) => {
 
 .empty-text {
   font-size: 16px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 /* 活动列表 */
@@ -307,17 +313,18 @@ const getStatusText = (status: string) => {
 }
 
 .activity-card {
-  background: var(--card-bg);
-  border-radius: 16px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   margin-bottom: 12px;
   box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal);
 }
 
 .activity-cover {
   position: relative;
   height: 160px;
-  background: var(--border-color);
+  background: var(--color-bg-tertiary);
 }
 
 .cover-image {
@@ -332,7 +339,7 @@ const getStatusText = (status: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f5f0, #e8e8e0);
+  background: linear-gradient(135deg, var(--color-bg-tertiary), var(--color-bg-primary));
 }
 
 .cover-icon {
@@ -344,11 +351,11 @@ const getStatusText = (status: string) => {
   top: 12px;
   right: 12px;
   padding: 6px 12px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 500;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
+  background: var(--color-bg-overlay);
+  color: var(--color-text-white);
 }
 
 .activity-status.upcoming {
@@ -378,7 +385,7 @@ const getStatusText = (status: string) => {
 .activity-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   line-height: 1.4;
 }
 
@@ -399,7 +406,7 @@ const getStatusText = (status: string) => {
 
 .meta-text {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .activity-desc {
@@ -408,7 +415,7 @@ const getStatusText = (status: string) => {
 
 .desc-text {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -421,7 +428,7 @@ const getStatusText = (status: string) => {
   align-items: center;
   justify-content: space-between;
   padding-top: 12px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border-light);
 }
 
 .creator-info {
@@ -432,19 +439,19 @@ const getStatusText = (status: string) => {
 .creator-avatar {
   width: 24px;
   height: 24px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   margin-right: 8px;
   object-fit: cover;
 }
 
 .creator-name {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .action-tag {
   padding: 4px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 500;
 }
@@ -470,8 +477,8 @@ const getStatusText = (status: string) => {
 }
 
 .action-tag.other {
-  background: #F5F5F5;
-  color: #9E9E9E;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
 }
 
 /* 加载状态 */
@@ -479,7 +486,7 @@ const getStatusText = (status: string) => {
 .no-more {
   text-align: center;
   padding: 24px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   font-size: 14px;
 }
 </style>

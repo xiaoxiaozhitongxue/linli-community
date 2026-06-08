@@ -100,7 +100,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuth } from '../../store/index'
 import { userApi } from '../../utils/api'
-import { navigateBack } from '../../utils/router'
+import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
 import { showLoading, hideLoading } from '../../utils/ui'
 
@@ -137,7 +137,7 @@ onMounted(() => {
 })
 
 const goBack = () => {
-  navigateBack()
+  navigateBackSmart()
 }
 
 const chooseAvatar = () => {
@@ -196,12 +196,12 @@ const saveProfile = async () => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 /* 导航栏 */
 .navbar {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -224,22 +224,35 @@ const saveProfile = async () => {
   justify-content: center;
   font-size: 24px;
   cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+}
+
+.back-btn:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .navbar-title {
   font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .save-btn {
   padding: 8px 16px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  color: white;
-  border-radius: 20px;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  border-radius: var(--radius-full);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-smooth);
+}
+
+.save-btn:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .scroll-content {
@@ -253,8 +266,9 @@ const saveProfile = async () => {
   flex-direction: column;
   align-items: center;
   padding: 32px 20px;
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
 }
 
 .avatar-wrapper {
@@ -268,8 +282,8 @@ const saveProfile = async () => {
 .avatar {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
-  border: 3px solid var(--border-color);
+  border-radius: var(--radius-full);
+  border: 3px solid var(--color-border-light);
   object-fit: cover;
 }
 
@@ -279,13 +293,13 @@ const saveProfile = async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 50%;
+  background: var(--color-bg-overlay);
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--transition-normal);
 }
 
 .avatar-wrapper:hover .avatar-overlay {
@@ -298,20 +312,21 @@ const saveProfile = async () => {
 
 .avatar-tip {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 /* 表单区域 */
 .form-section {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   padding: 0 16px;
+  box-shadow: var(--shadow-sm);
 }
 
 .form-item {
   display: flex;
   flex-direction: column;
   padding: 16px 0;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .form-item:last-child {
@@ -320,14 +335,14 @@ const saveProfile = async () => {
 
 .form-label {
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin-bottom: 8px;
   font-weight: 500;
 }
 
 .form-input {
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   padding: 10px 0;
   border: none;
   outline: none;
@@ -337,7 +352,7 @@ const saveProfile = async () => {
 
 .form-textarea {
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   padding: 10px 0;
   min-height: 80px;
   line-height: 1.6;
@@ -357,20 +372,24 @@ const saveProfile = async () => {
 .gender-option {
   flex: 1;
   padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
   text-align: center;
   font-size: 15px;
-  color: var(--text-secondary);
-  transition: all 0.3s;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-normal);
   cursor: pointer;
 }
 
 .gender-option.active {
-  border-color: var(--primary-color);
-  background: rgba(255, 140, 66, 0.1);
-  color: var(--primary-color);
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
   font-weight: 500;
+}
+
+.gender-option:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 /* 角色选择 */
@@ -385,34 +404,38 @@ const saveProfile = async () => {
   flex-direction: column;
   align-items: center;
   padding: 16px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  transition: all 0.3s;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
   cursor: pointer;
 }
 
 .role-option.active {
-  border-color: var(--primary-color);
-  background: rgba(255, 140, 66, 0.1);
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .role-option.active .role-icon {
   transform: scale(1.1);
 }
 
+.role-option:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
 .role-icon {
   font-size: 28px;
   margin-bottom: 8px;
-  transition: transform 0.3s;
+  transition: transform var(--transition-normal);
 }
 
 .role-option span:nth-child(2) {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .role-option.active span:nth-child(2) {
-  color: var(--primary-color);
+  color: var(--color-primary);
   font-weight: 500;
 }
 </style>

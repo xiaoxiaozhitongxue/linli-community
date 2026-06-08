@@ -56,24 +56,36 @@
     <div class="content" scroll-y v-if="isLoggedIn">
       <!-- AI互助任务模块 -->
       <div class="menu-section">
-        <div class="menu-title">AI互助任务</div>
+        <div class="section-header">
+          <span class="section-icon">🤝</span>
+          <span class="section-title">互助任务</span>
+        </div>
         
         <!-- 任务状态统计 -->
         <div class="task-stats-card">
           <div class="task-stats-header">
             <span class="task-stats-title">任务概览</span>
+            <span class="task-stats-subtitle">查看任务详情</span>
           </div>
           <div class="task-stats-grid">
-            <div class="task-stat-item">
-              <span class="task-stat-value pending">{{ taskStats.published.pending }}</span>
+            <div class="task-stat-item" @click="goToMyTasks('pending')">
+              <div class="task-stat-num pending">
+                <span class="task-stat-value">{{ taskStats.published.pending }}</span>
+              </div>
               <span class="task-stat-label">待接单</span>
             </div>
-            <div class="task-stat-item">
-              <span class="task-stat-value in-progress">{{ taskStats.published.in_progress }}</span>
+            <div class="task-stat-divider"></div>
+            <div class="task-stat-item" @click="goToMyTasks('ongoing')">
+              <div class="task-stat-num in-progress">
+                <span class="task-stat-value">{{ taskStats.published.in_progress }}</span>
+              </div>
               <span class="task-stat-label">进行中</span>
             </div>
-            <div class="task-stat-item">
-              <span class="task-stat-value completed">{{ taskStats.published.completed }}</span>
+            <div class="task-stat-divider"></div>
+            <div class="task-stat-item" @click="goToMyTasks('completed')">
+              <div class="task-stat-num completed">
+                <span class="task-stat-value">{{ taskStats.published.completed }}</span>
+              </div>
               <span class="task-stat-label">已完成</span>
             </div>
           </div>
@@ -81,49 +93,97 @@
 
         <!-- 快捷操作 -->
         <div class="task-quick-actions">
-          <div class="task-action-btn publish" @click="goToPublishTask">
-            <span class="action-icon">📝</span>
-            <span class="action-text">发布任务</span>
+          <div class="task-action-card my-tasks" @click="goToMyTasks('all')">
+            <div class="action-icon-wrap">
+              <span class="action-icon">📋</span>
+            </div>
+            <div class="action-content">
+              <span class="action-title">我的任务</span>
+              <span class="action-desc">管理已发布和已接受的任务</span>
+            </div>
+            <span class="action-arrow">›</span>
           </div>
-          <div class="task-action-btn browse" @click="goToBrowseTasks">
-            <span class="action-icon">🔍</span>
-            <span class="action-text">浏览任务</span>
+          <div class="task-action-card publish" @click="goToPublishTask">
+            <div class="action-icon-wrap">
+              <span class="action-icon">📝</span>
+            </div>
+            <div class="action-content">
+              <span class="action-title">发布任务</span>
+              <span class="action-desc">发布互助请求获取帮助</span>
+            </div>
+            <span class="action-arrow">›</span>
+          </div>
+          <div class="task-action-card browse" @click="goToBrowseTasks">
+            <div class="action-icon-wrap">
+              <span class="action-icon">🔍</span>
+            </div>
+            <div class="action-content">
+              <span class="action-title">浏览任务</span>
+              <span class="action-desc">发现社区中的互助任务</span>
+            </div>
+            <span class="action-arrow">›</span>
           </div>
         </div>
       </div>
 
       <!-- 个人设置 -->
       <div class="menu-section">
-        <div class="menu-title">个人设置</div>
-        <div class="menu-list">
-          <div class="menu-list-item" @click="goToNotifications">
+        <div class="section-header">
+          <span class="section-icon">⚙️</span>
+          <span class="section-title">个人设置</span>
+        </div>
+        <div class="menu-card">
+          <div class="menu-list-item" @click="goToMessages">
             <div class="menu-list-left">
-              <span class="menu-list-icon">🔔</span>
-              <span class="menu-list-text">消息通知</span>
+              <div class="menu-icon-wrap messages">
+                <span class="menu-list-icon">💬</span>
+              </div>
+              <div class="menu-list-content">
+                <span class="menu-list-text">消息中心</span>
+                <span class="menu-list-desc">查看系统通知和互动消息</span>
+              </div>
             </div>
             <div class="menu-list-right">
               <span class="menu-list-badge" v-if="hasUnreadNotification">有未读</span>
               <span class="menu-list-arrow">›</span>
             </div>
           </div>
+          <div class="menu-list-divider"></div>
           <div class="menu-list-item" @click="goToPrivacy">
             <div class="menu-list-left">
-              <span class="menu-list-icon">🔒</span>
-              <span class="menu-list-text">隐私设置</span>
+              <div class="menu-icon-wrap privacy">
+                <span class="menu-list-icon">🔒</span>
+              </div>
+              <div class="menu-list-content">
+                <span class="menu-list-text">隐私设置</span>
+                <span class="menu-list-desc">管理个人隐私和数据</span>
+              </div>
             </div>
             <span class="menu-list-arrow">›</span>
           </div>
+          <div class="menu-list-divider"></div>
           <div class="menu-list-item" @click="goToAddress">
             <div class="menu-list-left">
-              <span class="menu-list-icon">📍</span>
-              <span class="menu-list-text">收货地址</span>
+              <div class="menu-icon-wrap address">
+                <span class="menu-list-icon">📍</span>
+              </div>
+              <div class="menu-list-content">
+                <span class="menu-list-text">收货地址</span>
+                <span class="menu-list-desc">管理常用收货地址</span>
+              </div>
             </div>
             <span class="menu-list-arrow">›</span>
           </div>
+          <div class="menu-list-divider"></div>
           <div class="menu-list-item" @click="goToAbout">
             <div class="menu-list-left">
-              <span class="menu-list-icon">ℹ️</span>
-              <span class="menu-list-text">关于我们</span>
+              <div class="menu-icon-wrap about">
+                <span class="menu-list-icon">ℹ️</span>
+              </div>
+              <div class="menu-list-content">
+                <span class="menu-list-text">关于我们</span>
+                <span class="menu-list-desc">了解应用信息和版本</span>
+              </div>
             </div>
             <span class="menu-list-arrow">›</span>
           </div>
@@ -132,19 +192,33 @@
 
       <!-- 帮助与反馈 -->
       <div class="menu-section">
-        <div class="menu-title">帮助与支持</div>
-        <div class="menu-list">
+        <div class="section-header">
+          <span class="section-icon">💁</span>
+          <span class="section-title">帮助与支持</span>
+        </div>
+        <div class="menu-card">
           <div class="menu-list-item" @click="goToHelp">
             <div class="menu-list-left">
-              <span class="menu-list-icon">❓</span>
-              <span class="menu-list-text">帮助中心</span>
+              <div class="menu-icon-wrap help">
+                <span class="menu-list-icon">❓</span>
+              </div>
+              <div class="menu-list-content">
+                <span class="menu-list-text">帮助中心</span>
+                <span class="menu-list-desc">常见问题和使用指南</span>
+              </div>
             </div>
             <span class="menu-list-arrow">›</span>
           </div>
+          <div class="menu-list-divider"></div>
           <div class="menu-list-item" @click="goToFeedback">
             <div class="menu-list-left">
-              <span class="menu-list-icon">💬</span>
-              <span class="menu-list-text">意见反馈</span>
+              <div class="menu-icon-wrap feedback">
+                <span class="menu-list-icon">💬</span>
+              </div>
+              <div class="menu-list-content">
+                <span class="menu-list-text">意见反馈</span>
+                <span class="menu-list-desc">提交建议帮助我们改进</span>
+              </div>
             </div>
             <span class="menu-list-arrow">›</span>
           </div>
@@ -252,6 +326,10 @@ const goToAcceptedTasks = () => {
   navigateTo('/pages/profile/my-tasks?type=accepted')
 }
 
+const goToMyTasks = (status?: string) => {
+  navigateTo('/pages/profile/my-tasks' + (status ? '?status=' + status : ''))
+}
+
 const goToPublishTask = () => {
   navigateTo('/pages/ai-helper/publish')
 }
@@ -260,8 +338,8 @@ const goToBrowseTasks = () => {
   navigateTo('/pages/ai-helper/index')
 }
 
-const goToNotifications = () => {
-  navigateTo('/pages/profile/notifications')
+const goToMessages = () => {
+  navigateTo('/pages/messages/index')
 }
 
 const goToPrivacy = () => {
@@ -312,7 +390,7 @@ onMounted(() => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 .profile-header {
@@ -324,8 +402,8 @@ onMounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 180px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  height: 200px;
+  background: var(--color-primary-gradient);
 }
 
 .profile-content {
@@ -337,173 +415,191 @@ onMounted(() => {
 .profile-main {
   display: flex;
   align-items: flex-start;
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
   box-shadow: var(--shadow-md);
   margin-bottom: var(--spacing-md);
   cursor: pointer;
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+}
+
+.profile-main:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+.profile-main:active {
+  transform: scale(0.98);
 }
 
 .profile-avatar {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  margin-right: var(--spacing-md);
-  border: 3px solid white;
-  box-shadow: var(--shadow-sm);
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
   object-fit: cover;
+  border: 4px solid var(--color-text-white);
+  flex-shrink: 0;
+  margin-right: var(--spacing-md);
+  box-shadow: var(--shadow-md);
 }
 
 .profile-info {
   flex: 1;
+  min-width: 0;
 }
 
 .profile-name-row {
   display: flex;
   align-items: center;
   margin-bottom: var(--spacing-xs);
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
 }
 
 .profile-name {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-right: var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
 }
 
 .profile-badge {
-  padding: 2px 8px;
-  border-radius: 10px;
   font-size: 11px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-white);
+  font-weight: var(--font-weight-medium);
 }
 
-.badge-resident {
-  background: #E3F2FD;
-  color: #2196F3;
+.profile-badge.badge-volunteer {
+  background: var(--color-success);
 }
 
-.badge-volunteer {
-  background: #FCE4EC;
-  color: #E91E63;
+.profile-badge.badge-merchant {
+  background: var(--color-warning);
 }
 
-.badge-merchant {
-  background: #FFF3E0;
-  color: #FF9800;
-}
-
-.badge-elderly {
-  background: #E8F5E9;
-  color: #4CAF50;
+.profile-badge.badge-elderly {
+  background: #9C27B0;
 }
 
 .profile-desc {
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
   display: block;
   margin-bottom: var(--spacing-xs);
 }
 
 .profile-location {
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .edit-icon {
-  font-size: 18px;
-  opacity: 0.5;
+  font-size: 20px;
+  color: var(--color-text-muted);
+  margin-left: var(--spacing-sm);
+  transition: transform var(--transition-smooth);
 }
 
-/* 数据统计 */
+.profile-main:hover .edit-icon {
+  transform: translateX(3px);
+  color: var(--color-primary);
+}
+
 .stats-row {
   display: flex;
-  justify-content: space-around;
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-md) var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-md) 0;
+  box-shadow: var(--shadow-md);
 }
 
 .stat-item {
-  text-align: center;
-  cursor: pointer;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-lg);
+}
+
+.stat-item:hover {
+  background: var(--color-primary-soft);
+  transform: translateY(-2px);
+}
+
+.stat-item:active {
+  transform: scale(0.96);
 }
 
 .stat-value {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--primary-color);
-  display: block;
-  margin-bottom: 2px;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-xs);
 }
 
 .stat-label {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-medium);
 }
 
 .stat-divider {
   width: 1px;
-  background: var(--border-color);
-  margin: 0 var(--spacing-sm);
+  height: 36px;
+  background: var(--color-border-light);
 }
 
 .content {
-  min-height: calc(100vh - 200px);
+  padding: var(--spacing-lg);
 }
 
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-}
-
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-}
-
-.empty-text {
-  font-size: 16px;
-  color: var(--text-muted);
-}
-
-.btn {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--primary-color);
-  color: white;
-}
-
-/* 菜单区块 */
 .menu-section {
-  padding: var(--spacing-md) var(--spacing-lg);
-}
-
-.menu-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-md);
-}
-
-/* 任务统计卡片 */
-.task-stats-card {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
-  margin-bottom: var(--spacing-md);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.section-icon {
+  font-size: 18px;
+  margin-right: var(--spacing-sm);
+}
+
+.section-title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.task-stats-card {
+  background: var(--color-primary-gradient-soft);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  transition: transform var(--transition-smooth);
+}
+
+.task-stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .task-stats-header {
@@ -514,123 +610,273 @@ onMounted(() => {
 }
 
 .task-stats-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.task-stats-subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
 }
 
 .task-stats-grid {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .task-stat-item {
-  text-align: center;
-}
-
-.task-stat-value {
-  font-size: 24px;
-  font-weight: 600;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.task-stat-value.pending {
-  color: #FF9800;
-}
-
-.task-stat-value.in-progress {
-  color: #2196F3;
-}
-
-.task-stat-value.completed {
-  color: #4CAF50;
-}
-
-.task-stat-label {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* 快捷操作按钮 */
-.task-quick-actions {
   display: flex;
-  gap: var(--spacing-md);
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  flex: 1;
 }
 
-.task-action-btn {
-  flex: 1;
+.task-stat-item:hover {
+  background: var(--color-primary-soft);
+  transform: translateY(-2px);
+}
+
+.task-stat-item:active {
+  transform: scale(0.96);
+}
+
+.task-stat-num {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.task-stat-num.pending {
+  background: var(--color-info-soft);
+}
+
+.task-stat-num.in-progress {
+  background: var(--color-warning-soft);
+}
+
+.task-stat-num.completed {
+  background: var(--color-success-soft);
+}
+
+.task-stat-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.task-stat-num.pending .task-stat-value {
+  color: var(--color-info);
+}
+
+.task-stat-num.in-progress .task-stat-value {
+  color: var(--color-warning);
+}
+
+.task-stat-num.completed .task-stat-value {
+  color: var(--color-success);
+}
+
+.task-stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.task-stat-divider {
+  width: 1px;
+  height: 44px;
+  background: var(--color-border-light);
+}
+
+.task-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.task-action-card {
+  display: flex;
+  align-items: center;
   padding: var(--spacing-md);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-tertiary);
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all var(--transition-smooth);
 }
 
-.task-action-btn:active {
-  opacity: 0.8;
+.task-action-card:hover {
+  transform: translateX(6px);
+  box-shadow: var(--shadow-md);
+  background: var(--color-bg-primary);
 }
 
-.task-action-btn.publish {
-  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+.task-action-card:active {
+  transform: scale(0.98);
 }
 
-.task-action-btn.browse {
-  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+.task-action-card.my-tasks {
+  background: var(--color-info-soft);
+  border-left: 3px solid var(--color-info);
+}
+
+.task-action-card.publish {
+  background: var(--color-warning-soft);
+  border-left: 3px solid var(--color-warning);
+}
+
+.task-action-card.browse {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.08), rgba(156, 39, 176, 0.04));
+  border-left: 3px solid #9C27B0;
+}
+
+.action-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
+  background: var(--color-text-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .action-icon {
-  font-size: 18px;
-  margin-right: var(--spacing-xs);
+  font-size: 22px;
 }
 
-.action-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
+.action-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-/* 菜单列表 */
-.menu-list {
-  background: var(--card-bg);
+.action-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.action-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.action-arrow {
+  font-size: 22px;
+  color: var(--color-text-muted);
+  transition: transform var(--transition-smooth);
+}
+
+.task-action-card:hover .action-arrow {
+  transform: translateX(4px);
+  color: var(--color-primary);
+}
+
+.menu-card {
+  background: var(--color-bg-tertiary);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
 }
 
 .menu-list-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-md);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all var(--transition-smooth);
+}
+
+.menu-list-item:hover {
+  background: var(--color-primary-soft);
+  padding-left: var(--spacing-lg);
 }
 
 .menu-list-item:active {
-  background-color: var(--bg-color);
+  background: var(--color-primary-soft);
 }
 
-.menu-list-item:last-child {
-  border-bottom: none;
+.menu-list-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 0 var(--spacing-md);
 }
 
 .menu-list-left {
   display: flex;
   align-items: center;
+  flex: 1;
+}
+
+.menu-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: var(--spacing-md);
+  transition: transform var(--transition-smooth);
+}
+
+.menu-icon-wrap.messages {
+  background: var(--color-info-soft);
+}
+
+.menu-icon-wrap.privacy {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.08));
+}
+
+.menu-icon-wrap.address {
+  background: var(--color-error-soft);
+}
+
+.menu-icon-wrap.about {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.12), rgba(20, 184, 166, 0.08));
+}
+
+.menu-icon-wrap.help {
+  background: var(--color-warning-soft);
+}
+
+.menu-icon-wrap.feedback {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.12), rgba(156, 39, 176, 0.08));
+}
+
+.menu-list-item:hover .menu-icon-wrap {
+  transform: scale(1.08) rotate(3deg);
 }
 
 .menu-list-icon {
-  font-size: 18px;
-  margin-right: var(--spacing-md);
+  font-size: 20px;
+}
+
+.menu-list-content {
+  display: flex;
+  flex-direction: column;
 }
 
 .menu-list-text {
-  font-size: 15px;
-  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.menu-list-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
 }
 
 .menu-list-right {
@@ -640,32 +886,152 @@ onMounted(() => {
 
 .menu-list-badge {
   font-size: 11px;
-  color: white;
-  background: #F44336;
-  padding: 2px 6px;
-  border-radius: 8px;
+  background: var(--color-error);
+  color: var(--color-text-white);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
   margin-right: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .menu-list-arrow {
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: 22px;
+  color: var(--color-text-muted);
+  transition: transform var(--transition-smooth);
 }
 
-/* 退出登录 */
+.menu-list-item:hover .menu-list-arrow {
+  transform: translateX(4px);
+  color: var(--color-primary);
+}
+
 .logout-btn {
-  margin: var(--spacing-xl) var(--spacing-lg);
-  background: var(--card-bg);
-  color: #F44336;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   padding: var(--spacing-md);
-  border-radius: var(--radius-md);
   text-align: center;
-  font-size: 15px;
+  color: var(--color-error);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: opacity 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-smooth);
+  border: 1px solid var(--color-error-soft);
+}
+
+.logout-btn:hover {
+  background: var(--color-error-soft);
+  border-color: var(--color-error);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .logout-btn:active {
-  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: var(--spacing-lg);
+}
+
+.empty-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+.btn {
+  padding: 12px 32px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  font-weight: var(--font-weight-semibold);
+}
+
+.btn-primary {
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.safe-area-bottom {
+  height: 100px;
+}
+
+@media (max-width: 480px) {
+  .profile-main {
+    padding: var(--spacing-lg);
+  }
+  
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .profile-name {
+    font-size: var(--font-size-md);
+  }
+  
+  .menu-section {
+    padding: var(--spacing-lg);
+  }
+  
+  .task-stats-card {
+    padding: var(--spacing-md);
+  }
+  
+  .task-action-card {
+    padding: var(--spacing-sm);
+  }
+  
+  .action-icon-wrap {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .action-icon {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 360px) {
+  .profile-content {
+    padding: var(--spacing-md);
+  }
+  
+  .content {
+    padding: var(--spacing-md);
+  }
+  
+  .task-stat-item {
+    padding: var(--spacing-xs);
+  }
+  
+  .task-stat-num {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .task-stat-value {
+    font-size: var(--font-size-lg);
+  }
 }
 </style>

@@ -89,7 +89,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { userApi } from '../../utils/api'
-import { navigateBack } from '../../utils/router'
+import { navigateBackSmart } from '../../utils/router'
 import { navigateTo } from '../../utils/router'
 
 const statusBarHeight = ref(20)
@@ -143,7 +143,7 @@ onMounted(() => {
 })
 
 const goBack = () => {
-  navigateBack()
+  navigateBackSmart()
 }
 
 const goPublish = () => {
@@ -231,12 +231,12 @@ const getVisibilityText = (visibility: string) => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 /* 导航栏 */
 .navbar {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -259,22 +259,35 @@ const getVisibilityText = (visibility: string) => {
   justify-content: center;
   font-size: 24px;
   cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+}
+
+.back-btn:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .navbar-title {
   font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .publish-btn {
   padding: 8px 16px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  color: white;
-  border-radius: 20px;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  border-radius: var(--radius-full);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-smooth);
+}
+
+.publish-btn:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .scroll-content {
@@ -298,20 +311,27 @@ const getVisibilityText = (visibility: string) => {
 
 .empty-text {
   font-size: 16px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .btn {
   padding: 12px 24px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   font-size: 16px;
   cursor: pointer;
   border: none;
+  transition: all var(--transition-smooth);
 }
 
 .btn-primary {
-  background: var(--primary-color);
-  color: white;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 /* 下拉刷新 */
@@ -321,16 +341,16 @@ const getVisibilityText = (visibility: string) => {
   justify-content: center;
   gap: 8px;
   padding: 16px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   font-size: 14px;
 }
 
 .loading-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
 }
 
@@ -349,11 +369,12 @@ const getVisibilityText = (visibility: string) => {
 }
 
 .post-card {
-  background: var(--card-bg);
-  border-radius: 16px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
   padding: 16px;
   margin-bottom: 12px;
   box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal);
 }
 
 .post-header {
@@ -365,7 +386,7 @@ const getVisibilityText = (visibility: string) => {
 .post-avatar {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   margin-right: 12px;
   object-fit: cover;
 }
@@ -379,13 +400,13 @@ const getVisibilityText = (visibility: string) => {
 .post-username {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin-bottom: 2px;
 }
 
 .post-time {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
 }
 
 .post-content {
@@ -394,7 +415,7 @@ const getVisibilityText = (visibility: string) => {
 
 .post-text {
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   line-height: 1.6;
 }
 
@@ -408,8 +429,8 @@ const getVisibilityText = (visibility: string) => {
 .post-image {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 8px;
-  background: var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-tertiary);
   object-fit: cover;
 }
 
@@ -423,7 +444,7 @@ const getVisibilityText = (visibility: string) => {
   display: flex;
   align-items: center;
   padding-top: 12px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border-light);
 }
 
 .post-action {
@@ -439,7 +460,7 @@ const getVisibilityText = (visibility: string) => {
 
 .action-text {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 /* 加载状态 */
@@ -447,7 +468,7 @@ const getVisibilityText = (visibility: string) => {
 .no-more {
   text-align: center;
   padding: 24px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   font-size: 14px;
 }
 </style>

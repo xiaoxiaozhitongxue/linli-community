@@ -196,15 +196,16 @@ onMounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 .nav-header {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   position: sticky;
   top: 0;
   z-index: 100;
   flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-content {
@@ -216,9 +217,18 @@ onMounted(() => {
 
 .nav-back {
   font-size: 28px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
   width: 60px;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-back:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .nav-user {
@@ -230,14 +240,14 @@ onMounted(() => {
 .nav-avatar {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   object-fit: cover;
 }
 
 .nav-name {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .nav-right {
@@ -269,7 +279,7 @@ onMounted(() => {
 .chat-avatar {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -288,21 +298,22 @@ onMounted(() => {
 }
 
 .bubble-self .bubble-content {
-  background: var(--primary-color);
-  color: white;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
   border-bottom-right-radius: 4px;
+  box-shadow: var(--shadow-sm);
 }
 
 .bubble-other .bubble-content {
-  background: var(--card-bg);
-  color: var(--text-primary);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   border-bottom-left-radius: 4px;
   box-shadow: var(--shadow-sm);
 }
 
 .bubble-time {
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   margin-top: 2px;
   text-align: right;
 }
@@ -315,15 +326,16 @@ onMounted(() => {
   width: 100%;
   text-align: center;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   padding: 8px 0;
 }
 
 .input-area {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   padding: 12px 16px;
   flex-shrink: 0;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border-light);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .input-wrapper {
@@ -336,31 +348,42 @@ onMounted(() => {
   flex: 1;
   height: 40px;
   padding: 0 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-full);
   font-size: 15px;
   outline: none;
-  background: var(--bg-color);
+  background: var(--color-bg-tertiary);
+  transition: all var(--transition-normal);
 }
 
 .message-input:focus {
-  border-color: var(--primary-color);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+  background: var(--color-bg-secondary);
 }
 
 .send-btn {
   width: 64px;
   height: 40px;
-  background: var(--primary-color);
-  color: white;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
   border: none;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: 15px;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-smooth);
+}
+
+.send-btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .send-btn:disabled {
-  background: #ccc;
+  background: var(--color-text-muted);
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .safe-area-bottom {

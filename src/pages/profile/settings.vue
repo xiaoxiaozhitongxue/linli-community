@@ -158,7 +158,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuth } from '../../store/index'
-import { navigateBack } from '../../utils/router'
+import { navigateBackSmart } from '../../utils/router'
 import { navigateTo } from '../../utils/router'
 import { toastInfo, toastSuccess } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
@@ -186,7 +186,7 @@ onMounted(() => {
 })
 
 const goBack = () => {
-  navigateBack()
+  navigateBackSmart()
 }
 
 const goEditProfile = () => {
@@ -236,7 +236,7 @@ const toggleInteraction = () => {
 }
 
 const showPrivacy = () => {
-  toastInfo('隐私设置即将上线')
+  navigateTo('/pages/profile/privacy')
 }
 
 const showSecurity = () => {
@@ -268,7 +268,7 @@ const clearCache = () => {
 }
 
 const showAbout = () => {
-  toastInfo('关于我们即将上线')
+  navigateTo('/pages/profile/about')
 }
 
 const showFeedback = () => {
@@ -282,7 +282,7 @@ const logout = () => {
     success: (res: any) => {
       if (res.confirm) {
         authLogout()
-        navigateBack()
+        navigateBackSmart('/pages/index/index')
       }
     }
   })
@@ -292,12 +292,12 @@ const logout = () => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: var(--color-bg-primary);
 }
 
 /* 导航栏 */
 .navbar {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -320,12 +320,18 @@ const logout = () => {
   justify-content: center;
   font-size: 24px;
   cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+}
+
+.back-btn:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .navbar-title {
   font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .placeholder {
@@ -344,7 +350,7 @@ const logout = () => {
 
 .section-title {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   padding: 12px 16px 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -352,10 +358,11 @@ const logout = () => {
 
 /* 菜单列表 */
 .menu-list {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   margin: 0 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .menu-item {
@@ -363,8 +370,13 @@ const logout = () => {
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-light);
   cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.menu-item:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .menu-item:last-child {
@@ -384,7 +396,7 @@ const logout = () => {
 
 .menu-item-text {
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .menu-item-right {
@@ -394,13 +406,13 @@ const logout = () => {
 
 .menu-item-value {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   margin-right: 8px;
 }
 
 .menu-item-arrow {
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 /* 自定义开关 */
@@ -408,14 +420,14 @@ const logout = () => {
   position: relative;
   width: 48px;
   height: 26px;
-  background: #e0e0e0;
-  border-radius: 13px;
-  transition: background 0.3s;
+  background: var(--color-border-light);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-smooth);
   cursor: pointer;
 }
 
 .toggle-switch.active {
-  background: var(--primary-color);
+  background: var(--color-primary);
 }
 
 .toggle-thumb {
@@ -424,10 +436,10 @@ const logout = () => {
   left: 2px;
   width: 22px;
   height: 22px;
-  background: white;
-  border-radius: 50%;
-  transition: transform 0.3s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  background: var(--color-text-white);
+  border-radius: var(--radius-full);
+  transition: transform var(--transition-smooth);
+  box-shadow: var(--shadow-sm);
 }
 
 .toggle-switch.active .toggle-thumb {
@@ -440,14 +452,21 @@ const logout = () => {
 }
 
 .logout-btn {
-  background: var(--card-bg);
+  background: var(--color-bg-secondary);
   color: #F44336;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   text-align: center;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-smooth);
+}
+
+.logout-btn:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 /* 主题选择弹窗 */
@@ -457,7 +476,7 @@ const logout = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--color-bg-overlay);
   z-index: 200;
   display: flex;
   align-items: flex-end;
@@ -465,18 +484,19 @@ const logout = () => {
 }
 
 .modal-content {
-  background: white;
-  border-radius: 16px 16px 0 0;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   width: 100%;
   max-width: 500px;
   padding: 20px 16px;
   padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow-2xl);
 }
 
 .modal-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   text-align: center;
   margin-bottom: 16px;
 }
@@ -485,22 +505,35 @@ const logout = () => {
   padding: 16px;
   text-align: center;
   font-size: 15px;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
   cursor: pointer;
+  transition: background-color var(--transition-fast);
+  border-radius: var(--radius-sm);
+  margin: 0 4px;
+}
+
+.theme-option:hover {
+  background-color: var(--color-bg-tertiary);
 }
 
 .theme-option.active {
-  color: var(--primary-color);
+  color: var(--color-primary);
   font-weight: 500;
+  background: var(--color-primary-soft);
 }
 
 .modal-cancel {
   padding: 16px;
   text-align: center;
   font-size: 15px;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   cursor: pointer;
   margin-top: 8px;
+  transition: color var(--transition-fast);
+}
+
+.modal-cancel:hover {
+  color: var(--color-text-secondary);
 }
 </style>

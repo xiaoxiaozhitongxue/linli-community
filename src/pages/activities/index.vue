@@ -1,0 +1,1115 @@
+<template>
+  <div class="page">
+    <!-- 顶部导航栏 -->
+    <div class="nav-header">
+      <div class="nav-content">
+        <div class="nav-back" @click="goBack">
+          <span class="nav-back-icon">←</span>
+        </div>
+        <span class="nav-title">活动中心</span>
+        <div class="nav-action" @click="goToCreate">
+          <span class="nav-action-text">发起活动</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 筛选标签 -->
+    <div class="filter-tabs">
+      <div 
+        v-for="tab in filterTabs" 
+        :key="tab.value"
+        class="filter-tab"
+        :class="{ active: currentFilter === tab.value }"
+        @click="changeFilter(tab.value)"
+      >
+        <span>{{ tab.label }}</span>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content">
+      <!-- 加载状态 -->
+      <div v-if="loading && activities.length === 0" class="loading-container">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">加载中...</span>
+      </div>
+
+      <!-- 空状态 -->
+      <div v-else-if="!loading && activities.length === 0" class="empty-state">
+        <span class="empty-emoji">📅</span>
+        <span class="empty-text">暂无活动</span>
+        <div class="empty-btn" @click="goToCreate">
+          <span>发起第一个活动</span>
+        </div>
+      </div>
+
+      <!-- 活动列表 -->
+      <div v-else class="activity-list">
+        <!-- 热门活动区域 -->
+        <div v-if="hotActivities.length > 0 && currentFilter === 'all'" class="section">
+          <div class="section-header">
+            <span class="section-title">🔥 热门活动</span>
+          </div>
+          <div class="hot-activity-scroll">
+            <div 
+              v-for="activity in hotActivities" 
+              :key="activity.id"
+              class="hot-activity-card"
+              @click="goToDetail(activity.id)"
+            >
+              <div class="hot-activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
+                <span class="hot-activity-emoji">{{ getActivityEmoji(activity.category) }}</span>
+              </div>
+              <div class="hot-activity-info">
+                <span class="hot-activity-name">{{ activity.title }}</span>
+                <div class="hot-activity-meta">
+                  <span class="hot-activity-time">{{ formatShortTime(activity.start_time) }}</span>
+                  <span class="hot-activity-join">{{ activity.current_participants }}人参与</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 近期活动列表 -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">🎯 近期活动</span>
+            <span class="section-count">{{ filteredActivities.length }}个活动</span>
+          </div>
+          
+          <div class="recent-activity-list">
+            <div 
+              v-for="activity in filteredActivities" 
+              :key="activity.id"
+              class="recent-activity-card"
+              @click="goToDetail(activity.id)"
+            >
+              <div class="recent-activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
+                <span class="recent-activity-icon">{{ getActivityEmoji(activity.category) }}</span>
+                <div class="recent-activity-badge" :class="'status-' + activity.status">
+                  {{ getStatusText(activity.status) }}
+                </div>
+              </div>
+              <div class="recent-activity-content">
+                <div class="recent-activity-top">
+                  <span class="recent-activity-name">{{ activity.title }}</span>
+                  <div class="recent-activity-category" :class="'cat-' + activity.category">
+                    {{ getCategoryLabel(activity.category) }}
+                  </div>
+                </div>
+                
+                <div class="recent-activity-info">
+                  <div class="info-item">
+                    <span class="info-icon">📅</span>
+                    <span class="info-text">{{ formatFullDate(activity.start_time) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-icon">📍</span>
+                    <span class="info-text">{{ activity.location }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-icon">👥</span>
+                    <span class="info-text">{{ activity.current_participants }}人已报名{{ activity.max_participants ? ' / 限' + activity.max_participants + '人' : '' }}</span>
+                  </div>
+                </div>
+                
+                <div class="recent-activity-footer">
+                  <div class="recent-activity-participants">
+                    <span class="participant-icon">👤</span>
+                    <span class="participant-text">{{ activity.user?.nickname || '邻居' }}</span>
+                  </div>
+                  <div 
+                    class="recent-activity-join-btn"
+                    :class="{ 
+                      joined: activity.is_participant,
+                      full: activity.max_participants && activity.current_participants >= activity.max_participants,
+                      ended: activity.status === 'completed' || activity.status === 'cancelled'
+                    }"
+                  >
+                    {{ getButtonText(activity) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 加载更多 -->
+        <div v-if="hasMore && activities.length > 0" class="load-more">
+          <span v-if="!loadingMore" @click="loadMore">加载更多</span>
+          <div v-else class="loading-more">
+            <div class="loading-spinner small"></div>
+            <span>加载中...</span>
+          </div>
+        </div>
+
+        <div v-if="!hasMore && activities.length > 0" class="no-more">
+          <span>— 没有更多了 —</span>
+        </div>
+      </div>
+
+      <div class="safe-area-bottom"></div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { activitiesApi, type Activity } from '../../utils/api'
+import { navigateTo, navigateBack } from '../../utils/router'
+import { toastSuccess, toastError } from '../../utils/toast'
+
+const loading = ref(false)
+const loadingMore = ref(false)
+const activities = ref<Activity[]>([])
+const currentFilter = ref('all')
+const currentPage = ref(1)
+const hasMore = ref(true)
+
+const filterTabs = [
+  { label: '全部', value: 'all' },
+  { label: '即将开始', value: 'upcoming' },
+  { label: '进行中', value: 'ongoing' },
+  { label: '已结束', value: 'completed' }
+]
+
+// 热门活动(取前4个参与人数最多的活动)
+const hotActivities = computed(() => {
+  return [...activities.value]
+    .sort((a, b) => b.current_participants - a.current_participants)
+    .slice(0, 4)
+})
+
+// 根据筛选条件过滤活动
+const filteredActivities = computed(() => {
+  if (currentFilter.value === 'all') {
+    return activities.value
+  }
+  return activities.value.filter(a => a.status === currentFilter.value)
+})
+
+const getActivityEmoji = (category: string) => {
+  const map: Record<string, string> = {
+    sports: '⚽',
+    culture: '🎨',
+    charity: '💝',
+    party: '🎉',
+    other: '📌'
+  }
+  return map[category] || '📌'
+}
+
+const getActivityCoverBg = (category: string) => {
+  const map: Record<string, string> = {
+    sports: '#C8E6C9',
+    culture: '#F3E5F5',
+    charity: '#E8F5E9',
+    party: '#FFE0B2',
+    other: '#E3F2FD'
+  }
+  return map[category] || '#F5F5F0'
+}
+
+const getCategoryLabel = (category: string) => {
+  const map: Record<string, string> = {
+    sports: '运动健身',
+    culture: '文化艺术',
+    charity: '公益活动',
+    party: '聚会派对',
+    other: '其他'
+  }
+  return map[category] || '其他'
+}
+
+const getStatusText = (status: string) => {
+  const map: Record<string, string> = {
+    upcoming: '即将开始',
+    ongoing: '进行中',
+    completed: '已结束',
+    cancelled: '已取消'
+  }
+  return map[status] || ''
+}
+
+const getButtonText = (activity: Activity) => {
+  if (activity.status === 'completed' || activity.status === 'cancelled') {
+    return '已结束'
+  }
+  if (activity.is_participant) {
+    return '已报名'
+  }
+  if (activity.max_participants && activity.current_participants >= activity.max_participants) {
+    return '已满员'
+  }
+  return '立即报名'
+}
+
+const formatShortTime = (timestamp: number) => {
+  const date = new Date(timestamp * 1000)
+  const now = new Date()
+  const diff = date.getTime() - now.getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  
+  if (days === 0) {
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `今天 ${hours}:${minutes}`
+  } else if (days === 1) {
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `明天 ${hours}:${minutes}`
+  } else if (days > 0 && days < 7) {
+    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${weekdays[date.getDay()]} ${hours}:${minutes}`
+  } else {
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${month}月${day}日`
+  }
+}
+
+const formatFullDate = (timestamp: number) => {
+  const date = new Date(timestamp * 1000)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  const weekday = weekdays[date.getDay()]
+  return `${year}年${month}月${day}日 ${weekday} ${hours}:${minutes}`
+}
+
+const changeFilter = (value: string) => {
+  currentFilter.value = value
+}
+
+const fetchActivities = async (page: number = 1, isRefresh: boolean = false) => {
+  try {
+    const params: any = { page, limit: 10 }
+    if (currentFilter.value !== 'all') {
+      params.status = currentFilter.value
+    }
+    
+    const response = await activitiesApi.getActivities(params)
+    
+    if (isRefresh) {
+      activities.value = response.items
+    } else {
+      activities.value = [...activities.value, ...response.items]
+    }
+    
+    currentPage.value = page
+    hasMore.value = page < response.total_pages
+  } catch (error) {
+    console.error('获取活动列表失败:', error)
+    toastError('加载失败，请稍后重试')
+  } finally {
+    loading.value = false
+    loadingMore.value = false
+  }
+}
+
+const loadMore = async () => {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  await fetchActivities(currentPage.value + 1)
+}
+
+const goToDetail = (id: string) => {
+  navigateTo(`/pages/activities/detail?id=${id}`)
+}
+
+const goToCreate = () => {
+  navigateTo('/pages/activities/create')
+}
+
+const goBack = () => {
+  navigateBack()
+}
+
+onMounted(async () => {
+  loading.value = true
+  await fetchActivities(1, true)
+})
+</script>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+}
+
+/* 导航栏 */
+.nav-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-secondary);
+  z-index: var(--z-fixed);
+  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+.nav-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  padding-top: max(var(--spacing-md), var(--safe-area-top));
+}
+
+.nav-back {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  background: var(--icon-bg-default);
+  transition: all var(--transition-fast);
+}
+
+.nav-back:hover {
+  background: var(--hover-bg-subtle);
+  transform: scale(1.05);
+}
+
+.nav-back:active {
+  background: var(--hover-bg-active);
+  transform: scale(0.95);
+}
+
+.nav-back-icon {
+  font-size: 24px;
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+
+.nav-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.nav-action {
+  padding: 10px 18px;
+  background: var(--color-primary-gradient);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-action::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: left var(--transition-slow);
+}
+
+.nav-action:hover::before {
+  left: 100%;
+}
+
+.nav-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.4);
+}
+
+.nav-action:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.nav-action-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-white);
+}
+
+/* 筛选标签 */
+.filter-tabs {
+  position: fixed;
+  top: 56px;
+  top: calc(56px + var(--safe-area-top));
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--color-bg-secondary);
+  padding: var(--spacing-md) var(--spacing-lg);
+  gap: var(--spacing-md);
+  z-index: var(--z-sticky);
+  box-shadow: var(--shadow-sm);
+}
+
+.filter-tab {
+  flex: 1;
+  padding: var(--spacing-sm) 0;
+  text-align: center;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  border: 1px solid transparent;
+}
+
+.filter-tab:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: rgba(255, 107, 53, 0.2);
+}
+
+.filter-tab.active {
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  border-color: transparent;
+}
+
+.filter-tab span {
+  display: inline-block;
+}
+
+/* 内容区域 */
+.content {
+  padding-top: 116px;
+  padding-top: calc(116px + var(--safe-area-top));
+  min-height: 100vh;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 20px;
+}
+
+.loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--color-primary-soft);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+.loading-spinner.small {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 20px;
+}
+
+.empty-emoji {
+  font-size: 72px;
+  margin-bottom: var(--spacing-lg);
+  animation: float 3s ease-in-out infinite;
+}
+
+.empty-text {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xl);
+}
+
+.empty-btn {
+  padding: 14px 28px;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.empty-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: left var(--transition-slow);
+}
+
+.empty-btn:hover::before {
+  left: 100%;
+}
+
+.empty-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.45);
+}
+
+.empty-btn:active {
+  transform: translateY(0) scale(0.95);
+}
+
+/* 活动列表 */
+.activity-list {
+  padding: 0;
+}
+
+.section {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-tertiary);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+}
+
+/* 热门活动横向滚动 */
+.hot-activity-scroll {
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: var(--spacing-md);
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding-left: var(--spacing-lg);
+  padding-right: var(--spacing-lg);
+}
+
+.hot-activity-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.hot-activity-card {
+  display: inline-block;
+  width: 170px;
+  margin-right: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.02);
+  position: relative;
+}
+
+.hot-activity-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.hot-activity-card:hover::before {
+  opacity: 1;
+}
+
+.hot-activity-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-4px) scale(1.02);
+}
+
+.hot-activity-card:active {
+  transform: scale(0.97);
+}
+
+.hot-activity-cover {
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hot-activity-emoji {
+  font-size: 44px;
+}
+
+.hot-activity-info {
+  padding: var(--spacing-md);
+}
+
+.hot-activity-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hot-activity-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hot-activity-time {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.hot-activity-join {
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 近期活动纵向列表 */
+.recent-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: 0 var(--spacing-lg);
+}
+
+.recent-activity-card {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+  position: relative;
+}
+
+.recent-activity-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.recent-activity-card:hover::before {
+  opacity: 1;
+}
+
+.recent-activity-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-3px);
+}
+
+.recent-activity-card:active {
+  transform: scale(0.98);
+}
+
+.recent-activity-cover {
+  position: relative;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recent-activity-icon {
+  font-size: 56px;
+}
+
+.recent-activity-badge {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  padding: 5px 14px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  backdrop-filter: blur(10px);
+}
+
+.recent-activity-badge.status-upcoming {
+  background: rgba(255, 107, 53, 0.95);
+  color: var(--color-text-white);
+}
+
+.recent-activity-badge.status-ongoing {
+  background: rgba(16, 185, 129, 0.95);
+  color: var(--color-text-white);
+}
+
+.recent-activity-badge.status-completed,
+.recent-activity-badge.status-cancelled {
+  background: rgba(139, 139, 165, 0.95);
+  color: var(--color-text-white);
+}
+
+.recent-activity-content {
+  padding: var(--spacing-lg);
+}
+
+.recent-activity-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.recent-activity-name {
+  flex: 1;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+.recent-activity-category {
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+}
+
+.recent-activity-category.cat-sports {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+.recent-activity-category.cat-culture {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8B5CF6;
+}
+
+.recent-activity-category.cat-charity {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.recent-activity-category.cat-party {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.recent-activity-category.cat-other {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+}
+
+.recent-activity-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.info-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.info-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.recent-activity-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.recent-activity-participants {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.participant-icon {
+  font-size: 15px;
+  opacity: 0.8;
+}
+
+.participant-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.recent-activity-join-btn {
+  padding: 8px 18px;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-smooth);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
+  border: none;
+  cursor: pointer;
+}
+
+.recent-activity-join-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35);
+}
+
+.recent-activity-join-btn:active {
+  transform: scale(0.95);
+}
+
+.recent-activity-join-btn.joined {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  box-shadow: none;
+}
+
+.recent-activity-join-btn.full {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  box-shadow: none;
+}
+
+.recent-activity-join-btn.ended {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+  box-shadow: none;
+}
+
+/* 加载更多 */
+.load-more,
+.no-more {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.load-more span {
+  cursor: pointer;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+  display: inline-block;
+}
+
+.load-more span:hover {
+  background: var(--color-primary-soft);
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.safe-area-bottom {
+  height: var(--spacing-xl);
+}
+
+/* ========================================
+   响应式设计 - 平板及以上设备
+   ======================================== */
+@media (min-width: 768px) {
+  .filter-tabs {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    gap: var(--spacing-lg);
+    max-width: 600px;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+  }
+  
+  .filter-tab {
+    padding: var(--spacing-sm) 0;
+    font-size: var(--font-size-md);
+  }
+  
+  .hot-activity-card {
+    width: 200px;
+  }
+  
+  .hot-activity-cover {
+    height: 110px;
+  }
+  
+  .hot-activity-emoji {
+    font-size: 52px;
+  }
+  
+  .recent-activity-cover {
+    height: 150px;
+  }
+  
+  .recent-activity-icon {
+    font-size: 64px;
+  }
+  
+  .recent-activity-name {
+    font-size: var(--font-size-xl);
+  }
+  
+  .nav-content {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .nav-header {
+    max-width: 600px;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+  }
+}
+
+/* ========================================
+   响应式设计 - 电脑及以上设备
+   ======================================== */
+@media (min-width: 1024px) {
+  .content {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .filter-tabs {
+    max-width: 700px;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  }
+  
+  .nav-content {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .nav-header {
+    max-width: 700px;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+  }
+  
+  /* 热门活动 - 网格布局 */
+  .hot-activity-scroll {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-lg);
+    overflow-x: visible;
+    padding: 0;
+  }
+  
+  .hot-activity-card {
+    width: 100%;
+    margin-right: 0;
+  }
+  
+  /* 近期活动 - 保持单列布局 */
+  .recent-activity-list {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .recent-activity-card {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   大屏幕优化
+   ======================================== */
+@media (min-width: 1440px) {
+  .content {
+    max-width: 800px;
+  }
+  
+  .filter-tabs {
+    max-width: 800px;
+  }
+  
+  .nav-content {
+    max-width: 800px;
+  }
+  
+  .nav-header {
+    max-width: 800px;
+  }
+  
+  .hot-activity-scroll {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+</style>

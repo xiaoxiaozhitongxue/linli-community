@@ -8,13 +8,7 @@
         "enablePullDownRefresh": true
       }
     },
-    {
-      "path": "pages/neighborhood/index",
-      "style": {
-        "navigationBarTitleText": "邻里空间",
-        "navigationStyle": "custom"
-      }
-    },
+
     {
       "path": "pages/activities/create",
       "style": {
@@ -32,7 +26,7 @@
     {
       "path": "pages/ai-helper/index",
       "style": {
-        "navigationBarTitleText": "AI互助",
+        "navigationBarTitleText": "互助",
         "navigationStyle": "custom"
       }
     },
@@ -50,13 +44,7 @@
         "navigationStyle": "custom"
       }
     },
-    {
-      "path": "pages/business/index",
-      "style": {
-        "navigationBarTitleText": "社区创业",
-        "navigationStyle": "custom"
-      }
-    },
+
     {
       "path": "pages/elderly/index",
       "style": {
@@ -180,10 +168,7 @@
         "pagePath": "pages/index/index",
         "text": "首页"
       },
-      {
-        "pagePath": "pages/neighborhood/index",
-        "text": "邻里"
-      },
+
       {
         "pagePath": "pages/ai-helper/index",
         "text": "互助"
