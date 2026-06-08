@@ -25,9 +25,23 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
+        id: deploy
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: linli-community
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show deployment URL
+        if: success()
+        run: echo "Deployment successful! URL: ${{ steps.deploy.outputs.url }}"
+
+      - name: Debug info on failure
+        if: failure()
+        run: |
+          echo "Deployment failed. Please check:"
+          echo "- CLOUDFLARE_API_TOKEN is set: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}"
+          echo "- CLOUDFLARE_ACCOUNT_ID is set: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}"
+          echo "- Check if the Cloudflare Pages project 'linli-community' exists"
+          echo "- Ensure API Token has 'Edit Cloudflare Pages' permission"
