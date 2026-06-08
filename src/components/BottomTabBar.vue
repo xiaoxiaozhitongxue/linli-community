@@ -96,8 +96,8 @@ const handleTouchEnd = () => {
   background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,1) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 140, 66, 0.12);
-  box-shadow: 0 -4px 30px rgba(255, 140, 66, 0.08), 0 -1px 0 rgba(255, 255, 255, 0.8);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.04);
 }
 
 .tab-bar-inner {
@@ -241,11 +241,11 @@ const handleTouchEnd = () => {
 
 .indicator-dot {
   width: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #FF8C42, #FF6B35);
+  height: 3px;
+  background: var(--color-primary);
   border-radius: 2px;
   transition: all var(--transition-bounce);
-  box-shadow: 0 0 8px rgba(255, 140, 66, 0.5);
+  opacity: 0.3;
 }
 
 .tab-item.active .indicator-dot {
