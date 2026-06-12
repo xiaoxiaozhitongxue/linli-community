@@ -215,195 +215,34 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { navigateTo, getUserStorageKey } from '../../utils/router'
-import { toastSuccess, toastInfo } from '../../utils/toast'
-
-const STORAGE_KEY = 'ai_helper_tasks'
-const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
-const MY_ACCEPTED_TASKS_KEY = 'ai_helper_my_accepted_tasks'
+import { navigateTo } from '../../utils/router'
+import { toastSuccess } from '../../utils/toast'
+import { tasksApi } from '../../utils/api'
+import { getCurrentUser } from '../../utils/storage'
 
 const statusBarHeight = ref(20)
-const selectedCategory = ref('all')  // 默认选择全部分类
-const statusFilter = ref('open')     // 默认只显示待接单任务
+const selectedCategory = ref('all')
+const statusFilter = ref('open')
 
-// 扩展的任务广场数据（8个不同状态的任务）
-const defaultTasks = [
-  {
-    id: '1',
-    type: 'delivery',
-    title: '帮忙取个快递',
-    description: '菜鸟驿站，3个包裹，有密码，取件码1234',
-    reward: 5,
-    distance: 150,
-    responses: 3,
-    creatorName: '小红',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=4',
-    createTime: '10分钟前',
-    status: 'open',
-    creatorRating: 4.8,
-    creatorTasks: 23,
-    location: '阳光社区 菜鸟驿站'
-  },
-  {
-    id: '2',
-    type: 'shopping',
-    title: '帮忙带份早餐',
-    description: '永和大王，豆浆油条套餐，加个煎蛋',
-    reward: 8,
-    distance: 200,
-    responses: 5,
-    creatorName: '上班族小王',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=5',
-    createTime: '20分钟前',
-    status: 'open',
-    creatorRating: 4.5,
-    creatorTasks: 12,
-    location: '永和大王 阳光社区店'
-  },
-  {
-    id: '3',
-    type: 'pet',
-    title: '代遛金毛半小时',
-    description: '金毛很温顺，就在楼下花园，疫苗已打',
-    reward: 15,
-    distance: 80,
-    responses: 2,
-    creatorName: '铲屎官小刘',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=6',
-    createTime: '1小时前',
-    status: 'ongoing',
-    creatorRating: 4.9,
-    creatorTasks: 56,
-    location: '阳光社区 花园'
-  },
-  {
-    id: '4',
-    type: 'child',
-    title: '帮忙接孩子',
-    description: '阳光小学门口，4点15分，两个孩子，一个书包',
-    reward: 25,
-    distance: 300,
-    responses: 1,
-    creatorName: '双职工家庭',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=7',
-    createTime: '2小时前',
-    status: 'open',
-    creatorRating: 4.6,
-    creatorTasks: 8,
-    location: '阳光小学 门口'
-  },
-  {
-    id: '5',
-    type: 'delivery',
-    title: '急！取文件快递',
-    description: '顺丰快递，生鲜文件，需今天送到家',
-    reward: 10,
-    distance: 250,
-    responses: 4,
-    creatorName: '白领张小姐',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=9',
-    createTime: '30分钟前',
-    status: 'open',
-    creatorRating: 4.7,
-    creatorTasks: 35,
-    location: '顺丰速递 社区店'
-  },
-  {
-    id: '6',
-    type: 'shopping',
-    title: '代买感冒药',
-    description: '楼下药店，买感康两盒，可报销',
-    reward: 12,
-    distance: 50,
-    responses: 6,
-    creatorName: '独居老人家属',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=10',
-    createTime: '15分钟前',
-    status: 'open',
-    creatorRating: 4.3,
-    creatorTasks: 5,
-    location: '阳光大药房'
-  },
-  {
-    id: '7',
-    type: 'pet',
-    title: '临时照看猫咪',
-    description: '英短蓝猫，2岁，乖巧可爱，需出差3天',
-    reward: 80,
-    distance: 100,
-    responses: 0,
-    creatorName: '爱猫人士小林',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=11',
-    createTime: '3小时前',
-    status: 'open',
-    creatorRating: 4.8,
-    creatorTasks: 42,
-    location: '阳光社区 3栋'
-  },
-  {
-    id: '8',
-    type: 'child',
-    title: '兴趣班接送',
-    description: '每周六下午3点，舞蹈班，4点接回',
-    reward: 25,
-    distance: 400,
-    responses: 2,
-    creatorName: '辣妈小美',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=12',
-    createTime: '5小时前',
-    status: 'open',
-    creatorRating: 4.9,
-    creatorTasks: 67,
-    location: '青少年宫'
-  }
-]
-
-const defaultMyCreatedTasks = [
-  { id: '1', title: '取快递', reward: 5, status: 'ongoing', updateTime: '进行中' },
-  { id: '2', title: '带早餐', reward: 8, status: 'completed', updateTime: '已完成' }
-]
-
-const defaultMyAcceptedTasks = [
-  { id: '3', title: '帮取快递', reward: 5, status: 'ongoing', updateTime: '进行中' }
-]
-
-// 获取用户数据键名
-function getUserDataKey(prefix: string): string {
-  const userInfo = localStorage.getItem('userInfo')
-  if (userInfo) {
-    const user = JSON.parse(userInfo)
-    return `${prefix}_${user.phone}`
-  }
-  return prefix
+// 前端 UI 展示用的任务对象（包含 type / creatorName 等）
+interface UITask {
+  id: string
+  type: string
+  title: string
+  description: string
+  reward: number
+  distance: number
+  responses: number
+  creatorName: string
+  creatorAvatar: string
+  createTime: string | number
+  status: 'open' | 'ongoing' | 'completed' | 'pending' | string
+  creatorRating: number
+  creatorTasks: number
+  location: string
 }
 
-// 从 localStorage 加载数据
-function loadFromStorage(key: string, defaultValue: any[]) {
-  try {
-    const stored = localStorage.getItem(key)
-    if (stored) {
-      return JSON.parse(stored)
-    }
-  } catch (e) {
-    console.error(`加载数据失败: ${key}`, e)
-  }
-  return [...defaultValue]
-}
-
-// 保存数据到 localStorage
-function saveToStorage(key: string, data: any) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch (e) {
-    console.error(`保存数据失败: ${key}`, e)
-  }
-}
-
-const tasks = ref<any[]>([])
-const myCreatedTasks = ref<any[]>([])
-const myAcceptedTasks = ref<any[]>([])
-
-// 规范化状态值：后端可能用 pending/in_progress/completed 等
+// 规范化状态值
 function normalizeStatus(status: string): string {
   if (!status) return 'open'
   const s = String(status).toLowerCase()
@@ -413,54 +252,38 @@ function normalizeStatus(status: string): string {
   return 'open'
 }
 
-// 把后端 API 返回的任务对象映射到前端 UI 字段
-function mapApiTask(t: any): any {
+// 把后端 API 任务对象映射到前端 UI 字段
+function mapApiTaskToUI(t: any): UITask {
+  const u = getCurrentUser()
+  const creator = t.creator || {}
   return {
     id: t.id,
     type: t.category || t.type || 'other',
     title: t.title || '任务详情',
     description: t.description || '',
     reward: Number(t.reward) || 0,
-    distance: t.distance || 0,
+    distance: t.distance || Math.floor(Math.random() * 500) + 50,
     responses: t.responses || 0,
-    creatorName: t.creator?.nickname || t.creatorName || '邻居',
-    creatorAvatar: t.creator?.avatar || t.creatorAvatar || '',
+    creatorName: creator.nickname || creator.name || t.creatorName || '邻里用户',
+    creatorAvatar: creator.avatar || t.creatorAvatar || 'https://i.pravatar.cc/100?img=8',
     createTime: t.created_at || t.createTime || Date.now(),
     status: normalizeStatus(t.status),
-    creatorRating: t.creator?.credit_score || t.creatorRating || 4.8,
-    creatorTasks: t.creator?.completed_count || t.creatorTasks || 0,
-    location: t.location || ''
+    creatorRating: creator.credit_score
+      ? Number((creator.credit_score / 20).toFixed(1))
+      : t.creatorRating || 4.8,
+    creatorTasks: creator.completed_count || t.creatorTasks || (u ? 10 : 0),
+    location: t.location || '阳光社区',
   }
 }
 
-// 尝试从后端获取任务列表
-async function fetchTasksFromApi(): Promise<any[] | null> {
-  try {
-    const res = await fetch('/functions/api/tasks?limit=20&sort=created_at')
-    if (!res.ok) return null
-    const json = await res.json()
-    if (json && Array.isArray(json.data)) {
-      return json.data.map(mapApiTask)
-    }
-    if (json && json.data && Array.isArray(json.data.items)) {
-      return json.data.items.map(mapApiTask)
-    }
-  } catch (e) {
-    // ignore, fallback to local
-  }
-  return null
-}
+const tasks = ref<UITask[]>([])
 
-// 统计数据
 const openTaskCount = computed(() => {
-  return tasks.value.filter(t => t.status === 'open').length
+  return tasks.value.filter((t) => t.status === 'open').length
 })
 
 const todayCount = computed(() => {
-  // 简化统计：今天发布的任务数
-  return tasks.value.filter(t => {
-    return t.status === 'open' || t.status === 'ongoing'
-  }).length
+  return tasks.value.filter((t) => t.status === 'open' || t.status === 'ongoing').length
 })
 
 // 获取分类名称
@@ -471,86 +294,60 @@ const getCategoryName = (category: string) => {
     shopping: '买菜',
     pet: '遛狗',
     child: '接孩子',
-    other: '其他'
+    other: '其他',
   }
   return map[category] || ''
 }
 
-// 获取某个分类的待接单任务数量
+// 获取某分类的待接单数量
 const getCategoryOpenCount = (category: string) => {
-  if (category === 'all') {
-    return openTaskCount.value
-  }
-  return tasks.value.filter(t => 
-    t.type === category && t.status === 'open'
-  ).length
+  if (category === 'all') return openTaskCount.value
+  return tasks.value.filter((t) => t.type === category && t.status === 'open').length
 }
 
-// 筛选任务
 const filteredTasks = computed(() => {
   let result = [...tasks.value]
-  
-  // 按分类筛选
   if (selectedCategory.value !== 'all') {
-    result = result.filter(t => t.type === selectedCategory.value)
+    result = result.filter((t) => t.type === selectedCategory.value)
   }
-  
-  // 按状态筛选（默认只显示待接单）
   if (statusFilter.value !== 'all') {
-    result = result.filter(t => t.status === statusFilter.value)
+    result = result.filter((t) => t.status === statusFilter.value)
   }
-  
-  // 按时间排序（最新的在前）
   result.sort((a, b) => {
-    const timeA = new Date(a.createTime).getTime() || 0
-    const timeB = new Date(b.createTime).getTime() || 0
-    return timeB - timeA
+    const ta = typeof a.createTime === 'number' ? a.createTime : new Date(a.createTime).getTime()
+    const tb = typeof b.createTime === 'number' ? b.createTime : new Date(b.createTime).getTime()
+    return tb - ta
   })
-  
   return result
 })
 
-// 选择分类
 const selectCategory = (category: string) => {
   selectedCategory.value = category
 }
 
-// 设置状态筛选
 const setStatusFilter = (status: string) => {
   statusFilter.value = status
 }
 
-const goToTaskDetail = (task: any) => {
+const goToTaskDetail = (task: UITask) => {
   navigateTo(`/pages/ai-helper/detail?id=${task.id}`)
 }
 
-const respondToTask = (task: any, event: Event) => {
+const respondToTask = async (task: UITask, event: Event) => {
   event.stopPropagation()
-  if (window.confirm('确定要接下这个任务吗？')) {
-    const userTaskKey = getUserStorageKey('ai_helper_tasks')
-    const userAcceptedKey = getUserStorageKey('ai_helper_my_accepted_tasks')
+  if (task.status !== 'open') return
+  if (!window.confirm('确定要接下这个任务吗？')) return
 
-    // 更新任务列表
-    const index = tasks.value.findIndex(t => t.id === task.id)
-    if (index !== -1) {
-      tasks.value[index].responses++
-      tasks.value[index].status = 'ongoing'
-      saveToStorage(userTaskKey, tasks.value)
+  // 通过统一 API 层接单（自动按当前用户手机号隔离保存）
+  await tasksApi.acceptTask(task.id)
 
-      // 添加到我的接单任务
-      const myNewAcceptedTask = {
-        id: task.id,
-        title: task.title,
-        reward: task.reward,
-        status: 'ongoing',
-        updateTime: '刚刚'
-      }
-      myAcceptedTasks.value.unshift(myNewAcceptedTask)
-      saveToStorage(userAcceptedKey, myAcceptedTasks.value)
-
-      toastSuccess('接单成功')
-    }
+  // 更新本地 UI 状态
+  const idx = tasks.value.findIndex((t) => t.id === task.id)
+  if (idx !== -1) {
+    tasks.value[idx].status = 'ongoing'
+    tasks.value[idx].responses++
   }
+  toastSuccess('接单成功')
 }
 
 const getTypeName = (type: string) => {
@@ -559,7 +356,7 @@ const getTypeName = (type: string) => {
     shopping: '买菜',
     pet: '遛狗',
     child: '接孩子',
-    other: '其他'
+    other: '其他',
   }
   return map[type] || type
 }
@@ -569,25 +366,19 @@ const getStatusName = (status: string) => {
     open: '待接单',
     ongoing: '进行中',
     pending_confirm: '待确认',
-    completed: '已完成'
+    completed: '已完成',
   }
   return map[status] || status
 }
 
 onMounted(async () => {
-  // 优先尝试从 API 获取任务
-  const apiTasks = await fetchTasksFromApi()
-  if (apiTasks && apiTasks.length > 0) {
-    tasks.value = apiTasks
-  } else {
-    // 页面加载时使用用户专属键读取数据（localStorage 回退）
-    const userTaskKey = getUserStorageKey('ai_helper_tasks')
-    const userCreatedKey = getUserStorageKey('ai_helper_my_created_tasks')
-    const userAcceptedKey = getUserStorageKey('ai_helper_my_accepted_tasks')
-
-    tasks.value = loadFromStorage(userTaskKey, [])
-    myCreatedTasks.value = loadFromStorage(userCreatedKey, [])
-    myAcceptedTasks.value = loadFromStorage(userAcceptedKey, [])
+  try {
+    const res = await tasksApi.getTasks()
+    const list: any[] = (res && (res as any).items) || (Array.isArray(res) ? (res as any) : [])
+    tasks.value = list.map(mapApiTaskToUI)
+  } catch (e) {
+    console.error('[ai-helper] 加载任务失败:', e)
+    tasks.value = []
   }
 })
 </script>

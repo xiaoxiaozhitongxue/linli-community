@@ -42,6 +42,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { loadHealthRecords, saveHealthRecords } from '../../utils/storage'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess } from '../../utils/toast'
 
@@ -87,15 +88,13 @@ function formatDateKey(date: Date) {
 }
 
 function loadRecords() {
-  const stored = localStorage.getItem('linli_health_records')
-  if (stored) {
-    records.value = JSON.parse(stored)
-  }
+  const data = loadHealthRecords()
+  if (Array.isArray(data)) records.value = data
   checkTodayStatus()
 }
 
 function saveRecords() {
-  localStorage.setItem('linli_health_records', JSON.stringify(records.value))
+  saveHealthRecords(records.value)
 }
 
 function checkTodayStatus() {

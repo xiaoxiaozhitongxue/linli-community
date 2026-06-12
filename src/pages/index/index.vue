@@ -249,11 +249,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { postsApi, activitiesApi, type Post, type Comment, type Activity } from '../../utils/api'
+import { postsApi, activitiesApi, tasksApi, type Post, type Comment, type Activity } from '../../utils/api'
 import { useAuth } from '../../store'
 import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
+import { loadHealthRecords } from '../../utils/storage'
 
 const { initAuth, isLoggedIn } = useAuth()
 
@@ -296,48 +297,28 @@ const quickActions = ref([
 const healthBadge = ref('未打卡')
 const helpBadge = ref('')
 async function loadQuickBadges() {
-  // 健康打卡状态
+  // 健康打卡状态 - 使用统一存储层
   try {
-    const stored = localStorage.getItem('linli_health_records')
-    if (stored) {
-      const records = JSON.parse(stored)
-      const today = new Date()
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-      const hasChecked = records.some((r: any) => r.date === todayStr)
-      healthBadge.value = hasChecked ? '已打卡' : '去打卡'
-    } else {
-      healthBadge.value = '去打卡'
-    }
+    const records: any[] = loadHealthRecords() || []
+    const today = new Date()
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    const hasChecked = records.some((r: any) => r.date === todayStr)
+    healthBadge.value = hasChecked ? '已打卡' : '去打卡'
   } catch (e) {
-    // ignore
+    healthBadge.value = '去打卡'
   }
 
-  // 互助任务数量
+  // 互助任务数量 - 使用统一 API 层
   try {
-    const res = await fetch('/functions/api/tasks?status=pending&limit=1')
-    if (res.ok) {
-      const data = await res.json()
-      if (data && data.data && data.data.total_pages) {
-        const total = data.data.total || 0
-        const stored = localStorage.getItem('ai_helper_tasks')
-        let fallback = 0
-        if (stored) {
-          const localTasks = JSON.parse(stored)
-          fallback = localTasks.filter((t: any) => t.status === 'open').length
-        }
-        helpBadge.value = `${total > 0 ? total : fallback}单待接`
-      }
-    }
+    const res: any = await tasksApi.getTasks()
+    const items: any[] = (res && res.items) || (Array.isArray(res) ? (res as any) : [])
+    const pendingCount = items.filter((t: any) => {
+      const s = (t.status || '').toLowerCase()
+      return s === 'open' || s === 'pending'
+    }).length
+    helpBadge.value = pendingCount > 0 ? `${pendingCount}单待接` : ''
   } catch (e) {
-    // 使用 localStorage 回退
-    try {
-      const stored = localStorage.getItem('ai_helper_tasks')
-      if (stored) {
-        const localTasks = JSON.parse(stored)
-        const openCount = localTasks.filter((t: any) => t.status === 'open').length
-        helpBadge.value = `${openCount}单待接`
-      }
-    } catch (_) { /* ignore */ }
+    helpBadge.value = ''
   }
 }
 

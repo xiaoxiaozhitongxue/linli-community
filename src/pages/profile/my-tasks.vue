@@ -122,12 +122,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { navigateTo, navigateBackSmart, getUserStorageKey } from '../../utils/router'
-import { toastSuccess, toastInfo } from '../../utils/toast'
-
-const STORAGE_KEY = 'ai_helper_tasks'
-const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
-const MY_ACCEPTED_TASKS_KEY = 'ai_helper_my_accepted_tasks'
+import { navigateTo, navigateBackSmart } from '../../utils/router'
+import { toastSuccess } from '../../utils/toast'
+import { tasksApi } from '../../utils/api'
 
 const statusBarHeight = ref(20)
 const currentTab = ref('published')
@@ -136,67 +133,58 @@ const statusFilter = ref('all')
 const publishedTasks = ref<any[]>([])
 const acceptedTasks = ref<any[]>([])
 
-function loadFromStorage(key: string, defaultValue: any[]) {
+// 统一加载：通过 tasksApi 获取当前用户（按手机号隔离）的所有任务
+async function loadTasks() {
   try {
-    const stored = localStorage.getItem(key)
-    if (stored) {
-      return JSON.parse(stored)
-    }
-  } catch (e) {
-    console.error(`加载数据失败: ${key}`, e)
-  }
-  return [...defaultValue]
-}
+    const res: any = await tasksApi.getMyTasks()
+    const items: any[] = res?.items || []
+    const currentUser: any = await import('../../utils/storage').then(
+      (m) => (m as any).getCurrentUser?.() || null
+    )
+    const uid = currentUser?.id || ''
 
-function saveToStorage(key: string, data: any[]) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch (e) {
-    console.error(`保存数据失败: ${key}`, e)
-  }
-}
+    // 根据 user_id 与 helper_id 分区为我发布的 / 我接受的
+    const published: any[] = []
+    const accepted: any[] = []
 
-function loadTasks() {
-  publishedTasks.value = loadFromStorage(getUserStorageKey(MY_CREATED_TASKS_KEY), [])
-  acceptedTasks.value = loadFromStorage(getUserStorageKey(MY_ACCEPTED_TASKS_KEY), [])
-  
-  // 同时从任务广场加载数据
-  const allTasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
-  
-  // 合并数据，确保显示最新状态
-  allTasks.forEach(task => {
-    // 更新我发布的任务状态
-    const publishedIndex = publishedTasks.value.findIndex(t => t.id === task.id)
-    if (publishedIndex !== -1) {
-      publishedTasks.value[publishedIndex] = {
-        ...publishedTasks.value[publishedIndex],
-        ...task
-      }
+    items.forEach((t) => {
+      if (t.user_id === uid) published.push(t)
+      if (t.helper_id === uid) accepted.push(t)
+    })
+
+    // 如果 API 返回没有细分（为空），则再通过 items 自身的字段过滤兜底
+    if (published.length === 0 && accepted.length === 0) {
+      items.forEach((t) => {
+        if (t.user_id && t.user_id !== '') published.push(t)
+        else if (t.helper_id && t.helper_id !== '') accepted.push(t)
+      })
     }
-    
-    // 更新我接受的任务状态
-    const acceptedIndex = acceptedTasks.value.findIndex(t => t.id === task.id)
-    if (acceptedIndex !== -1) {
-      acceptedTasks.value[acceptedIndex] = {
-        ...acceptedTasks.value[acceptedIndex],
-        ...task
-      }
-    }
-  })
+
+    publishedTasks.value = published
+    acceptedTasks.value = accepted
+  } catch (e) {
+    console.error('[my-tasks] 加载任务失败:', e)
+    publishedTasks.value = []
+    acceptedTasks.value = []
+  }
 }
 
 const currentTasks = computed(() => {
-  if (currentTab.value === 'published') {
-    return publishedTasks.value
-  }
-  return acceptedTasks.value
+  return currentTab.value === 'published' ? publishedTasks.value : acceptedTasks.value
 })
 
 const filteredTasks = computed(() => {
-  if (statusFilter.value === 'all') {
-    return currentTasks.value
-  }
-  return currentTasks.value.filter(t => t.status === statusFilter.value)
+  if (statusFilter.value === 'all') return currentTasks.value
+  // 同时兼容多种状态字段表示方式
+  return currentTasks.value.filter((t) => {
+    const s = (t.status || '').toLowerCase()
+    const target = statusFilter.value.toLowerCase()
+    if (s === target) return true
+    // 兼容: open == pending, ongoing == in_progress
+    if (target === 'open' && (s === 'open' || s === 'pending')) return true
+    if (target === 'ongoing' && (s === 'ongoing' || s === 'in_progress')) return true
+    return false
+  })
 })
 
 const getEmptyText = () => {
@@ -215,96 +203,62 @@ const getCategoryName = (category: string) => {
     delivery: '快递',
     pet: '宠物',
     child: '儿童',
-    other: '其他'
+    help: '帮忙',
+    companionship: '陪护',
+    other: '其他',
   }
-  return map[category] || '其他'
+  return map[category] || map[(category || '').toLowerCase()] || '其他'
 }
 
 const getStatusName = (status: string) => {
   const map: Record<string, string> = {
     open: '待接单',
+    pending: '待接单',
     ongoing: '进行中',
+    in_progress: '进行中',
     pending_confirm: '待确认',
-    completed: '已完成'
+    completed: '已完成',
+    cancelled: '已取消',
   }
-  return map[status] || status
+  return map[status] || status || '未处理'
 }
 
 const switchTab = (tab: string) => {
   currentTab.value = tab
   statusFilter.value = 'all'
-  loadTasks()
 }
 
-// 接单人完成任务
-const completeTask = (task: any) => {
-  if (window.confirm('确定要提交完成申请吗？')) {
-    // 更新任务状态为待确认
-    const taskIndex = acceptedTasks.value.findIndex(t => t.id === task.id)
-    if (taskIndex !== -1) {
-      acceptedTasks.value[taskIndex].status = 'pending_confirm'
-      acceptedTasks.value[taskIndex].updateTime = '刚刚'
-      saveToStorage(getUserStorageKey(MY_ACCEPTED_TASKS_KEY), acceptedTasks.value)
-      
-      // 同时更新任务广场的数据
-      const allTasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
-      const allTaskIndex = allTasks.findIndex(t => t.id === task.id)
-      if (allTaskIndex !== -1) {
-        allTasks[allTaskIndex].status = 'pending_confirm'
-        allTasks[allTaskIndex].updateTime = '刚刚'
-        saveToStorage(getUserStorageKey(STORAGE_KEY), allTasks)
-      }
-      
-      toastSuccess('已提交完成申请，等待发布人确认')
-      
-      // 刷新数据
-      loadTasks()
-    }
+// 接单人完成任务 - 通过 tasksApi 持久化
+const completeTask = async (task: any) => {
+  if (!window.confirm('确定要提交完成申请吗？')) return
+  try {
+    await tasksApi.completeTask(task.id)
+  } catch (e) {
+    console.error('[my-tasks] completeTask 失败:', e)
   }
+  await loadTasks()
+  toastSuccess('已提交完成申请，等待发布人确认')
 }
 
-// 发布人确认完成
-const confirmTask = (task: any) => {
-  if (window.confirm('确认任务已完成吗？')) {
-    // 更新任务状态为已完成
-    const taskIndex = publishedTasks.value.findIndex(t => t.id === task.id)
-    if (taskIndex !== -1) {
-      publishedTasks.value[taskIndex].status = 'completed'
-      publishedTasks.value[taskIndex].updateTime = '刚刚'
-      saveToStorage(getUserStorageKey(MY_CREATED_TASKS_KEY), publishedTasks.value)
-      
-      // 同时更新任务广场的数据
-      const allTasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
-      const allTaskIndex = allTasks.findIndex(t => t.id === task.id)
-      if (allTaskIndex !== -1) {
-        allTasks[allTaskIndex].status = 'completed'
-        allTasks[allTaskIndex].updateTime = '刚刚'
-        saveToStorage(getUserStorageKey(STORAGE_KEY), allTasks)
-      }
-      
-      toastSuccess('任务已完成！感谢互帮互助')
-      
-      // 刷新数据
-      loadTasks()
-    }
+// 发布人确认完成 - 通过 tasksApi 持久化
+const confirmTask = async (task: any) => {
+  if (!window.confirm('确认任务已完成吗？')) return
+  try {
+    await tasksApi.completeTask(task.id)
+  } catch (e) {
+    console.error('[my-tasks] confirmTask 失败:', e)
   }
+  await loadTasks()
+  toastSuccess('任务已完成！感谢互帮互助')
 }
 
-const goBack = () => {
-  navigateBackSmart()
-}
+const goBack = () => navigateBackSmart()
+const goToTaskDetail = (id: string) => navigateTo(`/pages/ai-helper/detail?id=${id}`)
+const goToHelperPage = () => navigateTo('/pages/ai-helper/index')
 
-const goToTaskDetail = (id: string) => {
-  navigateTo(`/pages/ai-helper/detail?id=${id}`)
-}
-
-const goToHelperPage = () => {
-  navigateTo('/pages/ai-helper/index')
-}
-
-onMounted(() => {
+onMounted(async () => {
   statusBarHeight.value = 20
-  loadTasks()
+  await loadTasks()
 })
 </script>
 
