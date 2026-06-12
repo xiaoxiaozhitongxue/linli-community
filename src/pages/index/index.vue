@@ -631,10 +631,14 @@ async function chooseLocation() {
   try {
     const result = await getLocation({ forceRefresh: true })
     locationResult.value = result
-    // 展示策略：优先用户注册的社区，否则 "城市·区域"，兜底最近的社区
+    // 展示策略：优先展示真实城市·区域；注册社区仅在拿不到地理编码时作为兜底
     const display = pickDisplayCommunity(result, user.value?.community)
     communityName.value = display
-    toastSuccess(`已定位到 ${result.city || ''} ${result.district || ''}`)
+    const place = (result.city && result.district)
+      ? `${result.city} ${result.district}`
+      : (result.address || display)
+    toastSuccess(`已定位到 ${place}`)
+    console.log('[index] chooseLocation 完成, user =', user.value, 'result =', result, 'display =', display)
   } catch (err: any) {
     const msg = err?.message || '定位失败，请稍后重试'
     toastInfo(msg)

@@ -184,7 +184,7 @@ async function locateByAmap(): Promise<LocationResult> {
     'AMap'
   )
 
-  const coords = await new Promise<{ longitude: number; latitude: number; formattedAddress?: string }>(
+  const coords = await new Promise<{ longitude: number; latitude: number; formattedAddress?: string; city?: string; district?: string }>(
     (resolve, reject) => {
       plugin.plugin('AMap.Geolocation', () => {
         const geolocation = new plugin.Geolocation({
@@ -193,13 +193,19 @@ async function locateByAmap(): Promise<LocationResult> {
           showButton: false,
           showCircle: false,
           showMarker: false,
+          extensions: 'all',    // 拿到更完整的 POI/地址信息
+          GeoLocationFirst: true,
         })
         geolocation.getCurrentPosition((status: string, result: any) => {
+          console.log('[location][AMap] 定位回调 status=', status, 'result=', result)
           if (status === 'complete') {
+            const addrComp: any = (result.addressComponent as any) || {}
             resolve({
               longitude: result.position.lng,
               latitude: result.position.lat,
               formattedAddress: result.formattedAddress,
+              city: addrComp.city || addrComp.province || '',
+              district: addrComp.district || '',
             })
           } else {
             // 高德定位失败，fallback 到浏览器 geolocation
@@ -210,24 +216,30 @@ async function locateByAmap(): Promise<LocationResult> {
     }
   )
 
-  // 逆地理编码（city/district）
-  const regeo = await new Promise<{ city: string; district: string; address: string }>((resolve) => {
-    plugin.plugin('AMap.Geocoder', () => {
-      const gc = new plugin.Geocoder({ city: '全国' })
-      gc.getAddress([coords.longitude, coords.latitude], (status: string, result: any) => {
-        if (status === 'complete' && result.regeocode) {
-          const addr = result.regeocode.addressComponent
-          resolve({
-            city: addr.city || addr.province || '',
-            district: addr.district || '',
-            address: result.regeocode.formattedAddress || coords.formattedAddress || '',
-          })
-        } else {
-          resolve({ city: '', district: '', address: coords.formattedAddress || '' })
-        }
+  // 如果定位插件已经返回了 city/district，就直接用；否则仍调用逆地理编码补齐
+  let regeo = { city: '', district: '', address: '' }
+  if (coords.city || coords.district) {
+    regeo = { city: coords.city, district: coords.district, address: coords.formattedAddress || '' }
+  } else {
+    regeo = await new Promise<{ city: string; district: string; address: string }>((resolve) => {
+      plugin.plugin('AMap.Geocoder', () => {
+        const gc = new plugin.Geocoder({ city: '全国' })
+        gc.getAddress([coords.longitude, coords.latitude], (status: string, result: any) => {
+          console.log('[location][AMap] 逆地理编码 status=', status, 'result=', result)
+          if (status === 'complete' && result.regeocode) {
+            const addr = result.regeocode.addressComponent
+            resolve({
+              city: addr.city || addr.province || '',
+              district: addr.district || '',
+              address: result.regeocode.formattedAddress || coords.formattedAddress || '',
+            })
+          } else {
+            resolve({ city: '', district: '', address: coords.formattedAddress || '' })
+          }
+        })
       })
     })
-  })
+  }
 
   const communityHit = pickCommunityByKeywords(regeo.city, regeo.district)
   const nearest = communityHit || findNearestCommunity(coords.latitude, coords.longitude)
@@ -251,40 +263,54 @@ async function locateByBaidu(): Promise<LocationResult> {
   )
 
   const geo = new BMap.Geolocation()
-  const coords = await new Promise<{ longitude: number; latitude: number }>((resolve, reject) => {
-    geo.getCurrentPosition(
-      (result: any) => {
+  const coords = await new Promise<{ longitude: number; latitude: number; city?: string; district?: string; address?: string }>(
+    (resolve, reject) => {
+      geo.getCurrentPosition(
+        (result: any) => {
+          console.log('[location][Baidu] 定位回调 result =', result)
+          if (result) {
+            const addrComp: any = result.address || result.addressComponents || {}
+            resolve({
+              longitude: result.point.lng,
+              latitude: result.point.lat,
+              city: addrComp.city || '',
+              district: addrComp.district || '',
+              address: result.address || (addrComp.province || '') + (addrComp.city || '') + (addrComp.district || ''),
+            })
+          } else {
+            browserGetCoords().then(resolve).catch(reject)
+          }
+        },
+        (err: any) => {
+          console.warn('[location][Baidu] 定位失败 err =', err)
+          browserGetCoords().then(resolve).catch(reject)
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      )
+    }
+  )
+
+  // 如定位已返回 city/district，直接使用；否则调百度逆地理编码补齐
+  let regeo = { city: '', district: '', address: '' }
+  if (coords.city || coords.district) {
+    regeo = { city: coords.city, district: coords.district, address: coords.address || '' }
+  } else {
+    const myGeo = new BMap.Geocoder()
+    regeo = await new Promise<{ city: string; district: string; address: string }>((resolve) => {
+      myGeo.getLocation(new BMap.Point(coords.longitude, coords.latitude), (result: any) => {
+        console.log('[location][Baidu] 逆地理编码 result =', result)
         if (result) {
           resolve({
-            longitude: result.point.lng,
-            latitude: result.point.lat,
+            city: result.addressComponents.city || '',
+            district: result.addressComponents.district || '',
+            address: result.address || '',
           })
         } else {
-          browserGetCoords().then(resolve).catch(reject)
+          resolve({ city: '', district: '', address: '' })
         }
-      },
-      (err: any) => {
-        browserGetCoords().then(resolve).catch(reject)
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    )
-  })
-
-  // 百度逆地理编码
-  const myGeo = new BMap.Geocoder()
-  const regeo = await new Promise<{ city: string; district: string; address: string }>((resolve) => {
-    myGeo.getLocation(new BMap.Point(coords.longitude, coords.latitude), (result: any) => {
-      if (result) {
-        resolve({
-          city: result.addressComponents.city || '',
-          district: result.addressComponents.district || '',
-          address: result.address || '',
-        })
-      } else {
-        resolve({ city: '', district: '', address: '' })
-      }
+      })
     })
-  })
+  }
 
   const communityHit = pickCommunityByKeywords(regeo.city, regeo.district)
   const nearest = communityHit || findNearestCommunity(coords.latitude, coords.longitude)
@@ -300,9 +326,28 @@ async function locateByBaidu(): Promise<LocationResult> {
   }
 }
 
-// ======= 浏览器兜底（仅经纬度 + 距离匹配社区）===============================
+// ======= 浏览器兜底（经纬度 → OSM Nominatim 逆地理编码 → 真实 city/district/address）=======
+// 无高德/百度 key 时也能展示真实地理位置
 async function locateByBrowser(): Promise<LocationResult> {
   const coords = await browserGetCoords()
+
+  // 先调 Nominatim 免费逆地理编码获取真实城市/区域
+  const regeo = await nominatimReverseGeocode(coords.latitude, coords.longitude)
+  console.log('[location][browser] 原始坐标 + Nominatim 结果:', regeo, coords)
+
+  if (regeo.city || regeo.district) {
+    // 成功拿到真实地址
+    return {
+      longitude: coords.longitude,
+      latitude: coords.latitude,
+      city: regeo.city,
+      district: regeo.district,
+      address: regeo.address || `${regeo.city} ${regeo.district}`,
+      community: `${regeo.city}${regeo.district}`,
+      provider: 'browser',
+    }
+  }
+  // Nominatim 也失败时再回退到社区列表最近社区
   const nearest = findNearestCommunity(coords.latitude, coords.longitude)
   return {
     longitude: coords.longitude,
@@ -340,13 +385,16 @@ export async function getLocation(options: { forceRefresh?: boolean } = {}): Pro
       result = await locateByBrowser()
     }
     lastLocation = result
+    console.log('[location] 最终定位结果 =', result, '引擎 =', engine)
     return result
   } catch (err: any) {
+    console.warn('[location] 主引擎失败，错误 =', err)
     // 引擎失败时再试一下浏览器原生定位（避免白配置了 key 但是网络问题导致失败）
     if (engine !== 'browser') {
       try {
         const fallback = await locateByBrowser()
         lastLocation = fallback
+        console.log('[location] 降级至浏览器兜底，结果 =', fallback)
         return fallback
       } catch (_) { /* ignore */ }
     }
@@ -358,16 +406,58 @@ export function getLastLocation(): LocationResult | null {
   return lastLocation
 }
 
-// 展示给用户的社区名（优先使用当前用户注册的 community）
+// 展示给用户的社区名：优先用真实地理编码返回的城市+区域，避免被默认社区名（如"阳光社区"）覆盖
 export function pickDisplayCommunity(
   result: LocationResult,
   registeredCommunity?: string | null
 ): string {
+  // 1. 优先：逆地理编码返回的真实"城市·区域"
+  if (result.city && result.district) {
+    return `${result.city.replace(/市$/, '')} · ${result.district.replace(/区$/, '')}`
+  }
+  if (result.city) {
+    return result.city.replace(/市$/, '')
+  }
+  if (result.district) {
+    return result.district
+  }
+  if (result.address && result.address.trim()) {
+    return result.address
+  }
+  // 2. 次要：用户注册时的社区名
   if (registeredCommunity && registeredCommunity.trim()) {
     return registeredCommunity
   }
-  if (result.district && result.city) {
-    return `${result.city.replace(/市$/, '')} · ${result.district.replace(/区$/, '')}`
-  }
+  // 3. 兜底：预设社区
   return result.community || '未知社区'
+}
+
+// ======= 免费逆地理编码：OpenStreetMap Nominatim（无需 API key，HTTP(S)）=======
+// 用于"浏览器 Geolocation + OSM"的兜底链路：即使用户没配高德/百度 key，
+// 也能拿到真实 city/district/address，而不是仅从 COMMUNITIES 列表找最近预设
+async function nominatimReverseGeocode(
+  lat: number,
+  lng: number
+): Promise<{ city: string; district: string; address: string }> {
+  try {
+    const url =
+      'https://nominatim.openstreetmap.org/reverse?format=json&accept-language=zh-CN' +
+      `&lat=${lat}&lon=${lng}&zoom=14`
+    const resp = await fetch(url, { headers: { 'User-Agent': 'LinLiCommunity/1.0' } })
+    if (!resp.ok) {
+      return { city: '', district: '', address: '' }
+    }
+    const data = await resp.json()
+    const addr = data.address || {}
+    // OSM 对中文城市的返回字段差异较大，尝试按优先级收集
+    const city =
+      addr.city || addr.town || addr.municipality || addr.village || addr.county ||
+      addr.state || addr.state_district || ''
+    const district = addr.suburb || addr.neighbourhood || addr.district || addr.quarter || ''
+    const address = data.display_name || `${city} ${district}`
+    return { city, district, address }
+  } catch (e) {
+    console.warn('[location] Nominatim 逆地理编码失败：', e)
+    return { city: '', district: '', address: '' }
+  }
 }
