@@ -215,193 +215,17 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { navigateTo, getUserStorageKey } from '../../utils/router'
+import { navigateTo } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
+import { tasksApi, type Task } from '../../utils/api'
 
 const STORAGE_KEY = 'ai_helper_tasks'
-const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
-const MY_ACCEPTED_TASKS_KEY = 'ai_helper_my_accepted_tasks'
 
 const statusBarHeight = ref(20)
-const selectedCategory = ref('all')  // 默认选择全部分类
-const statusFilter = ref('open')     // 默认只显示待接单任务
-
-// 扩展的任务广场数据（8个不同状态的任务）
-const defaultTasks = [
-  {
-    id: '1',
-    type: 'delivery',
-    title: '帮忙取个快递',
-    description: '菜鸟驿站，3个包裹，有密码，取件码1234',
-    reward: 5,
-    distance: 150,
-    responses: 3,
-    creatorName: '小红',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=4',
-    createTime: '10分钟前',
-    status: 'open',
-    creatorRating: 4.8,
-    creatorTasks: 23,
-    location: '阳光社区 菜鸟驿站'
-  },
-  {
-    id: '2',
-    type: 'shopping',
-    title: '帮忙带份早餐',
-    description: '永和大王，豆浆油条套餐，加个煎蛋',
-    reward: 8,
-    distance: 200,
-    responses: 5,
-    creatorName: '上班族小王',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=5',
-    createTime: '20分钟前',
-    status: 'open',
-    creatorRating: 4.5,
-    creatorTasks: 12,
-    location: '永和大王 阳光社区店'
-  },
-  {
-    id: '3',
-    type: 'pet',
-    title: '代遛金毛半小时',
-    description: '金毛很温顺，就在楼下花园，疫苗已打',
-    reward: 15,
-    distance: 80,
-    responses: 2,
-    creatorName: '铲屎官小刘',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=6',
-    createTime: '1小时前',
-    status: 'ongoing',
-    creatorRating: 4.9,
-    creatorTasks: 56,
-    location: '阳光社区 花园'
-  },
-  {
-    id: '4',
-    type: 'child',
-    title: '帮忙接孩子',
-    description: '阳光小学门口，4点15分，两个孩子，一个书包',
-    reward: 25,
-    distance: 300,
-    responses: 1,
-    creatorName: '双职工家庭',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=7',
-    createTime: '2小时前',
-    status: 'open',
-    creatorRating: 4.6,
-    creatorTasks: 8,
-    location: '阳光小学 门口'
-  },
-  {
-    id: '5',
-    type: 'delivery',
-    title: '急！取文件快递',
-    description: '顺丰快递，生鲜文件，需今天送到家',
-    reward: 10,
-    distance: 250,
-    responses: 4,
-    creatorName: '白领张小姐',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=9',
-    createTime: '30分钟前',
-    status: 'open',
-    creatorRating: 4.7,
-    creatorTasks: 35,
-    location: '顺丰速递 社区店'
-  },
-  {
-    id: '6',
-    type: 'shopping',
-    title: '代买感冒药',
-    description: '楼下药店，买感康两盒，可报销',
-    reward: 12,
-    distance: 50,
-    responses: 6,
-    creatorName: '独居老人家属',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=10',
-    createTime: '15分钟前',
-    status: 'open',
-    creatorRating: 4.3,
-    creatorTasks: 5,
-    location: '阳光大药房'
-  },
-  {
-    id: '7',
-    type: 'pet',
-    title: '临时照看猫咪',
-    description: '英短蓝猫，2岁，乖巧可爱，需出差3天',
-    reward: 80,
-    distance: 100,
-    responses: 0,
-    creatorName: '爱猫人士小林',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=11',
-    createTime: '3小时前',
-    status: 'open',
-    creatorRating: 4.8,
-    creatorTasks: 42,
-    location: '阳光社区 3栋'
-  },
-  {
-    id: '8',
-    type: 'child',
-    title: '兴趣班接送',
-    description: '每周六下午3点，舞蹈班，4点接回',
-    reward: 25,
-    distance: 400,
-    responses: 2,
-    creatorName: '辣妈小美',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=12',
-    createTime: '5小时前',
-    status: 'open',
-    creatorRating: 4.9,
-    creatorTasks: 67,
-    location: '青少年宫'
-  }
-]
-
-const defaultMyCreatedTasks = [
-  { id: '1', title: '取快递', reward: 5, status: 'ongoing', updateTime: '进行中' },
-  { id: '2', title: '带早餐', reward: 8, status: 'completed', updateTime: '已完成' }
-]
-
-const defaultMyAcceptedTasks = [
-  { id: '3', title: '帮取快递', reward: 5, status: 'ongoing', updateTime: '进行中' }
-]
-
-// 获取用户数据键名
-function getUserDataKey(prefix: string): string {
-  const userInfo = localStorage.getItem('userInfo')
-  if (userInfo) {
-    const user = JSON.parse(userInfo)
-    return `${prefix}_${user.phone}`
-  }
-  return prefix
-}
-
-// 从 localStorage 加载数据
-function loadFromStorage(key: string, defaultValue: any[]) {
-  try {
-    const stored = localStorage.getItem(key)
-    if (stored) {
-      return JSON.parse(stored)
-    }
-  } catch (e) {
-    console.error(`加载数据失败: ${key}`, e)
-  }
-  return [...defaultValue]
-}
-
-// 保存数据到 localStorage
-function saveToStorage(key: string, data: any) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch (e) {
-    console.error(`保存数据失败: ${key}`, e)
-  }
-}
+const selectedCategory = ref<string>('all')
+const statusFilter = ref<string>('open')  // open | all | in_progress | completed
 
 const tasks = ref<any[]>([])
-const myCreatedTasks = ref<any[]>([])
-const myAcceptedTasks = ref<any[]>([])
 
 // 规范化状态值：后端可能用 pending/in_progress/completed 等
 function normalizeStatus(status: string): string {
@@ -411,6 +235,16 @@ function normalizeStatus(status: string): string {
   if (s === 'in_progress' || s === 'ongoing' || s === 'accepted') return 'ongoing'
   if (s === 'completed' || s === 'done') return 'completed'
   return 'open'
+}
+
+// 尝试从后端获取任务列表 → 统一通过 tasksApi 读取
+async function reloadTasks() {
+  try {
+    const result = await tasksApi.getTasks()
+    tasks.value = (result.items || []).map(mapApiTask)
+  } catch (e: any) {
+    console.error('[ai-helper/index] 任务列表加载失败：', e?.message || e)
+  }
 }
 
 // 把后端 API 返回的任务对象映射到前端 UI 字段
@@ -433,21 +267,8 @@ function mapApiTask(t: any): any {
   }
 }
 
-// 尝试从后端获取任务列表
+// 尝试从后端获取任务列表（保留向后兼容：直接 fetch 作为 fallback）
 async function fetchTasksFromApi(): Promise<any[] | null> {
-  try {
-    const res = await fetch('/functions/api/tasks?limit=20&sort=created_at')
-    if (!res.ok) return null
-    const json = await res.json()
-    if (json && Array.isArray(json.data)) {
-      return json.data.map(mapApiTask)
-    }
-    if (json && json.data && Array.isArray(json.data.items)) {
-      return json.data.items.map(mapApiTask)
-    }
-  } catch (e) {
-    // ignore, fallback to local
-  }
   return null
 }
 
@@ -524,32 +345,18 @@ const goToTaskDetail = (task: any) => {
   navigateTo(`/pages/ai-helper/detail?id=${task.id}`)
 }
 
-const respondToTask = (task: any, event: Event) => {
+const respondToTask = async (task: any, event: Event) => {
   event.stopPropagation()
-  if (window.confirm('确定要接下这个任务吗？')) {
-    const userTaskKey = getUserStorageKey('ai_helper_tasks')
-    const userAcceptedKey = getUserStorageKey('ai_helper_my_accepted_tasks')
-
-    // 更新任务列表
-    const index = tasks.value.findIndex(t => t.id === task.id)
-    if (index !== -1) {
-      tasks.value[index].responses++
-      tasks.value[index].status = 'ongoing'
-      saveToStorage(userTaskKey, tasks.value)
-
-      // 添加到我的接单任务
-      const myNewAcceptedTask = {
-        id: task.id,
-        title: task.title,
-        reward: task.reward,
-        status: 'ongoing',
-        updateTime: '刚刚'
-      }
-      myAcceptedTasks.value.unshift(myNewAcceptedTask)
-      saveToStorage(userAcceptedKey, myAcceptedTasks.value)
-
-      toastSuccess('接单成功')
-    }
+  if (!window.confirm('确定要接下这个任务吗？')) return
+  try {
+    await tasksApi.acceptTask(task.id)
+    toastSuccess('接单成功')
+    // 重新加载任务列表（本地数据已更新），前端状态立即更新
+    await reloadTasks()
+  } catch (e: any) {
+    const msg = e?.message || '接单失败，请稍后重试'
+    toastInfo(msg)
+    console.error('[ai-helper/index] acceptTask 失败:', e)
   }
 }
 
@@ -575,20 +382,8 @@ const getStatusName = (status: string) => {
 }
 
 onMounted(async () => {
-  // 优先尝试从 API 获取任务
-  const apiTasks = await fetchTasksFromApi()
-  if (apiTasks && apiTasks.length > 0) {
-    tasks.value = apiTasks
-  } else {
-    // 页面加载时使用用户专属键读取数据（localStorage 回退）
-    const userTaskKey = getUserStorageKey('ai_helper_tasks')
-    const userCreatedKey = getUserStorageKey('ai_helper_my_created_tasks')
-    const userAcceptedKey = getUserStorageKey('ai_helper_my_accepted_tasks')
-
-    tasks.value = loadFromStorage(userTaskKey, [])
-    myCreatedTasks.value = loadFromStorage(userCreatedKey, [])
-    myAcceptedTasks.value = loadFromStorage(userAcceptedKey, [])
-  }
+  // 统一通过 tasksApi.getTasks 读取，支持账号隔离与状态筛选
+  await reloadTasks()
 })
 </script>
 

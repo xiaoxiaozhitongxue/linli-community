@@ -402,6 +402,60 @@ API调用封装在 [src/utils/api.ts](./src/utils/api.ts)，支持：
 
 导航工具函数在 [src/utils/router.ts](./src/utils/router.ts)。
 
+## 📦 数据管理与互助任务模块
+
+### 统一业务数据层
+
+为了解决任务数据分散、重复接单、跨页面不同步等问题，项目构建了统一的业务数据管理层：
+
+- **存储层** [src/utils/storage.ts](./src/utils/storage.ts)
+  - `business_data`：统一承载任务（tasks）、活动（activities）和帖子（posts）等业务数据
+  - 按用户手机号隔离：`linli_business_data_138xxxxxx`，确保不同账号数据完全独立
+  - `safeGet` / `safeSet`：带 JSON 解析容错的读写封装
+  - `loadBusiness` / `updateBusiness`：统一入口读取与更新业务数据
+
+- **API 层** [src/utils/api.ts](./src/utils/api.ts)
+  - `tasksApi`：提供 `getTasks`、`getTask`、`createTask`、`acceptTask`、`completeTask`、`getMyTasks` 等接口
+  - `acceptTask` 包含"一账号一任务仅可接一次"的校验，避免重复接单
+  - 所有页面统一调用 `tasksApi`，确保数据与状态一致
+
+### 互助任务页面
+
+| 页面 | 路径 | 说明 |
+| --- | --- | --- |
+| 任务列表 | [src/pages/ai-helper/index.vue](./src/pages/ai-helper/index.vue) | 支持按状态/分类筛选任务，显示发单人、位置、报酬、接单数等 |
+| 任务详情 | [src/pages/ai-helper/detail.vue](./src/pages/ai-helper/detail.vue) | 展示完整任务信息、接单按钮、状态流转 |
+| 发布任务 | [src/pages/ai-helper/publish.vue](./src/pages/ai-helper/publish.vue) | 标题、描述、分类、位置、报酬，校验后发布 |
+| 我的任务 | [src/pages/profile/my-tasks.vue](./src/pages/profile/my-tasks.vue) | 我发布的 / 我接的，支持完成、确认、跳转详情 |
+
+### 任务状态
+
+- `pending`：待接单
+- `in_progress`：进行中
+- `completed`：已完成
+- `cancelled`：已取消
+
+## 🛠️ 已知修复与改进（Bug 修复日志）
+
+- **定位重复声明**：`pages/index/index.vue` 中 `chooseLocation` 函数重复声明导致构建失败，已清理重复声明
+- **visibilitychange 语法错误**：首页定位监听中缺少右括号，已修复
+- **任务详情"未找到任务"**：任务数据分散在多个 localStorage key（`ai_helper_tasks`、`my_created_tasks` 等），重构为统一的 `business_data.tasks`，详情页通过 `tasksApi.getTask(id)` 正确查询
+- **重复接单问题**：同一账号可多次接取同一任务，在 `tasksApi.acceptTask` 中加入手机号 / 身份双重校验
+- **页面跳转不同步**：首页、个人中心、我的任务均改为从 `tasksApi.getMyTasks` 读取统计与列表，确保数据实时一致
+- **分散的 localStorage 键**：移除多处直接读写 `ai_helper_*` 的代码，统一通过 `storage.ts` + `api.ts` 管理
+
+## 🚦 构建与验证
+
+```bash
+# 本地开发
+npm run dev     # 访问 http://localhost:8080
+
+# 生产构建（已验证通过）
+npm run build
+```
+
+所有生产构建均通过 `vite build`（Vue 3 + Vite 5 + TypeScript）。
+
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！

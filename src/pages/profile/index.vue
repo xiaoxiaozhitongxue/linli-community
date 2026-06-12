@@ -303,23 +303,22 @@ const loadUserProfile = async () => {
 
 const loadTaskStats = async () => {
   try {
-    // 从 localStorage 读取真实任务数据
-    const myCreatedTasks = JSON.parse(localStorage.getItem(getUserStorageKey(MY_CREATED_TASKS_KEY)) || '[]')
-    const myAcceptedTasks = JSON.parse(localStorage.getItem(getUserStorageKey(MY_ACCEPTED_TASKS_KEY)) || '[]')
+    const result = await tasksApi.getMyTasks()
+    const myCreatedTasks = result.published || []
+    const myAcceptedTasks = result.accepted || []
 
-    // 计算统计数据
     const published = {
       all: myCreatedTasks.length,
-      pending: myCreatedTasks.filter((t: any) => t.status === 'open').length,
-      in_progress: myCreatedTasks.filter((t: any) => t.status === 'ongoing').length,
+      pending: myCreatedTasks.filter((t: any) => t.status === 'pending' || t.status === 'open').length,
+      in_progress: myCreatedTasks.filter((t: any) => t.status === 'in_progress' || t.status === 'ongoing').length,
       completed: myCreatedTasks.filter((t: any) => t.status === 'completed' || t.status === 'pending_confirm').length
     }
 
     const accepted = {
       all: myAcceptedTasks.length,
-      pending: myAcceptedTasks.filter((t: any) => t.status === 'open').length,
-      in_progress: myAcceptedTasks.filter((t: any) => t.status === 'ongoing').length,
-      completed: myAcceptedTasks.filter((t: any) => t.status === 'completed').length
+      pending: myAcceptedTasks.filter((t: any) => t.status === 'pending' || t.status === 'open').length,
+      in_progress: myAcceptedTasks.filter((t: any) => t.status === 'in_progress' || t.status === 'ongoing').length,
+      completed: myAcceptedTasks.filter((t: any) => t.status === 'completed' || t.status === 'pending_confirm').length
     }
 
     taskStats.value = { published, accepted }

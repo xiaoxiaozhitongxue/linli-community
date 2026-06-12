@@ -93,6 +93,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
+import { tasksApi, type Task } from '../../utils/api'
 
 const route = useRoute()
 const statusBarHeight = ref(20)
@@ -125,7 +126,7 @@ const acceptButtonText = computed(() => {
       return '接下这个任务'
     case 'in_progress':
     case 'ongoing':
-      return '进行中'
+      return '任务进行中'
     case 'completed':
       return '任务已完成'
     case 'cancelled':
@@ -135,152 +136,38 @@ const acceptButtonText = computed(() => {
   }
 })
 
-function mapApiTaskToLocal(apiTask: any): TaskDetail {
+function mapApiTaskToLocal(apiTask: Task): TaskDetail {
   return {
     id: apiTask.id,
-    type: apiTask.category || apiTask.type || 'other',
+    type: apiTask.category || (apiTask as any).type || 'other',
     title: apiTask.title || '任务详情',
     description: apiTask.description || '暂无详细描述',
     reward: Number(apiTask.reward) || 0,
     location: apiTask.location || '',
-    createTime: apiTask.created_at || apiTask.createTime || '',
-    creatorName: apiTask.creator?.nickname || apiTask.creatorName || '邻居',
-    creatorAvatar: apiTask.creator?.avatar || apiTask.creatorAvatar || '',
-    creatorRating: apiTask.creator?.credit_score || apiTask.creatorRating || undefined,
+    createTime: apiTask.created_at || Date.now(),
+    creatorName: apiTask.creator?.nickname || '邻居',
+    creatorAvatar: apiTask.creator?.avatar || '',
+    creatorRating: apiTask.creator?.credit_score || undefined,
     creatorTasks: undefined,
-    status: normalizeStatus(apiTask.status)
+    status: (apiTask.status as any) === 'pending' ? 'open' : (apiTask.status as any)
   }
-}
-
-function normalizeStatus(status: string): TaskDetail['status'] {
-  if (!status) return 'pending'
-  const s = String(status).toLowerCase()
-  if (s === 'open' || s === 'pending') return 'pending'
-  if (s === 'in_progress' || s === 'ongoing' || s === 'accepted') return 'in_progress'
-  if (s === 'completed' || s === 'done') return 'completed'
-  if (s === 'cancelled' || s === 'canceled') return 'cancelled'
-  return 'pending'
-}
-
-function getTypeName(type: string) {
-  const map: Record<string, string> = {
-    delivery: '取快递',
-    shopping: '代买',
-    pet: '遛狗',
-    child: '看孩子',
-    help: '帮忙',
-    companionship: '陪护',
-    other: '其他'
-  }
-  return map[type] || type || '其他'
-}
-
-function getStatusName(status: string) {
-  const map: Record<string, string> = {
-    open: '待接单',
-    pending: '待接单',
-    in_progress: '进行中',
-    ongoing: '进行中',
-    completed: '已完成',
-    cancelled: '已取消'
-  }
-  return map[status] || status
-}
-
-function formatTime(value: string | number): string {
-  if (!value) return '刚刚'
-  if (typeof value === 'string' && /^\d+$/.test(value)) {
-    value = Number(value)
-  }
-  const now = Date.now()
-  const date = typeof value === 'number' ? value : new Date(value).getTime()
-  const diff = now - date
-  const minute = 60 * 1000
-  const hour = 60 * minute
-  const day = 24 * hour
-  if (diff < minute) return '刚刚'
-  if (diff < hour) return Math.floor(diff / minute) + '分钟前'
-  if (diff < day) return Math.floor(diff / hour) + '小时前'
-  if (diff < day * 7) return Math.floor(diff / day) + '天前'
-  const d = new Date(date)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-async function loadFromApi(id: string): Promise<TaskDetail | null> {
-  try {
-    const res = await fetch(`/functions/api/tasks/${id}`)
-    if (!res.ok) return null
-    const json = await res.json()
-    if (json && json.data) {
-      return mapApiTaskToLocal(json.data)
-    }
-  } catch (e) {
-    // fall through
-  }
-  return null
-}
-
-function loadFromLocal(id: string): TaskDetail | null {
-  // localStorage 里的 ai_helper_tasks（列表数据）
-  const stores = ['ai_helper_tasks', 'ai_helper_my_created_tasks', 'ai_helper_my_accepted_tasks']
-  for (const key of stores) {
-    try {
-      const raw = localStorage.getItem(key)
-      if (!raw) continue
-      const items = JSON.parse(raw)
-      if (!Array.isArray(items)) continue
-      const found = items.find((t: any) => t.id === id)
-      if (found) {
-        return {
-          id: found.id,
-          type: found.type || found.category || 'other',
-          title: found.title || '任务详情',
-          description: found.description || '',
-          reward: Number(found.reward) || 0,
-          location: found.location || '',
-          distance: found.distance || undefined,
-          responses: found.responses || 0,
-          createTime: found.createTime || found.created_at || '',
-          creatorName: found.creatorName || '邻居',
-          creatorAvatar: found.creatorAvatar || '',
-          creatorRating: found.creatorRating,
-          creatorTasks: found.creatorTasks,
-          status: normalizeStatus(found.status)
-        }
-      }
-    } catch (e) {
-      // skip
-    }
-  }
-  return null
 }
 
 async function handleAccept() {
   const t = task.value
   if (!t) return
-  const isAcceptable = t.status === 'pending' || t.status === 'open'
-  if (!isAcceptable) {
+  if (t.status !== 'open' && t.status !== 'pending') {
     toastError('此任务当前不可接单')
     return
   }
   try {
-    const res = await fetch(`/functions/api/tasks/${t.id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'accept' })
-    })
-    const json = await res.json().catch(() => ({}))
-    if (res.ok && json && json.data) {
-      task.value = mapApiTaskToLocal(json.data)
-      toastSuccess('接单成功')
-      return
-    }
-    // 回退到本地模拟
-    task.value.status = 'in_progress'
+    await tasksApi.acceptTask(t.id)
+    task.value = { ...task.value, status: 'in_progress' }
     toastSuccess('接单成功')
-  } catch (e) {
-    task.value.status = 'in_progress'
-    toastSuccess('接单成功')
+  } catch (e: any) {
+    const msg = e?.message || '接单失败，请稍后重试'
+    toastError(msg)
+    console.error('[ai-helper/detail] acceptTask 失败:', e)
   }
 }
 
@@ -295,14 +182,20 @@ onMounted(async () => {
     return
   }
   loading.value = true
-  const apiTask = await loadFromApi(taskId)
-  if (apiTask) {
-    task.value = apiTask
-  } else {
-    const localTask = loadFromLocal(taskId)
-    task.value = localTask
+  try {
+    const apiTask = await tasksApi.getTask(taskId)
+    if (apiTask) {
+      task.value = mapApiTaskToLocal(apiTask)
+    } else {
+      // 找不到任务：不显示空状态，避免迷惑用户，提示未找到
+      task.value = null
+    }
+  } catch (e: any) {
+    console.error('[ai-helper/detail] 加载任务失败:', e)
+    task.value = null
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 })
 </script>
 

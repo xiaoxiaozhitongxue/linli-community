@@ -1,4 +1,9 @@
 import { get, post, put, del } from './request'
+import {
+  loadBusiness,
+  saveBusiness,
+  getCurrentUser,
+} from './storage'
 
 export interface User {
   id: string
@@ -1090,241 +1095,244 @@ export interface PaginatedData<T> {
 }
 
 export const tasksApi = {
-  // 获取任务列表
+  // 获取任务广场列表
   getTasks: (params?: {
     page?: number
     limit?: number
     status?: string
     category?: string
-    user_id?: string
-    helper_id?: string
-    sort?: 'created_at' | 'deadline' | 'status' | 'category'
-    order?: 'asc' | 'desc'
   }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            items: mockTasks,
-            pagination: {
-              page: params?.page || 1,
-              limit: params?.limit || 10,
-              total: mockTasks.length,
-              totalPages: 1
-            }
+    return new Promise<{ items: Task[]; total: number; page: number; limit: number }>((resolve) => {
+      setTimeout(() => {
+        const biz = loadBusiness()
+        let items = biz.tasks || []
+
+        if (params?.status) {
+          const s = String(params.status).toLowerCase()
+          items = items.filter((t: Task) => {
+            if (s === 'open' || s === 'pending') return t.status === 'pending'
+            if (s === 'in_progress' || s === 'ongoing') return t.status === 'in_progress'
+            if (s === 'completed' || s === 'done') return t.status === 'completed'
+            if (s === 'cancelled' || s === 'canceled') return t.status === 'cancelled'
+            return t.status === s
           })
-        }, 300)
-      })
-    }
-    return get<PaginatedData<Task>>('/api/tasks', params)
+        }
+
+        if (params?.category && params.category !== 'all') {
+          items = items.filter((t: Task) => t.category === params.category)
+        }
+
+        items = [...items].sort((a: Task, b: Task) => b.created_at - a.created_at)
+
+        const limit = params?.limit || 50
+        const page = params?.page || 1
+        const start = (page - 1) * limit
+        const paged = items.slice(start, start + limit)
+
+        resolve({ items: paged, total: items.length, page, limit })
+      }, 150)
+    })
   },
 
   // 创建任务
-  createTask: (data: CreateTaskData) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const newTask: Task = {
-            id: Date.now().toString(),
-            user_id: '1',
-            title: data.title,
-            description: data.description,
-            category: data.category || 'other',
-            location: data.location,
-            reward: data.reward,
-            status: 'pending',
-            created_at: Date.now(),
-            updated_at: Date.now(),
-            creator: {
-              id: '1',
-              nickname: '阳光社区小李',
-              avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop',
-              credit_score: 95,
-              is_verified: true,
-              community: '阳光社区'
-            }
-          }
-          mockTasks.unshift(newTask)
-          resolve(newTask)
-        }, 300)
-      })
-    }
-    return post<Task>('/api/tasks', data)
+  createTask: (data: TaskCreateData) => {
+    return new Promise<Task>((resolve, reject) => {
+      const currentUser = getCurrentUser()
+      if (!currentUser) {
+        reject(new Error('请先登录后再发布任务'))
+        return
+      }
+
+      const biz = loadBusiness()
+      const newTask: Task = {
+        id: 't_' + Date.now().toString(),
+        user_id: currentUser.id || currentUser.phone || '',
+        title: data.title.trim(),
+        description: data.description.trim(),
+        category: data.category || 'other',
+        location: data.location.trim(),
+        reward: typeof data.reward === 'string' ? parseFloat(data.reward) || 0 : Number(data.reward) || 0,
+        status: 'pending',
+        created_at: Date.now(),
+        updated_at: Date.now(),
+        creator: {
+          id: currentUser.id || currentUser.phone || '',
+          nickname: currentUser.nickname || '邻里用户',
+          avatar: currentUser.avatar || '',
+          credit_score: currentUser.credit_score || 0,
+          community: currentUser.community || ''
+        }
+      }
+
+      biz.tasks = biz.tasks || []
+      biz.tasks.unshift(newTask)
+      saveBusiness(biz)
+
+      resolve(newTask)
+    })
   },
 
-  // 获取任务详情
+  // 获取任务详情（确保：新发布的任务点进去都能找到）
   getTask: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(mockTasks.find(t => t.id === id) || mockTasks[0])
-        }, 300)
-      })
-    }
-    return get<Task>(`/api/tasks/${id}`)
+    return new Promise<Task | null>((resolve) => {
+      setTimeout(() => {
+        const biz = loadBusiness()
+        const task = (biz.tasks || []).find((t: Task) => t.id === id)
+        resolve(task || null)
+      }, 150)
+    })
   },
 
   // 更新任务
   updateTask: (id: string, data: UpdateTaskData) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const task = mockTasks.find(t => t.id === id)
-          if (task) {
-            Object.assign(task, data)
-            resolve(task)
-          }
-        }, 300)
-      })
-    }
-    return put<Task>(`/api/tasks/${id}`, data)
+    return new Promise<Task>((resolve, reject) => {
+      const biz = loadBusiness()
+      const tasks = biz.tasks || []
+      const idx = tasks.findIndex((t: Task) => t.id === id)
+      if (idx < 0) {
+        reject(new Error('任务不存在'))
+        return
+      }
+      const updated: Task = { ...tasks[idx], ...(data as any), updated_at: Date.now() }
+      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
+      saveBusiness(biz)
+      resolve(updated)
+    })
   },
 
   // 删除任务
   deleteTask: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const index = mockTasks.findIndex(t => t.id === id)
-          if (index > -1) {
-            mockTasks.splice(index, 1)
-          }
-          resolve({ id })
-        }, 300)
-      })
-    }
-    return del<{ id: string }>(`/api/tasks/${id}`)
+    return new Promise<{ id: string }>((resolve) => {
+      const biz = loadBusiness()
+      biz.tasks = (biz.tasks || []).filter((t: Task) => t.id !== id)
+      saveBusiness(biz)
+      resolve({ id })
+    })
   },
 
-  // 接单
+  // 接单：确保一账号一任务仅可接一次
   acceptTask: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const task = mockTasks.find(t => t.id === id)
-          if (task) {
-            task.status = 'in_progress'
-            task.helper_id = '1'
-            task.helper = {
-              id: '1',
-              nickname: '阳光社区小李',
-              avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop',
-              credit_score: 95,
-              is_verified: true
-            }
-            resolve(task)
-          }
-        }, 300)
-      })
-    }
-    return post<Task>(`/api/tasks/${id}/accept`)
+    return new Promise<Task>((resolve, reject) => {
+      const currentUser = getCurrentUser()
+      if (!currentUser) {
+        reject(new Error('请先登录后再接任务'))
+        return
+      }
+
+      const biz = loadBusiness()
+      const tasks = biz.tasks || []
+      const idx = tasks.findIndex((t: Task) => t.id === id)
+      if (idx < 0) {
+        reject(new Error('任务不存在或已被删除'))
+        return
+      }
+      const task = tasks[idx]
+
+      if (task.status !== 'pending') {
+        reject(new Error('当前任务状态不可接单'))
+        return
+      }
+
+      // 不能接自己发布的任务
+      const isSelf =
+        (task.user_id && task.user_id === currentUser.id) ||
+        (task.user_id && task.user_id === currentUser.phone) ||
+        (currentUser.phone && task.creator && task.creator.id === currentUser.phone)
+      if (isSelf) {
+        reject(new Error('不能接自己发布的任务'))
+        return
+      }
+
+      // 一账号一任务仅可接一次
+      const alreadyAccepted =
+        (task.helper_phone && currentUser.phone && task.helper_phone === currentUser.phone) ||
+        (task.helper_id && currentUser.id && task.helper_id === currentUser.id)
+      if (alreadyAccepted) {
+        reject(new Error('您已接过此任务，不能重复接单'))
+        return
+      }
+
+      const updated: Task = {
+        ...task,
+        status: 'in_progress',
+        helper_id: currentUser.id || currentUser.phone || '',
+        helper_phone: currentUser.phone || '',
+        helper: {
+          id: currentUser.id || currentUser.phone || '',
+          nickname: currentUser.nickname || '邻里用户',
+          avatar: currentUser.avatar || '',
+          credit_score: currentUser.credit_score || 0
+        },
+        updated_at: Date.now()
+      }
+
+      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
+      saveBusiness(biz)
+
+      resolve(updated)
+    })
   },
 
   // 完成任务
   completeTask: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const task = mockTasks.find(t => t.id === id)
-          if (task) {
-            task.status = 'completed'
-            resolve(task)
-          }
-        }, 300)
-      })
-    }
-    return post<Task>(`/api/tasks/${id}/complete`)
+    return new Promise<Task>((resolve, reject) => {
+      const biz = loadBusiness()
+      const tasks = biz.tasks || []
+      const idx = tasks.findIndex((t: Task) => t.id === id)
+      if (idx < 0) {
+        reject(new Error('任务不存在'))
+        return
+      }
+      const updated: Task = { ...tasks[idx], status: 'completed', updated_at: Date.now() }
+      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
+      saveBusiness(biz)
+      resolve(updated)
+    })
   },
 
-  // 任务操作（accept/complete/cancel）
-  taskAction: (id: string, data: TaskActionData) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const task = mockTasks.find(t => t.id === id)
-          if (task) {
-            if (data.action === 'cancel') {
-              task.status = 'cancelled'
-            }
-            resolve(task)
-          }
-        }, 300)
-      })
-    }
-    return post<Task>(`/api/tasks/${id}`, data)
-  },
+  // 我的任务：按当前登录用户分离我发布/我接的
+  getMyTasks: (params?: { type?: 'published' | 'accepted' | 'all' }) => {
+    return new Promise<{
+      published: Task[]
+      accepted: Task[]
+      all: Task[]
+      stats: { published: number; accepted: number; total: number }
+    }>((resolve) => {
+      setTimeout(() => {
+        const currentUser = getCurrentUser()
+        const biz = loadBusiness()
+        const tasks = biz.tasks || []
 
-  // 获取我的任务
-  getMyTasks: (params?: {
-    page?: number
-    limit?: number
-    type?: 'all' | 'published' | 'accepted'
-  }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            items: mockTasks,
-            stats: {
-              total: mockTasks.length,
-              published: {
-                all: 2,
-                pending: 1,
-                in_progress: 1,
-                completed: 0
-              },
-              accepted: {
-                all: 1,
-                pending: 0,
-                in_progress: 1,
-                completed: 0
-              }
-            },
-            pagination: {
-              page: params?.page || 1,
-              limit: params?.limit || 10,
-              total: mockTasks.length,
-              totalPages: 1
-            }
+        let published: Task[] = []
+        let accepted: Task[] = []
+
+        if (currentUser) {
+          published = tasks.filter((t: Task) => {
+            if (t.user_id && t.user_id === currentUser.id) return true
+            if (t.user_id && t.user_id === currentUser.phone) return true
+            if (t.creator && currentUser.phone && t.creator.id === currentUser.phone) return true
+            return false
           })
-        }, 300)
-      })
-    }
-    return get<MyTasksResponse>('/api/tasks/my', params)
-  },
-
-  // AI 匹配推荐
-  getMatches: (params?: { task_id?: string; category?: string; limit?: number }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            matches: [
-              {
-                id: '2',
-                name: '热心肠王阿姨',
-                avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-                role: 'volunteer',
-                community: '阳光社区',
-                bio: '社区志愿者，乐于助人',
-                rating: 4.9,
-                distance: 0.1,
-                completedTasks: 56,
-                completionRate: 98,
-                isVerified: true,
-                isVolunteer: true,
-                sameCommunity: true,
-                tags: ['热心', '准时', '细心'],
-                matchScore: 98,
-                matchReasons: ['同社区', '志愿者', '高评分']
-              }
-            ],
-            total: 1
+          accepted = tasks.filter((t: Task) => {
+            if (t.helper_id && t.helper_id === currentUser.id) return true
+            if (t.helper_phone && currentUser.phone && t.helper_phone === currentUser.phone) return true
+            return false
           })
-        }, 300)
-      })
-    }
-    return get<MatchResponse>('/api/tasks/match', params)
+        }
+
+        published = published.sort((a: Task, b: Task) => b.created_at - a.created_at)
+        accepted = accepted.sort((a: Task, b: Task) => b.created_at - a.created_at)
+
+        const type = params?.type || 'all'
+        const all =
+          type === 'published' ? published : type === 'accepted' ? accepted : [...published, ...accepted]
+
+        resolve({
+          published, accepted, all,
+          stats: { published: published.length, accepted: accepted.length, total: all.length }
+        })
+      }, 150)
+    })
   }
 }
 

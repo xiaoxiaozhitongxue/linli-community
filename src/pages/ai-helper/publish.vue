@@ -127,87 +127,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { navigateTo, navigateBackSmart, getUserStorageKey } from '../../utils/router'
+import { navigateTo, navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
-import { useAuth } from '../../store/index'
-
-const STORAGE_KEY = 'ai_helper_tasks'
-const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
-
-// 默认模拟任务数据
-const defaultTasks = [
-  {
-    id: '1',
-    type: 'delivery',
-    title: '帮忙取个快递',
-    description: '菜鸟驿站，3个包裹，有密码，取件码1234',
-    reward: 5,
-    distance: 150,
-    responses: 3,
-    creatorName: '小红',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=4',
-    createTime: '10分钟前',
-    status: 'open',
-    creatorRating: 4.8,
-    creatorTasks: 23,
-    location: '阳光社区 菜鸟驿站'
-  },
-  {
-    id: '2',
-    type: 'shopping',
-    title: '帮忙带份早餐',
-    description: '永和大王，豆浆油条套餐，加个煎蛋',
-    reward: 8,
-    distance: 200,
-    responses: 5,
-    creatorName: '上班族小王',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=5',
-    createTime: '20分钟前',
-    status: 'open',
-    creatorRating: 4.5,
-    creatorTasks: 12,
-    location: '永和大王 阳光社区店'
-  },
-  {
-    id: '3',
-    type: 'pet',
-    title: '代遛金毛半小时',
-    description: '金毛很温顺，就在楼下花园，疫苗已打',
-    reward: 15,
-    distance: 80,
-    responses: 2,
-    creatorName: '铲屎官小刘',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=6',
-    createTime: '1小时前',
-    status: 'ongoing',
-    creatorRating: 4.9,
-    creatorTasks: 56,
-    location: '阳光社区 花园'
-  },
-  {
-    id: '4',
-    type: 'child',
-    title: '帮忙接孩子',
-    description: '阳光小学门口，4点15分，两个孩子，一个书包',
-    reward: 25,
-    distance: 300,
-    responses: 1,
-    creatorName: '双职工家庭',
-    creatorAvatar: 'https://i.pravatar.cc/100?img=7',
-    createTime: '2小时前',
-    status: 'open',
-    creatorRating: 4.6,
-    creatorTasks: 8,
-    location: '阳光小学 门口'
-  }
-]
-
-const defaultMyCreatedTasks = [
-  { id: '1', title: '取快递', reward: 5, status: 'ongoing', updateTime: '进行中' },
-  { id: '2', title: '带早餐', reward: 8, status: 'completed', updateTime: '已完成' }
-]
-
-const { user } = useAuth()
+import { tasksApi } from '../../utils/api'
 
 const statusBarHeight = ref(20)
 
@@ -231,30 +153,10 @@ const form = ref({
 })
 
 const canSubmit = computed(() => {
-  return form.value.title.trim().length >= 2 && 
+  return form.value.title.trim().length >= 2 &&
          form.value.description.trim().length >= 5 &&
          form.value.location.trim().length > 0
 })
-
-function saveToStorage(key: string, data: any) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch (e) {
-    console.error(`保存数据失败: ${key}`, e)
-  }
-}
-
-function loadFromStorage(key: string, defaultValue: any[]) {
-  try {
-    const stored = localStorage.getItem(key)
-    if (stored) {
-      return JSON.parse(stored)
-    }
-  } catch (e) {
-    console.error(`加载数据失败: ${key}`, e)
-  }
-  return [...defaultValue]
-}
 
 const goBack = () => {
   navigateBackSmart()
@@ -263,9 +165,9 @@ const goBack = () => {
 const submitTask = async () => {
   if (!canSubmit.value) {
     if (form.value.title.trim().length < 2) {
-      toastInfo('请输入任务标题（至少2个字）')
+      toastInfo('请输入任务标题（至少 2 个字）')
     } else if (form.value.description.trim().length < 5) {
-      toastInfo('请详细描述任务内容（至少5个字）')
+      toastInfo('请详细描述任务内容（至少 5 个字）')
     } else if (!form.value.location.trim()) {
       toastInfo('请输入服务地点')
     } else {
@@ -274,48 +176,23 @@ const submitTask = async () => {
     return
   }
 
-  // 创建新任务
-  const newTask = {
-    id: Date.now().toString(),
-    type: form.value.category,
-    title: form.value.title.trim(),
-    description: form.value.description.trim(),
-    reward: Number(form.value.reward) || 0,
-    distance: Math.floor(Math.random() * 500) + 50,
-    responses: 0,
-    creatorName: user.value?.nickname || '邻里用户',
-    creatorAvatar: user.value?.avatar || 'https://i.pravatar.cc/100?img=8',
-    createTime: '刚刚',
-    status: 'open',
-    creatorRating: user.value?.credit_score ? Number((user.value.credit_score / 20).toFixed(1)) : 4.5,
-    creatorTasks: 10,
-    location: form.value.location
+  try {
+    await tasksApi.createTask({
+      title: form.value.title.trim(),
+      description: form.value.description.trim(),
+      category: form.value.category,
+      location: form.value.location.trim(),
+      reward: Number(form.value.reward) || 0
+    })
+    toastSuccess('任务发布成功')
+    setTimeout(() => {
+      navigateTo('/pages/ai-helper/index')
+    }, 800)
+  } catch (e: any) {
+    const msg = e?.message || '发布失败，请稍后重试'
+    toastInfo(msg)
+    console.error('[ai-helper/publish] createTask 失败:', e)
   }
-
-  // 使用用户专属键保存
-  const userTaskKey = getUserStorageKey('ai_helper_tasks')
-  const userCreatedKey = getUserStorageKey('ai_helper_my_created_tasks')
-
-  // 保存到任务列表
-  const tasks = loadFromStorage(userTaskKey, [])
-  tasks.unshift(newTask)
-  saveToStorage(userTaskKey, tasks)
-
-  // 保存到我的发起任务
-  const myCreatedTasks = loadFromStorage(userCreatedKey, [])
-  myCreatedTasks.unshift({
-    id: newTask.id,
-    title: newTask.title,
-    reward: newTask.reward,
-    status: newTask.status,
-    updateTime: '刚刚'
-  })
-  saveToStorage(userCreatedKey, myCreatedTasks)
-
-  toastSuccess('任务发布成功')
-  setTimeout(() => {
-    navigateTo('/pages/ai-helper/index')
-  }, 1500)
 }
 </script>
 
