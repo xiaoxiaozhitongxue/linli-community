@@ -13,5 +13,5 @@
 
 ## 构建检查点
 - [x] npm run build 成功，退出码 0
-- [ ] git commit 创建成功
-- [ ] git push origin master 成功
+- [x] git commit 创建成功
+- [ ] git push origin master 成功（网络问题：Empty reply from server，请稍后重试）

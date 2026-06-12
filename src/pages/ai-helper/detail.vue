@@ -118,38 +118,23 @@ const route = useRoute()
 const statusBarHeight = ref(20)
 
 const task = ref({
-  id: '1',
-  type: 'delivery',
-  title: '帮忙取个快递',
-  description: '菜鸟驿站，3个包裹，有密码。取件码：12-3-5678',
-  reward: 5,
-  location: '阳光社区 菜鸟驿站',
-  distance: 150,
-  responses: 3,
-  createTime: '10分钟前',
-  creatorName: '小红',
-  creatorAvatar: 'https://i.pravatar.cc/100?img=4',
-  creatorRating: 4.8,
-  creatorTasks: 23,
-  status: 'open'
+  id: '',
+  type: 'other',
+  title: '加载中...',
+  description: '',
+  reward: 0,
+  location: '',
+  distance: 0,
+  responses: 0,
+  createTime: '',
+  creatorName: '',
+  creatorAvatar: '',
+  creatorRating: 0,
+  creatorTasks: 0,
+  status: 'open' as 'open' | 'ongoing' | 'completed' | ''
 })
 
-const responders = ref([
-  {
-    id: '1',
-    name: '王阿姨',
-    avatar: 'https://i.pravatar.cc/100?img=1',
-    rating: 4.9,
-    completedTasks: 89
-  },
-  {
-    id: '2',
-    name: '小李',
-    avatar: 'https://i.pravatar.cc/100?img=2',
-    rating: 4.8,
-    completedTasks: 56
-  }
-])
+const responders = ref<any[]>([])
 
 const isAccepted = ref(false)
 
@@ -163,12 +148,16 @@ function loadFromStorage(key: string, defaultValue: any[]) {
   try {
     const stored = localStorage.getItem(key)
     if (stored) {
-      return JSON.parse(stored)
+      const parsed = JSON.parse(stored)
+      // 确保返回数组
+      if (Array.isArray(parsed)) {
+        return parsed
+      }
     }
   } catch (e) {
     console.error(`加载数据失败: ${key}`, e)
   }
-  return [...defaultValue]
+  return defaultValue
 }
 
 function saveToStorage(key: string, data: any) {
@@ -200,23 +189,62 @@ function updateMyTaskStatus(taskId: string, newStatus: string, storageKey: strin
 }
 
 onMounted(() => {
-  const taskId = (route.query.id as string) || '1'
-  
-  const tasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
+  const taskId = (route.query.id as string) || ''
+
+  if (!taskId) {
+    console.warn('[详情页] 未传入任务ID')
+    return
+  }
+
+  const storageKey = getUserStorageKey(STORAGE_KEY)
+  const createdKey = getUserStorageKey(MY_CREATED_TASKS_KEY)
+  const acceptedKey = getUserStorageKey(MY_ACCEPTED_TASKS_KEY)
+
+  // 调试日志
+  console.log('[详情页] 任务ID:', taskId)
+  console.log('[详情页] 存储键:', storageKey)
+
+  // 1. 优先从任务广场主存储加载（包含完整任务数据）
+  const tasks = loadFromStorage(storageKey, [])
+  console.log('[详情页] 任务广场数据:', tasks)
+
   let found = tasks.find((t: any) => t.id === taskId)
-  
+
+  // 2. 回退到"我的发布"存储
   if (!found) {
-    const myCreatedTasks = loadFromStorage(getUserStorageKey(MY_CREATED_TASKS_KEY), [])
+    const myCreatedTasks = loadFromStorage(createdKey, [])
+    console.log('[详情页] 我的发布数据:', myCreatedTasks)
     found = myCreatedTasks.find((t: any) => t.id === taskId)
   }
-  
+
+  // 3. 再回退到"我的接单"存储
   if (!found) {
-    const myAcceptedTasks = loadFromStorage(getUserStorageKey(MY_ACCEPTED_TASKS_KEY), [])
+    const myAcceptedTasks = loadFromStorage(acceptedKey, [])
+    console.log('[详情页] 我的接单数据:', myAcceptedTasks)
     found = myAcceptedTasks.find((t: any) => t.id === taskId)
   }
-  
+
+  // 4. 用找到的数据更新 task，默认值兜底
   if (found) {
-    task.value = { ...task.value, ...found }
+    console.log('[详情页] 找到任务数据:', found)
+    task.value = {
+      id: found.id || taskId,
+      type: found.type || 'other',
+      title: found.title || '任务详情',
+      description: found.description || '暂无详细描述',
+      reward: found.reward || 0,
+      location: found.location || '',
+      distance: found.distance || 0,
+      responses: found.responses || 0,
+      createTime: found.createTime || '',
+      creatorName: found.creatorName || '',
+      creatorAvatar: found.creatorAvatar || '',
+      creatorRating: found.creatorRating || 0,
+      creatorTasks: found.creatorTasks || 0,
+      status: found.status || 'open'
+    }
+  } else {
+    console.warn('[详情页] 未找到任务，taskId:', taskId)
   }
 })
 
@@ -234,7 +262,7 @@ const getTypeName = (type: string) => {
     companionship: '陪护',
     other: '其他'
   }
-  return map[type] || type
+  return map[type] || '其他'
 }
 
 const getStatusName = (status: string) => {
