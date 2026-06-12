@@ -169,9 +169,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { navigateBack, navigateTo, getUserStorageKey } from '../../utils/router'
+import { navigateBack, navigateTo } from '../../utils/router'
 import { useAuth } from '../../store'
 import { toastInfo } from '../../utils/toast'
+import { loadUserData, saveUserData } from '../../utils/storage'
+
+const TASK_NOTIFICATIONS_KEY = 'linli_task_notifications'
+const MESSAGES_KEY = 'linli_messages'
 
 interface Message {
   id: string
@@ -267,21 +271,13 @@ const loadMessages = () => {
   
   setTimeout(() => {
     try {
-      const userNotifKey = getUserStorageKey('linli_task_notifications')
-      const storedNotifications = localStorage.getItem(userNotifKey)
-      if (storedNotifications) {
-        taskNotifications.value = JSON.parse(storedNotifications)
-      } else {
-        taskNotifications.value = []
-        saveTaskNotifications()
-      }
+      taskNotifications.value = loadUserData<any[]>(TASK_NOTIFICATIONS_KEY, [])
+      if (taskNotifications.value.length === 0) saveTaskNotifications()
 
-      const userMsgKey = getUserStorageKey('linli_messages')
-      const stored = localStorage.getItem(userMsgKey)
+      const stored = loadUserData<{ private?: Message[]; group?: Message[] } | null>(MESSAGES_KEY, null)
       if (stored) {
-        const data = JSON.parse(stored)
-        privateMessages.value = data.private || []
-        groupChats.value = data.group || []
+        privateMessages.value = stored.private || []
+        groupChats.value = stored.group || []
       } else {
         privateMessages.value = []
         groupChats.value = []
@@ -299,16 +295,14 @@ const loadMessages = () => {
 }
 
 const saveTaskNotifications = () => {
-  const userNotifKey = getUserStorageKey('linli_task_notifications')
-  localStorage.setItem(userNotifKey, JSON.stringify(taskNotifications.value))
+  saveUserData<any[]>(TASK_NOTIFICATIONS_KEY, taskNotifications.value)
 }
 
 const saveMessages = () => {
-  const userMsgKey = getUserStorageKey('linli_messages')
-  localStorage.setItem(userMsgKey, JSON.stringify({
-    private: privateMessages.value,
-    group: groupChats.value
-  }))
+  saveUserData<{ private: Message[]; group: Message[] }>(
+    MESSAGES_KEY,
+    { private: privateMessages.value, group: groupChats.value }
+  )
 }
 
 const handleTaskNotification = (item: TaskNotification) => {

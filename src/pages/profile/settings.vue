@@ -162,6 +162,10 @@ import { navigateBackSmart } from '../../utils/router'
 import { navigateTo } from '../../utils/router'
 import { toastInfo, toastSuccess } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
+import { loadUserData, saveUserData } from '../../utils/storage'
+
+const NOTIFICATIONS_KEY = 'linli_settings_notifications'
+const THEME_KEY = 'linli_settings_theme'
 
 const { user, logout: authLogout, isLoggedIn } = useAuth()
 const statusBarHeight = ref(20)
@@ -195,16 +199,11 @@ const goEditProfile = () => {
 
 const loadSettings = () => {
   try {
-    const savedNotifications = localStorage.getItem('notifications')
-    const savedTheme = localStorage.getItem('theme')
-
-    if (savedNotifications) {
-      notifications.value = JSON.parse(savedNotifications)
-    }
-    if (savedTheme) {
-      theme.value = savedTheme
-    }
-
+    notifications.value = loadUserData<any>(
+      NOTIFICATIONS_KEY,
+      { push: true, message: true, interaction: true }
+    )
+    theme.value = loadUserData<string>(THEME_KEY, 'light')
     cacheSize.value = '12.5MB'
   } catch (error) {
     console.error('加载设置失败:', error)
@@ -213,8 +212,8 @@ const loadSettings = () => {
 
 const saveSettings = () => {
   try {
-    localStorage.setItem('notifications', JSON.stringify(notifications.value))
-    localStorage.setItem('theme', theme.value)
+    saveUserData<any>(NOTIFICATIONS_KEY, notifications.value)
+    saveUserData<string>(THEME_KEY, theme.value)
   } catch (error) {
     console.error('保存设置失败:', error)
   }
