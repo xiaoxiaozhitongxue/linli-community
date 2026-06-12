@@ -3,8 +3,8 @@
     <div class="status-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
       <div class="status-content">
         <div class="location" @click="chooseLocation">
-          <span class="location-icon">📍</span>
-          <span class="location-text">{{ communityName }}</span>
+          <span class="location-icon">{{ locating ? '⏳' : '📍' }}</span>
+          <span class="location-text">{{ locating ? '定位中...' : communityName }}</span>
           <span class="location-arrow">▼</span>
         </div>
         <div class="search-bar" @click="goToSearch">
@@ -249,16 +249,78 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { postsApi, activitiesApi, type Post, type Comment, type Activity } from '../../utils/api'
+import { postsApi, activitiesApi, tasksApi, type Post, type Comment, type Activity } from '../../utils/api'
 import { useAuth } from '../../store'
 import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
+import { loadHealthRecords } from '../../utils/storage'
+import { getLocation, pickDisplayCommunity } from '../../utils/location'
+import type { LocationResult } from '../../utils/location'
 
-const { initAuth, isLoggedIn } = useAuth()
+const { initAuth, isLoggedIn, user } = useAuth()
 
 const statusBarHeight = ref(20)
-const communityName = ref('阳光社区')
+const communityName = ref('点击定位')
+const locating = ref(false)
+const locationResult = ref<LocationResult | null>(null)
+let lastAutoLocateAt = 0          // 上次自动定位的时间戳（用于去抖）
+let hardResetTimer: any = null    // 组件级硬重置（20s 还没完成则强制恢复）
+let pageHiddenAt = 0              // visibilitychange 时记住页面什么时候隐藏的
+
+async function chooseLocation(opts: { auto?: boolean } = {}) {
+  // 1) 已经在定位中：直接 skip（防止重复触发）
+  if (locating.value) return
+
+  // 2) 自动定位的 60 秒去抖
+  const now = Date.now()
+  if (opts.auto && now - lastAutoLocateAt < 60 * 1000) {
+    return
+  }
+  lastAutoLocateAt = now
+
+  locating.value = true
+
+  // 3) 组件级 20 秒硬重置：
+  //    如果底层任何一个 Promise 都永远不 resolve，这里兜底强制把 locating 复位，
+  //    并保留当前的 communityName（不回退成"点击定位"）
+  if (hardResetTimer) clearTimeout(hardResetTimer)
+  hardResetTimer = setTimeout(() => {
+    console.warn('[index] 定位超过 20 秒仍未返回 — 已强制复位')
+    if (locating.value) {
+      locating.value = false
+      // 没有定位到新地址的情况下：如果之前有地址就保留，否则显示"点击定位"
+      if (!communityName.value || communityName.value === '点击定位') {
+        communityName.value = '点击定位'
+      }
+      toastInfo('定位超时，稍后点击地址栏重试')
+    }
+  }, 20000)
+
+  try {
+    const result = await getLocation({ forceRefresh: true })
+    locationResult.value = result
+    // 展示策略：优先展示真实城市·区域；注册社区仅在拿不到地理编码时作为兜底
+    const display = pickDisplayCommunity(result, user.value?.community)
+    communityName.value = display
+    const place = (result.city && result.district)
+      ? `${result.city} ${result.district}`
+      : (result.address || display)
+    toastSuccess(`已定位到 ${place}`)
+    console.log('[index] chooseLocation 完成, result =', result, 'display =', display)
+  } catch (err: any) {
+    // 失败不覆盖已有的社区名 — 用户可能之前已经定位成功过
+    const msg = err?.message || '定位失败，请稍后重试'
+    console.warn('[index] 定位失败:', err)
+    if (!opts.auto) toastInfo(msg)
+  } finally {
+    locating.value = false
+    if (hardResetTimer) {
+      clearTimeout(hardResetTimer)
+      hardResetTimer = null
+    }
+  }
+}
 const refreshing = ref(false)
 const loading = ref(false)
 const loadingMore = ref(false)
@@ -296,48 +358,28 @@ const quickActions = ref([
 const healthBadge = ref('未打卡')
 const helpBadge = ref('')
 async function loadQuickBadges() {
-  // 健康打卡状态
+  // 健康打卡状态 - 使用统一存储层
   try {
-    const stored = localStorage.getItem('linli_health_records')
-    if (stored) {
-      const records = JSON.parse(stored)
-      const today = new Date()
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-      const hasChecked = records.some((r: any) => r.date === todayStr)
-      healthBadge.value = hasChecked ? '已打卡' : '去打卡'
-    } else {
-      healthBadge.value = '去打卡'
-    }
+    const records: any[] = loadHealthRecords() || []
+    const today = new Date()
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    const hasChecked = records.some((r: any) => r.date === todayStr)
+    healthBadge.value = hasChecked ? '已打卡' : '去打卡'
   } catch (e) {
-    // ignore
+    healthBadge.value = '去打卡'
   }
 
-  // 互助任务数量
+  // 互助任务数量 - 使用统一 API 层
   try {
-    const res = await fetch('/functions/api/tasks?status=pending&limit=1')
-    if (res.ok) {
-      const data = await res.json()
-      if (data && data.data && data.data.total_pages) {
-        const total = data.data.total || 0
-        const stored = localStorage.getItem('ai_helper_tasks')
-        let fallback = 0
-        if (stored) {
-          const localTasks = JSON.parse(stored)
-          fallback = localTasks.filter((t: any) => t.status === 'open').length
-        }
-        helpBadge.value = `${total > 0 ? total : fallback}单待接`
-      }
-    }
+    const res: any = await tasksApi.getTasks()
+    const items: any[] = (res && res.items) || (Array.isArray(res) ? (res as any) : [])
+    const pendingCount = items.filter((t: any) => {
+      const s = (t.status || '').toLowerCase()
+      return s === 'open' || s === 'pending'
+    }).length
+    helpBadge.value = pendingCount > 0 ? `${pendingCount}单待接` : ''
   } catch (e) {
-    // 使用 localStorage 回退
-    try {
-      const stored = localStorage.getItem('ai_helper_tasks')
-      if (stored) {
-        const localTasks = JSON.parse(stored)
-        const openCount = localTasks.filter((t: any) => t.status === 'open').length
-        helpBadge.value = `${openCount}单待接`
-      }
-    } catch (_) { /* ignore */ }
+    helpBadge.value = ''
   }
 }
 
@@ -640,8 +682,27 @@ function getActivityCoverBg(category: string) {
   return map[category] || '#F5F5F0'
 }
 
-function chooseLocation() {
-  toastInfo('选择位置功能开发中')
+async function chooseLocation() {
+  if (locating.value) return
+  locating.value = true
+  try {
+    const result = await getLocation({ forceRefresh: true })
+    locationResult.value = result
+    // 展示策略：优先展示真实城市·区域；注册社区仅在拿不到地理编码时作为兜底
+    const display = pickDisplayCommunity(result, user.value?.community)
+    communityName.value = display
+    const place = (result.city && result.district)
+      ? `${result.city} ${result.district}`
+      : (result.address || display)
+    toastSuccess(`已定位到 ${place}`)
+    console.log('[index] chooseLocation 完成, user =', user.value, 'result =', result, 'display =', display)
+  } catch (err: any) {
+    const msg = err?.message || '定位失败，请稍后重试'
+    toastInfo(msg)
+    console.error('[index] 定位失败:', err)
+  } finally {
+    locating.value = false
+  }
 }
 
 function goToSearch() {
@@ -715,75 +776,6 @@ function onImagePreviewTouchEnd() {
   }
 }
 
-const communities = [
-  { id: 1, name: '阳光社区', lat: 31.2304, lng: 121.4737 },
-  { id: 2, name: '幸福家园', lat: 31.2345, lng: 121.4821 },
-  { id: 3, name: '和谐里', lat: 31.2289, lng: 121.4654 },
-  { id: 4, name: '温馨苑', lat: 31.2387, lng: 121.4912 },
-  { id: 5, name: '美好社区', lat: 31.2412, lng: 121.4589 },
-  { id: 6, name: '康乐家园', lat: 31.2256, lng: 121.4798 }
-]
-
-function getLocation() {
-  if ('geolocation' in navigator) {
-    toastInfo('正在定位...')
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        console.log('定位成功:', position)
-        const nearestCommunity = findNearestCommunity(position.coords.latitude, position.coords.longitude)
-        communityName.value = nearestCommunity.name
-        toastSuccess(`已定位到${nearestCommunity.name}`)
-      },
-      (error) => {
-        console.error('定位失败:', error)
-        let errorMsg = '定位失败'
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMsg = '请允许获取位置信息'
-            break
-          case error.POSITION_UNAVAILABLE:
-            errorMsg = '无法获取位置信息'
-            break
-          case error.TIMEOUT:
-            errorMsg = '获取位置超时'
-            break
-        }
-        toastInfo(errorMsg)
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    )
-  } else {
-    toastInfo('您的浏览器不支持定位功能')
-  }
-}
-
-function findNearestCommunity(lat: number, lng: number) {
-  let nearest = communities[0]
-  let minDistance = Infinity
-  
-  for (const community of communities) {
-    const distance = getDistance(lat, lng, community.lat, community.lng)
-    if (distance < minDistance) {
-      minDistance = distance
-      nearest = community
-    }
-  }
-  
-  return nearest
-}
-
-function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLng/2) * Math.sin(dLng/2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return R * c
-}
-
 function startBannerAutoPlay() {
   stopBannerAutoPlay()
   bannerTimer = setInterval(() => {
@@ -804,13 +796,49 @@ onMounted(() => {
   loading.value = true
   Promise.all([fetchPosts(1, true), fetchActivities(), loadQuickBadges()])
   startBannerAutoPlay()
-  getLocation()
+
+  // 每次进入首页自动定位一次（稍延迟，等首屏资源加载完毕后再触发）
+  const runAutoLocate = () => {
+    chooseLocation({ auto: true }).catch((err) => {
+      console.warn('[index] 自动定位出错（非阻塞错误）:', err)
+    })
+  }
+  const autoTimer = setTimeout(runAutoLocate, 600)
+
+  // visibilitychange：页面从不可见切回可见时定位
+  // — 只有页面隐藏超过 30 秒才重新定位
+  // — 且遵守 60s 全局去抖
+  // — 避免每次切回首页时触发新地址
+  const onVisibility = () => {
+    if (document.visibilityState === 'hidden') {
+      pageHiddenAt = Date.now()
+      return
+    }
+    if (document.visibilityState === 'visible') {
+      if (pageHiddenAt > 0 && (Date.now() - pageHiddenAt > 30 * 1000) {
+      setTimeout(runAutoLocate, 300)
+    }
+  }
+  document.addEventListener('visibilitychange', onVisibility)
+
+  // 记录清理标记
+  ;(window as any).__indexCleanup = () => {
+    clearTimeout(autoTimer)
+    document.removeEventListener('visibilitychange', onVisibility)
+    if (hardResetTimer) {
+      clearTimeout(hardResetTimer)
+      hardResetTimer = null
+    }
+  }
 })
 
 onUnmounted(() => {
   stopBannerAutoPlay()
   if (showImagePreview.value) {
     document.body.style.overflow = ''
+  }
+  if (typeof (window as any).__indexCleanup === 'function') {
+    ;(window as any).__indexCleanup()
   }
 })
 </script>
