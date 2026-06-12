@@ -3,8 +3,8 @@
     <div class="status-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
       <div class="status-content">
         <div class="location" @click="chooseLocation">
-          <span class="location-icon">📍</span>
-          <span class="location-text">{{ communityName }}</span>
+          <span class="location-icon">{{ locating ? '⏳' : '📍' }}</span>
+          <span class="location-text">{{ locating ? '定位中...' : communityName }}</span>
           <span class="location-arrow">▼</span>
         </div>
         <div class="search-bar" @click="goToSearch">
@@ -255,11 +255,15 @@ import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
 import { loadHealthRecords } from '../../utils/storage'
+import { getLocation, pickDisplayCommunity } from '../../utils/location'
+import type { LocationResult } from '../../utils/location'
 
-const { initAuth, isLoggedIn } = useAuth()
+const { initAuth, isLoggedIn, user } = useAuth()
 
 const statusBarHeight = ref(20)
-const communityName = ref('阳光社区')
+const communityName = ref('点击定位')
+const locating = ref(false)
+const locationResult = ref<LocationResult | null>(null)
 const refreshing = ref(false)
 const loading = ref(false)
 const loadingMore = ref(false)
@@ -621,8 +625,23 @@ function getActivityCoverBg(category: string) {
   return map[category] || '#F5F5F0'
 }
 
-function chooseLocation() {
-  toastInfo('选择位置功能开发中')
+async function chooseLocation() {
+  if (locating.value) return
+  locating.value = true
+  try {
+    const result = await getLocation({ forceRefresh: true })
+    locationResult.value = result
+    // 展示策略：优先用户注册的社区，否则 "城市·区域"，兜底最近的社区
+    const display = pickDisplayCommunity(result, user.value?.community)
+    communityName.value = display
+    toastSuccess(`已定位到 ${result.city || ''} ${result.district || ''}`)
+  } catch (err: any) {
+    const msg = err?.message || '定位失败，请稍后重试'
+    toastInfo(msg)
+    console.error('[index] 定位失败:', err)
+  } finally {
+    locating.value = false
+  }
 }
 
 function goToSearch() {
@@ -696,75 +715,6 @@ function onImagePreviewTouchEnd() {
   }
 }
 
-const communities = [
-  { id: 1, name: '阳光社区', lat: 31.2304, lng: 121.4737 },
-  { id: 2, name: '幸福家园', lat: 31.2345, lng: 121.4821 },
-  { id: 3, name: '和谐里', lat: 31.2289, lng: 121.4654 },
-  { id: 4, name: '温馨苑', lat: 31.2387, lng: 121.4912 },
-  { id: 5, name: '美好社区', lat: 31.2412, lng: 121.4589 },
-  { id: 6, name: '康乐家园', lat: 31.2256, lng: 121.4798 }
-]
-
-function getLocation() {
-  if ('geolocation' in navigator) {
-    toastInfo('正在定位...')
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        console.log('定位成功:', position)
-        const nearestCommunity = findNearestCommunity(position.coords.latitude, position.coords.longitude)
-        communityName.value = nearestCommunity.name
-        toastSuccess(`已定位到${nearestCommunity.name}`)
-      },
-      (error) => {
-        console.error('定位失败:', error)
-        let errorMsg = '定位失败'
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMsg = '请允许获取位置信息'
-            break
-          case error.POSITION_UNAVAILABLE:
-            errorMsg = '无法获取位置信息'
-            break
-          case error.TIMEOUT:
-            errorMsg = '获取位置超时'
-            break
-        }
-        toastInfo(errorMsg)
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    )
-  } else {
-    toastInfo('您的浏览器不支持定位功能')
-  }
-}
-
-function findNearestCommunity(lat: number, lng: number) {
-  let nearest = communities[0]
-  let minDistance = Infinity
-  
-  for (const community of communities) {
-    const distance = getDistance(lat, lng, community.lat, community.lng)
-    if (distance < minDistance) {
-      minDistance = distance
-      nearest = community
-    }
-  }
-  
-  return nearest
-}
-
-function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLng/2) * Math.sin(dLng/2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return R * c
-}
-
 function startBannerAutoPlay() {
   stopBannerAutoPlay()
   bannerTimer = setInterval(() => {
@@ -785,7 +735,11 @@ onMounted(() => {
   loading.value = true
   Promise.all([fetchPosts(1, true), fetchActivities(), loadQuickBadges()])
   startBannerAutoPlay()
-  getLocation()
+
+  // 登录后若有注册社区，直接展示（不自动触发定位，避免频繁弹窗）
+  if (user.value?.community) {
+    communityName.value = user.value.community
+  }
 })
 
 onUnmounted(() => {
