@@ -740,9 +740,28 @@ onMounted(() => {
   Promise.all([fetchPosts(1, true), fetchActivities(), loadQuickBadges()])
   startBannerAutoPlay()
 
-  // 登录后若有注册社区，直接展示（不自动触发定位，避免频繁弹窗）
-  if (user.value?.community) {
-    communityName.value = user.value.community
+  // 每次进入首页自动定位一次（稍延迟，等首屏资源加载完毕后再触发）
+  const runAutoLocate = () => {
+    if (locating.value) return
+    chooseLocation().catch((err) => {
+      console.warn('[index] 自动定位出错（非阻塞错误）:', err)
+    })
+  }
+  const autoTimer = setTimeout(runAutoLocate, 600)
+
+  // 页面切到可见（从其他 tab/app 切回来）时重新定位
+  const onVisibility = () => {
+    if (document.visibilityState === 'visible') {
+      // 稍微延迟一下避免与 onMounted 重复触发
+      clearTimeout(autoTimer)
+      setTimeout(runAutoLocate, 400)
+    }
+  }
+  document.addEventListener('visibilitychange', onVisibility)
+
+  // 记录清理标记
+  ;(window as any).__indexCleanup = () => {
+    document.removeEventListener('visibilitychange', onVisibility)
   }
 })
 
@@ -750,6 +769,9 @@ onUnmounted(() => {
   stopBannerAutoPlay()
   if (showImagePreview.value) {
     document.body.style.overflow = ''
+  }
+  if (typeof (window as any).__indexCleanup === 'function') {
+    ;(window as any).__indexCleanup()
   }
 })
 </script>

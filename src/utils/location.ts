@@ -141,33 +141,65 @@ function pickCommunityByKeywords(city: string, district: string): CommunityPrese
 // ======= 浏览器 Geolocation 原始定位 ========================================
 function browserGetCoords(): Promise<{ longitude: number; latitude: number }> {
   return new Promise((resolve, reject) => {
-    if (!('geolocation' in navigator)) {
-      reject(new Error('您的浏览器不支持定位功能'))
+    // 1. 浏览器完全不支持
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      reject(new Error('当前浏览器不支持定位功能'))
       return
     }
+    // 2. 非 HTTPS 且非 localhost：部分浏览器在此环境下禁用 geolocation
+    const isSecure =
+      typeof window !== 'undefined' &&
+      (window.location.protocol === 'https:' ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1')
+    if (!isSecure) {
+      reject(new Error('请使用 HTTPS 或 localhost 访问以启用定位'))
+      return
+    }
+
+    let done = false
+    const onError = (msg: string) => {
+      if (done) return
+      done = true
+      reject(new Error(msg))
+    }
+
+    // 超时保护（12s），防止系统弹窗被用户忽略或卡死
+    const timeoutTimer = setTimeout(() => {
+      if (done) return
+      done = true
+      reject(new Error('定位超时，请检查设备定位是否已开启，或手动点击定位按钮重试'))
+    }, 12000)
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (done) return
+        done = true
+        clearTimeout(timeoutTimer)
         resolve({
           longitude: position.coords.longitude,
           latitude: position.coords.latitude,
         })
       },
       (error) => {
-        let msg = '定位失败'
+        if (done) return
+        done = true
+        clearTimeout(timeoutTimer)
+        let msg = '定位失败，请重试'
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            msg = '请在浏览器设置中允许获取位置信息'
+            msg = '请在浏览器/系统设置中允许定位权限，然后重试'
             break
           case error.POSITION_UNAVAILABLE:
-            msg = '当前无法获取位置信息'
+            msg = '位置信息不可用，请检查网络或定位服务'
             break
           case error.TIMEOUT:
-            msg = '获取位置超时，请重试'
+            msg = '定位超时，请重试'
             break
         }
         reject(new Error(msg))
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     )
   })
 }
@@ -367,6 +399,7 @@ export async function getLocation(options: { forceRefresh?: boolean } = {}): Pro
   if (!options.forceRefresh && lastLocation) return lastLocation
 
   const engine = pickEngine()
+  console.log('[location] 使用引擎 =', engine)
 
   // 浏览器定位前提示用户（部分浏览器需要用户手动授权）
   toastInfo(
@@ -375,31 +408,38 @@ export async function getLocation(options: { forceRefresh?: boolean } = {}): Pro
       : '正在定位中，请稍候...'
   )
 
-  try {
-    let result: LocationResult
-    if (engine === 'amap') {
-      result = await locateByAmap()
-    } else if (engine === 'baidu') {
-      result = await locateByBaidu()
-    } else {
-      result = await locateByBrowser()
-    }
-    lastLocation = result
-    console.log('[location] 最终定位结果 =', result, '引擎 =', engine)
-    return result
-  } catch (err: any) {
-    console.warn('[location] 主引擎失败，错误 =', err)
-    // 引擎失败时再试一下浏览器原生定位（避免白配置了 key 但是网络问题导致失败）
-    if (engine !== 'browser') {
-      try {
+  // 顶层 Promise.race 超时保护（15秒），无论哪个引擎都不能永远挂起
+  const overallTimeout = new Promise<LocationResult>((_, reject) => {
+    setTimeout(() => reject(new Error('定位超时（15秒未完成），请点击定位按钮重试')), 15000)
+  })
+
+  const actualWork = (async (): Promise<LocationResult> => {
+    try {
+      let result: LocationResult
+      if (engine === 'amap') {
+        result = await locateByAmap()
+      } else if (engine === 'baidu') {
+        result = await locateByBaidu()
+      } else {
+        result = await locateByBrowser()
+      }
+      return result
+    } catch (err: any) {
+      console.warn('[location] 主引擎失败，错误 =', err)
+      // 引擎失败时再试一下浏览器原生定位（避免白配置了 key 但是网络问题导致失败）
+      if (engine !== 'browser') {
         const fallback = await locateByBrowser()
-        lastLocation = fallback
         console.log('[location] 降级至浏览器兜底，结果 =', fallback)
         return fallback
-      } catch (_) { /* ignore */ }
+      }
+      throw err
     }
-    throw err
-  }
+  })()
+
+  const finalResult = await Promise.race([actualWork, overallTimeout])
+  lastLocation = finalResult
+  console.log('[location] 最终定位结果 =', finalResult)
+  return finalResult
 }
 
 export function getLastLocation(): LocationResult | null {
