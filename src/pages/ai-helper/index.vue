@@ -215,7 +215,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { navigateTo } from '../../utils/router'
+import { navigateTo, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 
 const STORAGE_KEY = 'ai_helper_tasks'
@@ -397,16 +397,6 @@ function saveToStorage(key: string, data: any) {
   } catch (e) {
     console.error(`保存数据失败: ${key}`, e)
   }
-}
-
-// 获取用户专属的存储键
-function getUserStorageKey(baseKey: string): string {
-  const userInfo = localStorage.getItem('userInfo')
-  if (userInfo) {
-    const user = JSON.parse(userInfo)
-    return `${baseKey}_${user.phone}`
-  }
-  return baseKey
 }
 
 const tasks = ref<any[]>([])

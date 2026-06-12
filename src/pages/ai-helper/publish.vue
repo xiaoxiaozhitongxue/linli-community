@@ -127,7 +127,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { navigateTo, navigateBack } from '../../utils/router'
+import { navigateTo, navigateBackSmart, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { useAuth } from '../../store/index'
 
@@ -256,18 +256,8 @@ function loadFromStorage(key: string, defaultValue: any[]) {
   return [...defaultValue]
 }
 
-// 获取用户专属的存储键
-function getUserStorageKey(baseKey: string): string {
-  const userInfo = localStorage.getItem('userInfo')
-  if (userInfo) {
-    const user = JSON.parse(userInfo)
-    return `${baseKey}_${user.phone}`
-  }
-  return baseKey
-}
-
 const goBack = () => {
-  navigateBack()
+  navigateBackSmart()
 }
 
 const submitTask = async () => {
