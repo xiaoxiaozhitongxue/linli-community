@@ -48,8 +48,20 @@
       </div>
     </div>
 
+    <!-- 未登录提示 -->
+    <div class="not-logged-in-container" v-else-if="!isLoggedIn">
+      <div class="not-logged-in">
+        <div class="not-logged-in-icon">🔒</div>
+        <div class="not-logged-in-title">请先登录</div>
+        <div class="not-logged-in-desc">登录后可查看消息通知和聊天记录</div>
+        <div class="login-btn" @click="goToLogin">
+          立即登录
+        </div>
+      </div>
+    </div>
+
     <!-- 任务通知列表 -->
-    <div class="message-list" v-show="activeTab === 'tasks' && !loading">
+    <div class="message-list" v-show="activeTab === 'tasks' && !loading && isLoggedIn">
       <div 
         class="message-item task-notification"
         :class="{ 'is-unread': item.unread }"
@@ -86,7 +98,7 @@
     </div>
 
     <!-- 私信列表 -->
-    <div class="message-list" v-show="activeTab === 'private' && !loading">
+    <div class="message-list" v-show="activeTab === 'private' && !loading && isLoggedIn">
       <div 
         class="message-item" 
         :class="{ 'is-unread': item.unread > 0 }"
@@ -109,7 +121,7 @@
         <div class="unread-bar" v-if="item.unread > 0"></div>
       </div>
 
-      <div class="empty-state" v-if="privateMessages.length === 0 && !loading">
+      <div class="empty-state" v-if="privateMessages.length === 0 && !loading && isLoggedIn">
         <div class="empty-illustration">💬</div>
         <div class="empty-title">暂无私信消息</div>
         <div class="empty-desc">和其他邻居开始对话吧</div>
@@ -117,7 +129,7 @@
     </div>
 
     <!-- 群聊列表 -->
-    <div class="message-list" v-show="activeTab === 'group' && !loading">
+    <div class="message-list" v-show="activeTab === 'group' && !loading && isLoggedIn">
       <div 
         class="message-item" 
         :class="{ 'is-unread': item.unread > 0 }"
@@ -144,7 +156,7 @@
         <div class="unread-bar" v-if="item.unread > 0"></div>
       </div>
 
-      <div class="empty-state" v-if="groupChats.length === 0 && !loading">
+      <div class="empty-state" v-if="groupChats.length === 0 && !loading && isLoggedIn">
         <div class="empty-illustration">👥</div>
         <div class="empty-title">暂无群聊消息</div>
         <div class="empty-desc">加入社区群组，和邻居聊天吧</div>
@@ -158,6 +170,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { navigateBack, navigateTo } from '../../utils/router'
+import { useAuth } from '../../store'
+import { toastInfo } from '../../utils/toast'
 
 interface Message {
   id: string
@@ -190,6 +204,8 @@ const loading = ref(true)
 const taskNotifications = ref<TaskNotification[]>([])
 const privateMessages = ref<Message[]>([])
 const groupChats = ref<Message[]>([])
+
+const { isLoggedIn } = useAuth()
 
 const taskUnread = computed(() => taskNotifications.value.filter(n => n.unread).length)
 const privateUnread = computed(() => privateMessages.value.reduce((sum, m) => sum + m.unread, 0))
@@ -234,132 +250,55 @@ const getTaskBadgeText = (type: string) => {
   return map[type] || '通知'
 }
 
+const goToLogin = () => {
+  navigateTo('/pages/login/index')
+}
+
 const loadMessages = () => {
   loading.value = true
   
-  // 模拟加载延迟
-  setTimeout(() => {
-    // 加载任务通知
-  const storedNotifications = localStorage.getItem('linli_task_notifications')
+  // 检查是否已登录
+  if (!isLoggedIn.value) {
+    setTimeout(() => {
+      loading.value = false
+    }, 500)
+    return
+  }
+  
+  // 获取用户专属的存储键
+function getUserStorageKey(baseKey: string): string {
+  const userInfo = localStorage.getItem('userInfo')
+  if (userInfo) {
+    const user = JSON.parse(userInfo)
+    return `${baseKey}_${user.phone}`
+  }
+  return baseKey
+}
+
+// 模拟加载延迟
+setTimeout(() => {
+  // 使用用户专属键加载任务通知
+  const userNotifKey = getUserStorageKey('linli_task_notifications')
+  const storedNotifications = localStorage.getItem(userNotifKey)
   if (storedNotifications) {
     taskNotifications.value = JSON.parse(storedNotifications)
   } else {
-    // Mock 数据 - 任务通知
-    taskNotifications.value = [
-      {
-        id: 't1',
-        title: '🎉 新任务发布',
-        content: '有人发布了"帮忙取快递"任务，悬赏5元，快去看看吧！',
-        time: new Date(Date.now() - 300000).toISOString(),
-        unread: true,
-        type: 'new_task',
-        taskId: '1',
-        reward: 5,
-        location: '阳光社区',
-        avatar: 'https://i.pravatar.cc/100?img=4'
-      },
-      {
-        id: 't2',
-        title: '✅ 任务已被接受',
-        content: '您发布的"帮忙带早餐"任务已被小红接受，正在进行中',
-        time: new Date(Date.now() - 1800000).toISOString(),
-        unread: true,
-        type: 'task_accepted',
-        taskId: '2',
-        reward: 8,
-        location: '永和大王',
-        avatar: 'https://i.pravatar.cc/100?img=5'
-      },
-      {
-        id: 't3',
-        title: '🎯 等待您确认',
-        content: '您帮助的"代遛金毛"任务已完成，请确认',
-        time: new Date(Date.now() - 3600000).toISOString(),
-        unread: false,
-        type: 'task_completed',
-        taskId: '3',
-        reward: 15,
-        location: '阳光社区',
-        avatar: 'https://i.pravatar.cc/100?img=6'
-      },
-      {
-        id: 't4',
-        title: '🌟 任务已完成',
-        content: '"兴趣班接送"任务已确认完成，感谢您的帮助！',
-        time: new Date(Date.now() - 7200000).toISOString(),
-        unread: false,
-        type: 'task_confirmed',
-        taskId: '4',
-        reward: 25,
-        location: '青少年宫',
-        avatar: 'https://i.pravatar.cc/100?img=7'
-      }
-    ]
+    // 新用户没有通知数据
+    taskNotifications.value = []
     saveTaskNotifications()
   }
 
-  // 加载私信
-  const stored = localStorage.getItem('linli_messages')
+  // 使用用户专属键加载私信
+  const userMsgKey = getUserStorageKey('linli_messages')
+  const stored = localStorage.getItem(userMsgKey)
   if (stored) {
     const data = JSON.parse(stored)
     privateMessages.value = data.private || []
     groupChats.value = data.group || []
   } else {
-    // Mock 数据 - 3条私信
-    privateMessages.value = [
-      {
-        id: 'p1',
-        name: '王阿姨',
-        avatar: 'https://i.pravatar.cc/100?img=20',
-        lastMessage: '明天一起去买菜吗？',
-        lastTime: new Date(Date.now() - 1800000).toISOString(),
-        unread: 2,
-        type: 'private'
-      },
-      {
-        id: 'p2',
-        name: '李叔叔',
-        avatar: 'https://i.pravatar.cc/100?img=33',
-        lastMessage: '活动已经开始了，你到哪了？',
-        lastTime: new Date(Date.now() - 7200000).toISOString(),
-        unread: 0,
-        type: 'private'
-      },
-      {
-        id: 'p3',
-        name: '物业小张',
-        avatar: 'https://i.pravatar.cc/100?img=8',
-        lastMessage: '您的报修单已处理完成',
-        lastTime: new Date(Date.now() - 86400000).toISOString(),
-        unread: 1,
-        type: 'private'
-      }
-    ]
-
-    // Mock 数据 - 2个群聊
-    groupChats.value = [
-      {
-        id: 'g1',
-        name: '邻里互助群',
-        avatar: 'https://i.pravatar.cc/100?img=50',
-        lastMessage: '张大爷：谁能帮忙带袋米？',
-        lastTime: new Date(Date.now() - 600000).toISOString(),
-        unread: 5,
-        type: 'group',
-        memberCount: 128
-      },
-      {
-        id: 'g2',
-        name: '广场舞爱好者',
-        avatar: 'https://i.pravatar.cc/100?img=45',
-        lastMessage: '李姐：明天早上7点老地方见',
-        lastTime: new Date(Date.now() - 3600000).toISOString(),
-        unread: 0,
-        type: 'group',
-        memberCount: 45
-      }
-    ]
-
+    // 新用户没有消息数据
+    privateMessages.value = []
+    groupChats.value = []
     saveMessages()
   }
   
@@ -368,17 +307,24 @@ const loadMessages = () => {
 }
 
 const saveTaskNotifications = () => {
-  localStorage.setItem('linli_task_notifications', JSON.stringify(taskNotifications.value))
+  const userNotifKey = getUserStorageKey('linli_task_notifications')
+  localStorage.setItem(userNotifKey, JSON.stringify(taskNotifications.value))
 }
 
 const saveMessages = () => {
-  localStorage.setItem('linli_messages', JSON.stringify({
+  const userMsgKey = getUserStorageKey('linli_messages')
+  localStorage.setItem(userMsgKey, JSON.stringify({
     private: privateMessages.value,
     group: groupChats.value
   }))
 }
 
 const handleTaskNotification = (item: TaskNotification) => {
+  if (!isLoggedIn.value) {
+    toastInfo('请先登录')
+    goToLogin()
+    return
+  }
   // 标记为已读
   if (item.unread) {
     item.unread = false
@@ -396,6 +342,11 @@ const goBack = () => {
 }
 
 const goToChat = (item: Message) => {
+  if (!isLoggedIn.value) {
+    toastInfo('请先登录')
+    goToLogin()
+    return
+  }
   // 将未读数清零
   item.unread = 0
   saveMessages()
@@ -403,6 +354,11 @@ const goToChat = (item: Message) => {
 }
 
 const goToGroup = (item: Message) => {
+  if (!isLoggedIn.value) {
+    toastInfo('请先登录')
+    goToLogin()
+    return
+  }
   item.unread = 0
   saveMessages()
   navigateTo(`/pages/messages/group?id=${item.id}&name=${encodeURIComponent(item.name)}&avatar=${encodeURIComponent(item.avatar)}&members=${item.memberCount}`)
@@ -866,6 +822,61 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-tertiary);
   text-align: center;
+}
+
+/* 未登录提示 */
+.not-logged-in-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+}
+
+.not-logged-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.not-logged-in-icon {
+  font-size: 64px;
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.8;
+}
+
+.not-logged-in-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.not-logged-in-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--spacing-xl);
+}
+
+.not-logged-in .login-btn {
+  background: var(--color-primary-gradient);
+  color: white;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+}
+
+.not-logged-in .login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.4);
+}
+
+.not-logged-in .login-btn:active {
+  transform: translateY(0);
 }
 
 .safe-area-bottom {

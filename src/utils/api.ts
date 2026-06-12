@@ -124,6 +124,93 @@ export interface InterestGroup {
 
 const MOCK_MODE = true
 
+// 用户数据存储键名前缀
+const USER_DATA_PREFIX = 'linli_user_data_'
+
+// 各模块存储键名
+const ACTIVITIES_STORAGE_KEY = 'linli_activities'
+
+// 初始化用户数据结构
+interface UserData {
+  posts: Post[]
+  activities: Activity[]
+  tasks: any[]
+  myCreatedTasks: any[]
+  myAcceptedTasks: any[]
+  messages: any[]
+  notifications: any[]
+}
+
+// 获取用户数据键名
+function getUserDataKey(phone: string): string {
+  return `${USER_DATA_PREFIX}${phone}`
+}
+
+// 初始化用户数据
+function initUserData(phone: string): UserData {
+  return {
+    posts: [],
+    activities: [],
+    tasks: [],
+    myCreatedTasks: [],
+    myAcceptedTasks: [],
+    messages: [],
+    notifications: []
+  }
+}
+
+// 获取用户数据
+function getUserData(phone: string): UserData {
+  try {
+    const key = getUserDataKey(phone)
+    const stored = localStorage.getItem(key)
+    if (stored) {
+      return JSON.parse(stored)
+    }
+  } catch (e) {
+    console.error('读取用户数据失败', e)
+  }
+  return initUserData(phone)
+}
+
+// 保存用户数据
+function saveUserData(phone: string, data: UserData): void {
+  try {
+    const key = getUserDataKey(phone)
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch (e) {
+    console.error('保存用户数据失败', e)
+  }
+}
+
+// 获取当前登录用户的手机号
+function getCurrentPhone(): string | null {
+  try {
+    const userInfo = localStorage.getItem('userInfo')
+    if (userInfo) {
+      const user = JSON.parse(userInfo)
+      return user.phone || null
+    }
+  } catch (e) {
+    console.error('读取当前用户失败', e)
+  }
+  return null
+}
+
+// 获取当前用户的独立数据
+function getCurrentUserData(): UserData | null {
+  const phone = getCurrentPhone()
+  if (!phone) return null
+  return getUserData(phone)
+}
+
+// 保存当前用户的独立数据
+function saveCurrentUserData(data: UserData): void {
+  const phone = getCurrentPhone()
+  if (!phone) return
+  saveUserData(phone, data)
+}
+
 const mockUsers: User[] = [
   {
     id: '1',
@@ -338,11 +425,24 @@ export const postsApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
+          // 优先从用户独立数据读取
+          const userData = getCurrentUserData()
+          if (userData && userData.posts.length > 0) {
+            resolve({
+              items: userData.posts,
+              page: params?.page || 1,
+              limit: params?.limit || 10,
+              total: userData.posts.length,
+              total_pages: 1
+            })
+            return
+          }
+          // 如果没有用户数据，返回空数组（不再返回mockPosts）
           resolve({
-            items: mockPosts,
+            items: [],
             page: params?.page || 1,
             limit: params?.limit || 10,
-            total: mockPosts.length,
+            total: 0,
             total_pages: 1
           })
         }, 300)
@@ -355,22 +455,39 @@ export const postsApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
+          // 获取当前用户信息
+          let currentUser = mockUsers[0]
+          try {
+            const savedUser = localStorage.getItem('userInfo')
+            if (savedUser) {
+              currentUser = JSON.parse(savedUser)
+            }
+          } catch (e) {
+            console.error('读取用户信息失败', e)
+          }
+
           const newPost: Post = {
-          id: Date.now().toString(),
-          user_id: '1',
-          content: data.content,
-          images: data.images,
-          location: data.location,
-          visibility: data.visibility || 'public',
-          like_count: 0,
-          comment_count: 0,
-          created_at: Date.now(),
-          updated_at: Date.now(),
-          user: mockUsers[0],
-          is_liked: false
-        }
-        mockPosts.unshift(newPost)
-        resolve(newPost)
+            id: Date.now().toString(),
+            user_id: currentUser.id || '1',
+            content: data.content,
+            images: data.images,
+            location: data.location,
+            visibility: data.visibility || 'public',
+            like_count: 0,
+            comment_count: 0,
+            created_at: Date.now(),
+            updated_at: Date.now(),
+            user: currentUser,
+            is_liked: false
+          }
+
+          // 保存到用户独立数据
+          const userData = getCurrentUserData()
+          if (userData) {
+            userData.posts.unshift(newPost)
+            saveCurrentUserData(userData)
+          }
+          resolve(newPost)
         }, 300)
       })
     }
@@ -381,21 +498,23 @@ export const postsApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
-          const post = mockPosts.find(p => p.id === postId)
-          if (post) {
-            const wasLiked = mockLikeStates[postId] || false
-            mockLikeStates[postId] = !wasLiked
-            post.is_liked = !wasLiked
-            if (!wasLiked) {
-              post.like_count++
-            } else {
-              post.like_count--
+          const userData = getCurrentUserData()
+          if (userData) {
+            const post = userData.posts.find(p => p.id === postId)
+            if (post) {
+              const wasLiked = post.is_liked || false
+              post.is_liked = !wasLiked
+              post.like_count = (post.like_count || 0) + (wasLiked ? -1 : 1)
+              saveCurrentUserData(userData)
+              resolve({
+                liked: !wasLiked,
+                like_count: post.like_count
+              })
+              return
             }
-            resolve({
-              liked: !wasLiked,
-              like_count: post.like_count
-            })
           }
+          // 如果没找到，返回默认响应
+          resolve({ liked: false, like_count: 0 })
         }, 200)
       })
     }
@@ -452,24 +571,64 @@ export const authApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
-          // 根据传入的昵称和社区创建一个新用户，或者使用已有用户
-          const user: User = {
-            id: 'demo-user-' + Date.now(),
-            phone: data.phone,
-            nickname: data.nickname || '邻里用户',
-            avatar: '',
-            community: data.community || '阳光社区',
-            bio: '热爱社区，乐于助人',
-            role: 'resident',
-            credit_score: 100,
-            is_verified: true,
-            created_at: Date.now(),
-            updated_at: Date.now(),
-            last_active_at: Date.now()
+          // 从localStorage读取已保存的用户信息
+          let savedUser = null
+          try {
+            const savedUserStr = localStorage.getItem('userInfo')
+            if (savedUserStr) {
+              savedUser = JSON.parse(savedUserStr)
+            }
+          } catch (e) {
+            console.error('读取用户信息失败', e)
           }
+
+          let user: User
+          const phone = data.phone
+          
+          if (savedUser && savedUser.phone === phone) {
+            // 如果已存在该手机号的用户，更新其信息
+            user = {
+              ...savedUser,
+              nickname: data.nickname || savedUser.nickname || '邻里用户',
+              community: data.community || savedUser.community || '阳光社区',
+              updated_at: Date.now(),
+              last_active_at: Date.now()
+            }
+          } else {
+            // 创建新用户
+            user = {
+              id: savedUser?.id || 'demo-user-' + Date.now(),
+              phone: phone,
+              nickname: data.nickname || savedUser?.nickname || '邻里用户',
+              avatar: savedUser?.avatar || '',
+              gender: savedUser?.gender,
+              birthday: savedUser?.birthday || '',
+              community: data.community || savedUser?.community || '阳光社区',
+              address: savedUser?.address || '',
+              bio: savedUser?.bio || '热爱社区，乐于助人',
+              role: savedUser?.role || 'resident',
+              credit_score: savedUser?.credit_score || 100,
+              is_verified: true,
+              created_at: savedUser?.created_at || Date.now(),
+              updated_at: Date.now(),
+              last_active_at: Date.now()
+            }
+          }
+
+          // 保存用户信息到localStorage
+          try {
+            localStorage.setItem('userInfo', JSON.stringify(user))
+          } catch (e) {
+            console.error('保存用户信息失败', e)
+          }
+
+          // 获取该账号的用户数据（如果不存在则初始化空数据）
+          const userData = getUserData(phone)
+
           resolve({
             token: 'mock-token-' + Date.now(),
-            user
+            user,
+            userData
           })
         }, 500)
       })
@@ -483,6 +642,17 @@ export const userApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
+          // 优先从localStorage读取
+          try {
+            const savedUserStr = localStorage.getItem('userInfo')
+            if (savedUserStr) {
+              resolve(JSON.parse(savedUserStr))
+              return
+            }
+          } catch (e) {
+            console.error('读取用户信息失败', e)
+          }
+          // 如果localStorage没有，返回mockUsers[0]
           resolve(mockUsers[0])
         }, 300)
       })
@@ -494,7 +664,27 @@ export const userApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
-          Object.assign(mockUsers[0], data)
+          // 优先更新localStorage中的用户信息
+          try {
+            const savedUserStr = localStorage.getItem('userInfo')
+            if (savedUserStr) {
+              const savedUser = JSON.parse(savedUserStr)
+              const updatedUser = {
+                ...savedUser,
+                ...data,
+                updated_at: Date.now()
+              }
+              localStorage.setItem('userInfo', JSON.stringify(updatedUser))
+              // 同时更新mockUsers以保持一致性
+              Object.assign(mockUsers[0], updatedUser)
+              resolve(updatedUser)
+              return
+            }
+          } catch (e) {
+            console.error('更新用户信息失败', e)
+          }
+          // 如果localStorage没有，更新mockUsers[0]
+          Object.assign(mockUsers[0], data, { updated_at: Date.now() })
           resolve(mockUsers[0])
         }, 300)
       })
@@ -582,12 +772,27 @@ export const activitiesApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
+          // 优先从用户独立数据读取
+          const userData = getCurrentUserData()
+          if (userData && userData.activities.length > 0) {
+            resolve({
+              items: userData.activities,
+              pagination: {
+                page: params?.page || 1,
+                limit: params?.limit || 10,
+                total: userData.activities.length,
+                totalPages: 1
+              }
+            })
+            return
+          }
+          // 如果没有用户数据，返回空数组
           resolve({
-            items: mockActivities,
+            items: [],
             pagination: {
               page: params?.page || 1,
               limit: params?.limit || 10,
-              total: mockActivities.length,
+              total: 0,
               totalPages: 1
             }
           })
@@ -601,7 +806,17 @@ export const activitiesApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
-          resolve(mockActivities.find(a => a.id === id) || mockActivities[0])
+          // 优先从用户独立数据读取
+          const userData = getCurrentUserData()
+          if (userData) {
+            const activity = userData.activities.find((a: Activity) => a.id === id)
+            if (activity) {
+              resolve(activity)
+              return
+            }
+          }
+          // 如果没找到，返回 null
+          resolve(null)
         }, 300)
       })
     }
@@ -621,9 +836,20 @@ export const activitiesApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
+          // 获取当前用户信息
+          let currentUser = mockUsers[0]
+          try {
+            const savedUser = localStorage.getItem('userInfo')
+            if (savedUser) {
+              currentUser = JSON.parse(savedUser)
+            }
+          } catch (e) {
+            console.error('读取用户信息失败', e)
+          }
+
           const newActivity: Activity = {
             id: Date.now().toString(),
-            user_id: '1',
+            user_id: currentUser.id || '1',
             title: data.title,
             description: data.description,
             category: data.category as any,
@@ -634,10 +860,16 @@ export const activitiesApi = {
             status: 'upcoming',
             created_at: Date.now(),
             updated_at: Date.now(),
-            user: mockUsers[0],
+            user: currentUser,
             is_participant: true
           }
-          mockActivities.unshift(newActivity)
+
+          // 保存到用户独立数据
+          const userData = getCurrentUserData()
+          if (userData) {
+            userData.activities.unshift(newActivity)
+            saveCurrentUserData(userData)
+          }
           resolve(newActivity)
         }, 300)
       })
@@ -649,10 +881,15 @@ export const activitiesApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
-          const activity = mockActivities.find(a => a.id === id)
-          if (activity && !activity.is_participant) {
-            activity.is_participant = true
-            activity.current_participants++
+          // 更新用户独立数据中的活动
+          const userData = getCurrentUserData()
+          if (userData) {
+            const activity = userData.activities.find(a => a.id === id)
+            if (activity && !activity.is_participant) {
+              activity.is_participant = true
+              activity.current_participants++
+              saveCurrentUserData(userData)
+            }
           }
           resolve({
             id: Date.now().toString(),
@@ -671,10 +908,15 @@ export const activitiesApi = {
     if (MOCK_MODE) {
       return new Promise((resolve) => {
         setTimeout(() => {
-          const activity = mockActivities.find(a => a.id === id)
-          if (activity && activity.is_participant) {
-            activity.is_participant = false
-            activity.current_participants--
+          // 更新用户独立数据中的活动
+          const userData = getCurrentUserData()
+          if (userData) {
+            const activity = userData.activities.find(a => a.id === id)
+            if (activity && activity.is_participant) {
+              activity.is_participant = false
+              activity.current_participants--
+              saveCurrentUserData(userData)
+            }
           }
           resolve({ success: true })
         }, 300)

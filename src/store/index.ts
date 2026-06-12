@@ -1,8 +1,28 @@
 import { ref, computed } from 'vue'
 import type { User } from '../utils/api'
 
+// 用户数据结构
+interface UserData {
+  posts: any[]
+  activities: any[]
+  tasks: any[]
+  myCreatedTasks: any[]
+  myAcceptedTasks: any[]
+  messages: any[]
+  notifications: any[]
+}
+
 const user = ref<User | null>(null)
 const token = ref<string>('')
+const userData = ref<UserData>({
+  posts: [],
+  activities: [],
+  tasks: [],
+  myCreatedTasks: [],
+  myAcceptedTasks: [],
+  messages: [],
+  notifications: []
+})
 
 function safeGetStorage(key: string) {
   try {
@@ -36,6 +56,24 @@ function safeRemoveStorage(key: string) {
   }
 }
 
+// 获取用户数据键名
+function getUserDataKey(phone: string): string {
+  return `linli_user_data_${phone}`
+}
+
+// 初始化用户数据
+function initUserData(): UserData {
+  return {
+    posts: [],
+    activities: [],
+    tasks: [],
+    myCreatedTasks: [],
+    myAcceptedTasks: [],
+    messages: [],
+    notifications: []
+  }
+}
+
 export function useAuth() {
   const isLoggedIn = computed(() => !!token.value || !!user.value)
 
@@ -49,19 +87,41 @@ export function useAuth() {
     
     if (savedUser) {
       user.value = savedUser
+      // 加载该用户的独立数据
+      const userDataKey = getUserDataKey(savedUser.phone)
+      const savedUserData = safeGetStorage(userDataKey)
+      if (savedUserData) {
+        userData.value = savedUserData
+      } else {
+        userData.value = initUserData()
+      }
     }
   }
 
-  function setUser(newUser: User, newToken: string) {
+  function setUser(newUser: User, newToken: string, newUserData?: UserData) {
     user.value = newUser
     token.value = newToken
     safeSetStorage('token', newToken)
     safeSetStorage('userInfo', newUser)
+    
+    // 保存用户独立数据
+    if (newUserData) {
+      userData.value = newUserData
+      safeSetStorage(getUserDataKey(newUser.phone), newUserData)
+    }
+  }
+
+  function setUserData(data: UserData) {
+    userData.value = data
+    if (user.value) {
+      safeSetStorage(getUserDataKey(user.value.phone), data)
+    }
   }
 
   function logout() {
     user.value = null
     token.value = ''
+    userData.value = initUserData()
     safeRemoveStorage('token')
     safeRemoveStorage('userInfo')
   }
@@ -76,10 +136,14 @@ export function useAuth() {
   return {
     user,
     token,
+    userData,
     isLoggedIn,
     initAuth,
     setUser,
+    setUserData,
     logout,
-    updateUser
+    updateUser,
+    // 导出获取当前用户手机号的函数，供 api.ts 使用
+    getCurrentPhone: () => user.value?.phone || null
   }
 }

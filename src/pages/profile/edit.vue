@@ -181,7 +181,7 @@ const saveProfile = async () => {
     toastSuccess('保存成功')
 
     setTimeout(() => {
-      navigateBack()
+      navigateBackSmart()
     }, 1500)
   } catch (error) {
     hideLoading()

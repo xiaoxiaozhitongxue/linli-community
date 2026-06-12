@@ -118,6 +118,11 @@ const router = createRouter({
       meta: { title: '登录' }
     },
     {
+      path: '/pages/register/index',
+      component: () => import('./pages/register/index.vue'),
+      meta: { title: '注册' }
+    },
+    {
       path: '/pages/post/create',
       component: () => import('./pages/post/create.vue'),
       meta: { title: '发布动态', requiresAuth: true }

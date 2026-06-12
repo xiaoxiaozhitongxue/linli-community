@@ -107,7 +107,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { navigateBack } from '../../utils/router'
+import { navigateBackSmart, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 
 const STORAGE_KEY = 'ai_helper_tasks'
@@ -180,11 +180,11 @@ function saveToStorage(key: string, data: any) {
 }
 
 function updateTaskStatus(taskId: string, newStatus: string) {
-  const tasks = loadFromStorage(STORAGE_KEY, [])
+  const tasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
   const index = tasks.findIndex((t: any) => t.id === taskId)
   if (index !== -1) {
     tasks[index].status = newStatus
-    saveToStorage(STORAGE_KEY, tasks)
+    saveToStorage(getUserStorageKey(STORAGE_KEY), tasks)
     task.value.status = newStatus
   }
 }
@@ -201,7 +201,7 @@ function updateMyTaskStatus(taskId: string, newStatus: string, storageKey: strin
 
 onMounted(() => {
   const taskId = (route.query.id as string) || '1'
-  const tasks = loadFromStorage(STORAGE_KEY, [])
+  const tasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
   const found = tasks.find((t: any) => t.id === taskId)
   if (found) {
     task.value = { ...task.value, ...found }
@@ -256,12 +256,12 @@ const handleAction = () => {
       isAccepted.value = false
 
       updateTaskStatus(task.value.id, 'completed')
-      updateMyTaskStatus(task.value.id, 'completed', MY_CREATED_TASKS_KEY)
-      updateMyTaskStatus(task.value.id, 'completed', MY_ACCEPTED_TASKS_KEY)
+      updateMyTaskStatus(task.value.id, 'completed', getUserStorageKey(MY_CREATED_TASKS_KEY))
+      updateMyTaskStatus(task.value.id, 'completed', getUserStorageKey(MY_ACCEPTED_TASKS_KEY))
 
       toastSuccess('任务已完成')
       setTimeout(() => {
-        navigateBack()
+        navigateBackSmart()
       }, 1500)
     }
   } else {
@@ -270,15 +270,15 @@ const handleAction = () => {
       task.value.status = 'ongoing'
       task.value.responses++
 
-      const tasks = loadFromStorage(STORAGE_KEY, [])
+      const tasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
       const index = tasks.findIndex((t: any) => t.id === task.value.id)
       if (index !== -1) {
         tasks[index].status = 'ongoing'
         tasks[index].responses++
-        saveToStorage(STORAGE_KEY, tasks)
+        saveToStorage(getUserStorageKey(STORAGE_KEY), tasks)
       }
 
-      const myAcceptedTasks = loadFromStorage(MY_ACCEPTED_TASKS_KEY, [])
+      const myAcceptedTasks = loadFromStorage(getUserStorageKey(MY_ACCEPTED_TASKS_KEY), [])
       myAcceptedTasks.unshift({
         id: task.value.id,
         title: task.value.title,
@@ -286,7 +286,7 @@ const handleAction = () => {
         status: 'ongoing',
         updateTime: '刚刚'
       })
-      saveToStorage(MY_ACCEPTED_TASKS_KEY, myAcceptedTasks)
+      saveToStorage(getUserStorageKey(MY_ACCEPTED_TASKS_KEY), myAcceptedTasks)
 
       toastSuccess('接单成功')
     }

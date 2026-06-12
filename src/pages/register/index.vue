@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <div class="login-container">
+    <div class="register-container">
       <!-- Logo区域 -->
       <div class="logo-section">
         <div class="logo">
@@ -10,7 +10,7 @@
         <span class="app-slogan">连接邻里，共建美好社区</span>
       </div>
 
-      <!-- 登录表单 -->
+      <!-- 注册表单 -->
       <div class="form-section" :class="{ shake: isShaking }">
         <!-- 手机号输入 -->
         <div class="input-group" :class="{ error: phoneError }">
@@ -60,22 +60,73 @@
           </div>
         </div>
 
-        <!-- 登录按钮 -->
+        <!-- 昵称输入 -->
+        <div class="input-group" :class="{ error: nicknameError }">
+          <div class="input-label">昵称</div>
+          <div class="input-row" :class="{ focused: nicknameFocused }">
+            <input 
+              class="input-field" 
+              type="text" 
+              v-model="nickname" 
+              placeholder="请输入您的昵称"
+              @focus="onNicknameFocus"
+              @blur="onNicknameBlur"
+              @input="onNicknameInput"
+            />
+            <span class="input-icon" :class="{ valid: nicknameValid }">✓</span>
+          </div>
+          <div class="error-text" v-if="nicknameError">{{ nicknameError }}</div>
+        </div>
+
+        <!-- 社区选择 -->
+        <div class="input-group" :class="{ error: communityError }">
+          <div class="input-label">所在社区</div>
+          <div class="input-row" :class="{ focused: communityFocused }">
+            <select 
+              class="input-field select-field" 
+              v-model="community"
+              @focus="onCommunityFocus"
+              @blur="onCommunityBlur"
+            >
+              <option value="">请选择社区</option>
+              <option v-for="c in communities" :key="c" :value="c">{{ c }}</option>
+            </select>
+          </div>
+          <div class="error-text" v-if="communityError">{{ communityError }}</div>
+        </div>
+
+        <!-- 协议 -->
+        <div class="agreement" :class="{ error: agreementError }">
+          <div 
+            class="agreement-check" 
+            :class="{ checked: agreed, bounce: agreementBounce }"
+            @click="toggleAgreement"
+          >
+            <span v-if="agreed">✓</span>
+          </div>
+          <span class="agreement-text">
+            同意并阅读<span class="agreement-link" @click.stop="showAgreement">《用户协议》</span>
+            和<span class="agreement-link" @click.stop="showPrivacy">《隐私政策》</span>
+          </span>
+        </div>
+        <div class="error-text agreement-error" v-if="agreementError">{{ agreementError }}</div>
+
+        <!-- 注册按钮 -->
         <div 
-          class="login-btn" 
-          :class="{ loading: isLoading, disabled: !canLogin }"
-          @click="handleLogin"
+          class="register-btn" 
+          :class="{ loading: isLoading, disabled: !canRegister }"
+          @click="handleRegister"
         >
-          <span v-if="!isLoading">登录</span>
+          <span v-if="!isLoading">注册</span>
           <span v-else class="loading-text">
             <span class="spinner"></span>
-            登录中...
+            注册中...
           </span>
         </div>
 
-        <!-- 注册链接 -->
-        <div class="register-link">
-          还没有账号？<span class="link-text" @click="goToRegister">立即注册</span>
+        <!-- 登录链接 -->
+        <div class="login-link">
+          已有账号？<span class="link-text" @click="goToLogin">立即登录</span>
         </div>
       </div>
 
@@ -101,23 +152,41 @@ import { getAndClearLoginRedirect } from '../../utils/auth'
 
 const { setUser } = useAuth()
 
+// 社区列表
+const communities = [
+  '阳光社区',
+  '幸福社区',
+  '花园社区',
+  '和平社区',
+  '东风社区'
+]
+
 // 表单数据
 const phone = ref('')
 const code = ref('')
+const nickname = ref('')
+const community = ref('')
+const agreed = ref(false)
 
 // UI状态
 const counting = ref(false)
 const countdown = ref(60)
 const isLoading = ref(false)
 const isShaking = ref(false)
+const agreementBounce = ref(false)
 
 // 聚焦状态
 const phoneFocused = ref(false)
 const codeFocused = ref(false)
+const nicknameFocused = ref(false)
+const communityFocused = ref(false)
 
 // 错误状态
 const phoneError = ref('')
 const codeError = ref('')
+const nicknameError = ref('')
+const communityError = ref('')
+const agreementError = ref('')
 const globalError = ref('')
 
 let countdownTimer: number | null = null
@@ -134,7 +203,9 @@ onUnmounted(() => {
 // 验证状态
 const phoneValid = computed(() => phone.value.length === 11 && /^1[3-9]\d{9}$/.test(phone.value))
 const codeValid = computed(() => code.value.length === 6)
-const canLogin = computed(() => phoneValid.value && codeValid.value && !isLoading.value)
+const nicknameValid = computed(() => nickname.value.trim().length >= 2)
+const communityValid = computed(() => community.value.trim().length > 0)
+const canRegister = computed(() => phoneValid.value && codeValid.value && nicknameValid.value && communityValid.value && agreed.value && !isLoading.value)
 
 // 聚焦/失焦处理
 const onPhoneFocus = () => { phoneFocused.value = true }
@@ -146,6 +217,16 @@ const onCodeFocus = () => { codeFocused.value = true }
 const onCodeBlur = () => { 
   codeFocused.value = false
   validateCode()
+}
+const onNicknameFocus = () => { nicknameFocused.value = true }
+const onNicknameBlur = () => { 
+  nicknameFocused.value = false
+  validateNickname()
+}
+const onCommunityFocus = () => { communityFocused.value = true }
+const onCommunityBlur = () => { 
+  communityFocused.value = false
+  validateCommunity()
 }
 
 // 输入处理
@@ -161,6 +242,10 @@ const onCodeInput = () => {
   code.value = code.value.replace(/\D/g, '')
   // 清除错误
   if (codeError.value) codeError.value = ''
+}
+
+const onNicknameInput = () => {
+  if (nicknameError.value) nicknameError.value = ''
 }
 
 // 验证
@@ -191,6 +276,28 @@ const validateCode = () => {
     return false
   }
   codeError.value = ''
+  return true
+}
+
+const validateNickname = () => {
+  if (!nickname.value.trim()) {
+    nicknameError.value = '请输入昵称'
+    return false
+  }
+  if (nickname.value.trim().length < 2) {
+    nicknameError.value = '昵称至少2个字符'
+    return false
+  }
+  nicknameError.value = ''
+  return true
+}
+
+const validateCommunity = () => {
+  if (!community.value.trim()) {
+    communityError.value = '请选择所在社区'
+    return false
+  }
+  communityError.value = ''
   return true
 }
 
@@ -236,38 +343,62 @@ const sendCode = () => {
   }, 1000)
 }
 
-// 跳转到注册
-const goToRegister = () => {
-  navigateTo('/pages/register/index')
+// 切换协议
+const toggleAgreement = () => {
+  agreed.value = !agreed.value
+  if (agreed.value) {
+    agreementError.value = ''
+    // 添加点击反馈动画
+    agreementBounce.value = true
+    setTimeout(() => {
+      agreementBounce.value = false
+    }, 300)
+  }
 }
 
-// 处理登录
-const handleLogin = async () => {
+// 跳转到登录
+const goToLogin = () => {
+  navigateTo('/pages/login/index')
+}
+
+// 处理注册
+const handleRegister = async () => {
   // 清除之前的错误
   phoneError.value = ''
   codeError.value = ''
+  nicknameError.value = ''
+  communityError.value = ''
+  agreementError.value = ''
   
   // 验证所有字段
-  const valid = validatePhone() && validateCode()
+  const valid = validatePhone() && validateCode() && validateNickname() && validateCommunity()
   if (!valid) {
+    triggerShake()
+    return
+  }
+  
+  if (!agreed.value) {
+    agreementError.value = '请先同意用户协议'
     triggerShake()
     return
   }
   
   try {
     isLoading.value = true
-    showLoading('登录中...')
+    showLoading('注册中...')
     
     const result: any = await authApi.login({ 
       phone: phone.value, 
-      code: code.value
+      code: code.value,
+      nickname: nickname.value,
+      community: community.value
     })
     setUser(result.user, result.token, result.userData)
     
     hideLoading()
-    toastSuccess('登录成功')
+    toastSuccess('注册成功')
     
-    // 登录成功后，检查是否有重定向路径
+    // 注册成功后，检查是否有重定向路径
     setTimeout(() => {
       const redirectPath = getAndClearLoginRedirect()
       if (redirectPath) {
@@ -280,10 +411,18 @@ const handleLogin = async () => {
   } catch (error: any) {
     hideLoading()
     isLoading.value = false
-    const errMsg = error?.response?.data?.message || error?.message || '登录失败，请重试'
+    const errMsg = error?.response?.data?.message || error?.message || '注册失败，请重试'
     showGlobalError(errMsg)
-    console.error('Login error:', error)
+    console.error('Register error:', error)
   }
+}
+
+const showAgreement = () => {
+  toastInfo('用户协议页面开发中')
+}
+
+const showPrivacy = () => {
+  toastInfo('隐私政策页面开发中')
 }
 </script>
 
@@ -293,7 +432,7 @@ const handleLogin = async () => {
   background: var(--color-primary-gradient-soft);
 }
 
-.login-container {
+.register-container {
   padding: var(--spacing-lg);
   padding-top: 60px;
   max-width: 400px;
@@ -609,8 +748,8 @@ const handleLogin = async () => {
   margin-top: var(--spacing-xs);
 }
 
-/* 登录按钮 */
-.login-btn {
+/* 注册按钮 */
+.register-btn {
   background: var(--color-primary-gradient);
   color: white;
   padding: var(--spacing-md);
@@ -626,7 +765,7 @@ const handleLogin = async () => {
   box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
 }
 
-.login-btn::before {
+.register-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -637,28 +776,28 @@ const handleLogin = async () => {
   transition: left var(--transition-slow);
 }
 
-.login-btn:hover:not(.disabled):not(.loading)::before {
+.register-btn:hover:not(.disabled):not(.loading)::before {
   left: 100%;
 }
 
-.login-btn:hover:not(.disabled):not(.loading) {
+.register-btn:hover:not(.disabled):not(.loading) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
 }
 
-.login-btn:active:not(.disabled):not(.loading) {
+.register-btn:active:not(.disabled):not(.loading) {
   transform: translateY(0) scale(0.98);
   box-shadow: 0 2px 6px rgba(255, 107, 53, 0.25);
 }
 
-.login-btn.disabled {
+.register-btn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: var(--color-text-muted);
   box-shadow: none;
 }
 
-.login-btn.loading {
+.register-btn.loading {
   pointer-events: none;
 }
 
@@ -678,8 +817,8 @@ const handleLogin = async () => {
   animation: spin 0.8s linear infinite;
 }
 
-/* 注册链接 */
-.register-link {
+/* 登录链接 */
+.login-link {
   text-align: center;
   margin-top: var(--spacing-lg);
   padding-top: var(--spacing-md);
@@ -797,7 +936,7 @@ const handleLogin = async () => {
 
 /* 响应式布局 */
 @media (max-width: 480px) {
-  .login-container {
+  .register-container {
     padding-top: 40px;
   }
   

@@ -122,7 +122,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { navigateTo, navigateBackSmart } from '../../utils/router'
+import { navigateTo, navigateBackSmart, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 
 const STORAGE_KEY = 'ai_helper_tasks'
@@ -157,11 +157,11 @@ function saveToStorage(key: string, data: any[]) {
 }
 
 function loadTasks() {
-  publishedTasks.value = loadFromStorage(MY_CREATED_TASKS_KEY, [])
-  acceptedTasks.value = loadFromStorage(MY_ACCEPTED_TASKS_KEY, [])
+  publishedTasks.value = loadFromStorage(getUserStorageKey(MY_CREATED_TASKS_KEY), [])
+  acceptedTasks.value = loadFromStorage(getUserStorageKey(MY_ACCEPTED_TASKS_KEY), [])
   
   // 同时从任务广场加载数据
-  const allTasks = loadFromStorage(STORAGE_KEY, [])
+  const allTasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
   
   // 合并数据，确保显示最新状态
   allTasks.forEach(task => {
@@ -244,15 +244,15 @@ const completeTask = (task: any) => {
     if (taskIndex !== -1) {
       acceptedTasks.value[taskIndex].status = 'pending_confirm'
       acceptedTasks.value[taskIndex].updateTime = '刚刚'
-      saveToStorage(MY_ACCEPTED_TASKS_KEY, acceptedTasks.value)
+      saveToStorage(getUserStorageKey(MY_ACCEPTED_TASKS_KEY), acceptedTasks.value)
       
       // 同时更新任务广场的数据
-      const allTasks = loadFromStorage(STORAGE_KEY, [])
+      const allTasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
       const allTaskIndex = allTasks.findIndex(t => t.id === task.id)
       if (allTaskIndex !== -1) {
         allTasks[allTaskIndex].status = 'pending_confirm'
         allTasks[allTaskIndex].updateTime = '刚刚'
-        saveToStorage(STORAGE_KEY, allTasks)
+        saveToStorage(getUserStorageKey(STORAGE_KEY), allTasks)
       }
       
       toastSuccess('已提交完成申请，等待发布人确认')
@@ -271,15 +271,15 @@ const confirmTask = (task: any) => {
     if (taskIndex !== -1) {
       publishedTasks.value[taskIndex].status = 'completed'
       publishedTasks.value[taskIndex].updateTime = '刚刚'
-      saveToStorage(MY_CREATED_TASKS_KEY, publishedTasks.value)
+      saveToStorage(getUserStorageKey(MY_CREATED_TASKS_KEY), publishedTasks.value)
       
       // 同时更新任务广场的数据
-      const allTasks = loadFromStorage(STORAGE_KEY, [])
+      const allTasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
       const allTaskIndex = allTasks.findIndex(t => t.id === task.id)
       if (allTaskIndex !== -1) {
         allTasks[allTaskIndex].status = 'completed'
         allTasks[allTaskIndex].updateTime = '刚刚'
-        saveToStorage(STORAGE_KEY, allTasks)
+        saveToStorage(getUserStorageKey(STORAGE_KEY), allTasks)
       }
       
       toastSuccess('任务已完成！感谢互帮互助')

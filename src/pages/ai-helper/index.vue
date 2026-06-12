@@ -367,6 +367,16 @@ const defaultMyAcceptedTasks = [
   { id: '3', title: '帮取快递', reward: 5, status: 'ongoing', updateTime: '进行中' }
 ]
 
+// 获取用户数据键名
+function getUserDataKey(prefix: string): string {
+  const userInfo = localStorage.getItem('userInfo')
+  if (userInfo) {
+    const user = JSON.parse(userInfo)
+    return `${prefix}_${user.phone}`
+  }
+  return prefix
+}
+
 // 从 localStorage 加载数据
 function loadFromStorage(key: string, defaultValue: any[]) {
   try {
@@ -389,9 +399,19 @@ function saveToStorage(key: string, data: any) {
   }
 }
 
-const tasks = ref<any[]>(loadFromStorage(STORAGE_KEY, defaultTasks))
-const myCreatedTasks = ref<any[]>(loadFromStorage(MY_CREATED_TASKS_KEY, defaultMyCreatedTasks))
-const myAcceptedTasks = ref<any[]>(loadFromStorage(MY_ACCEPTED_TASKS_KEY, defaultMyAcceptedTasks))
+// 获取用户专属的存储键
+function getUserStorageKey(baseKey: string): string {
+  const userInfo = localStorage.getItem('userInfo')
+  if (userInfo) {
+    const user = JSON.parse(userInfo)
+    return `${baseKey}_${user.phone}`
+  }
+  return baseKey
+}
+
+const tasks = ref<any[]>([])
+const myCreatedTasks = ref<any[]>([])
+const myAcceptedTasks = ref<any[]>([])
 
 // 统计数据
 const openTaskCount = computed(() => {
@@ -469,12 +489,15 @@ const goToTaskDetail = (task: any) => {
 const respondToTask = (task: any, event: Event) => {
   event.stopPropagation()
   if (window.confirm('确定要接下这个任务吗？')) {
+    const userTaskKey = getUserStorageKey('ai_helper_tasks')
+    const userAcceptedKey = getUserStorageKey('ai_helper_my_accepted_tasks')
+
     // 更新任务列表
     const index = tasks.value.findIndex(t => t.id === task.id)
     if (index !== -1) {
       tasks.value[index].responses++
       tasks.value[index].status = 'ongoing'
-      saveToStorage(STORAGE_KEY, tasks.value)
+      saveToStorage(userTaskKey, tasks.value)
 
       // 添加到我的接单任务
       const myNewAcceptedTask = {
@@ -485,7 +508,7 @@ const respondToTask = (task: any, event: Event) => {
         updateTime: '刚刚'
       }
       myAcceptedTasks.value.unshift(myNewAcceptedTask)
-      saveToStorage(MY_ACCEPTED_TASKS_KEY, myAcceptedTasks.value)
+      saveToStorage(userAcceptedKey, myAcceptedTasks.value)
 
       toastSuccess('接单成功')
     }
@@ -514,10 +537,14 @@ const getStatusName = (status: string) => {
 }
 
 onMounted(() => {
-  // 页面加载时确保数据从 localStorage 中读取
-  tasks.value = loadFromStorage(STORAGE_KEY, defaultTasks)
-  myCreatedTasks.value = loadFromStorage(MY_CREATED_TASKS_KEY, defaultMyCreatedTasks)
-  myAcceptedTasks.value = loadFromStorage(MY_ACCEPTED_TASKS_KEY, defaultMyAcceptedTasks)
+  // 页面加载时使用用户专属键读取数据
+  const userTaskKey = getUserStorageKey('ai_helper_tasks')
+  const userCreatedKey = getUserStorageKey('ai_helper_my_created_tasks')
+  const userAcceptedKey = getUserStorageKey('ai_helper_my_accepted_tasks')
+
+  tasks.value = loadFromStorage(userTaskKey, [])
+  myCreatedTasks.value = loadFromStorage(userCreatedKey, [])
+  myAcceptedTasks.value = loadFromStorage(userAcceptedKey, [])
 })
 </script>
 

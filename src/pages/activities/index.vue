@@ -246,7 +246,8 @@ const getButtonText = (activity: Activity) => {
 }
 
 const formatShortTime = (timestamp: number) => {
-  const date = new Date(timestamp * 1000)
+  // 如果时间戳大于 1e12，说明是毫秒级时间戳
+  const date = new Date(timestamp > 1e12 ? timestamp : timestamp * 1000)
   const now = new Date()
   const diff = date.getTime() - now.getTime()
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
@@ -272,7 +273,8 @@ const formatShortTime = (timestamp: number) => {
 }
 
 const formatFullDate = (timestamp: number) => {
-  const date = new Date(timestamp * 1000)
+  // 如果时间戳大于 1e12，说明是毫秒级时间戳
+  const date = new Date(timestamp > 1e12 ? timestamp : timestamp * 1000)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')

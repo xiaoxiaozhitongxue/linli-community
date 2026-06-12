@@ -129,12 +129,7 @@ export function clearPageHistory() {
 export function navigateTo(url: string, query?: Record<string, any>) {
   const router = ensureRouter()
   if (router) {
-    // 记录当前页面访问
-    const currentPath = router.currentRoute.value.fullPath
-    recordPageVisit(currentPath, router.currentRoute.value.query)
-    
     router.push({ path: url, query }).catch((err: any) => {
-      // 忽略导航取消的错误（重复点击时会出现）
       if (err.name !== 'NavigationDuplicated' && err.name !== 'NavigationCancelled') {
         console.error('导航失败', err)
       }
@@ -226,12 +221,19 @@ export function navigateBackSmart(fallbackPath: string = '/pages/index/index') {
 }
 
 /**
- * 标准返回 - 使用浏览器原生的返回功能
+ * 标准返回 - 使用浏览器原生的返回功能，如果失败则使用智能返回
  */
 export function navigateBack(delta: number = 1) {
   const router = ensureRouter()
   if (router) {
-    router.go(-delta)
+    // 尝试使用浏览器历史返回
+    try {
+      router.go(-delta)
+    } catch (e) {
+      // 如果失败（比如没有历史记录），使用智能返回
+      console.warn('浏览器历史返回失败，使用智能返回')
+      navigateBackSmart()
+    }
   }
 }
 
@@ -239,13 +241,6 @@ export function navigateBack(delta: number = 1) {
  * 跳转到详情页 - 自动记录来源页面
  */
 export function navigateToDetail(detailPath: string, query?: Record<string, any>) {
-  // 先记录当前列表页
-  const router = ensureRouter()
-  if (router) {
-    const currentPath = router.currentRoute.value.path
-    recordPageVisit(currentPath, router.currentRoute.value.query)
-  }
-  
   navigateTo(detailPath, query)
 }
 
@@ -333,6 +328,27 @@ function setupRouteGuard(router: any) {
     // 可以在这里添加页面埋码等逻辑
     console.log('页面跳转:', from.path, '->', to.path)
   })
+}
+
+/**
+ * 获取当前用户的专属存储键
+ * 根据登录用户的手机号构建独立的存储键，确保多账号数据隔离
+ * @param baseKey 基础存储键名
+ * @returns 用户专属的存储键名 {baseKey}_{phone}，未登录时返回 baseKey
+ */
+export function getUserStorageKey(baseKey: string): string {
+  try {
+    const userInfoStr = localStorage.getItem('userInfo')
+    if (userInfoStr) {
+      const userInfo = JSON.parse(userInfoStr)
+      if (userInfo && userInfo.phone) {
+        return `${baseKey}_${userInfo.phone}`
+      }
+    }
+  } catch (e) {
+    console.error(`获取用户存储键失败 (${baseKey}):`, e)
+  }
+  return baseKey
 }
 
 // 导出 auth.ts 中的重定向路径管理函数
