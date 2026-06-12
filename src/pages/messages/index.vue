@@ -169,7 +169,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { navigateBack, navigateTo } from '../../utils/router'
+import { navigateBack, navigateTo, getUserStorageKey } from '../../utils/router'
 import { useAuth } from '../../store'
 import { toastInfo } from '../../utils/toast'
 
@@ -265,44 +265,36 @@ const loadMessages = () => {
     return
   }
   
-  // 获取用户专属的存储键
-function getUserStorageKey(baseKey: string): string {
-  const userInfo = localStorage.getItem('userInfo')
-  if (userInfo) {
-    const user = JSON.parse(userInfo)
-    return `${baseKey}_${user.phone}`
-  }
-  return baseKey
-}
+  setTimeout(() => {
+    try {
+      const userNotifKey = getUserStorageKey('linli_task_notifications')
+      const storedNotifications = localStorage.getItem(userNotifKey)
+      if (storedNotifications) {
+        taskNotifications.value = JSON.parse(storedNotifications)
+      } else {
+        taskNotifications.value = []
+        saveTaskNotifications()
+      }
 
-// 模拟加载延迟
-setTimeout(() => {
-  // 使用用户专属键加载任务通知
-  const userNotifKey = getUserStorageKey('linli_task_notifications')
-  const storedNotifications = localStorage.getItem(userNotifKey)
-  if (storedNotifications) {
-    taskNotifications.value = JSON.parse(storedNotifications)
-  } else {
-    // 新用户没有通知数据
-    taskNotifications.value = []
-    saveTaskNotifications()
-  }
-
-  // 使用用户专属键加载私信
-  const userMsgKey = getUserStorageKey('linli_messages')
-  const stored = localStorage.getItem(userMsgKey)
-  if (stored) {
-    const data = JSON.parse(stored)
-    privateMessages.value = data.private || []
-    groupChats.value = data.group || []
-  } else {
-    // 新用户没有消息数据
-    privateMessages.value = []
-    groupChats.value = []
-    saveMessages()
-  }
-  
-  loading.value = false
+      const userMsgKey = getUserStorageKey('linli_messages')
+      const stored = localStorage.getItem(userMsgKey)
+      if (stored) {
+        const data = JSON.parse(stored)
+        privateMessages.value = data.private || []
+        groupChats.value = data.group || []
+      } else {
+        privateMessages.value = []
+        groupChats.value = []
+        saveMessages()
+      }
+    } catch (e) {
+      console.error('消息数据加载失败:', e)
+      taskNotifications.value = []
+      privateMessages.value = []
+      groupChats.value = []
+    } finally {
+      loading.value = false
+    }
   }, 800)
 }
 

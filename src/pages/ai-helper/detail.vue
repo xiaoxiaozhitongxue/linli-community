@@ -201,8 +201,20 @@ function updateMyTaskStatus(taskId: string, newStatus: string, storageKey: strin
 
 onMounted(() => {
   const taskId = (route.query.id as string) || '1'
+  
   const tasks = loadFromStorage(getUserStorageKey(STORAGE_KEY), [])
-  const found = tasks.find((t: any) => t.id === taskId)
+  let found = tasks.find((t: any) => t.id === taskId)
+  
+  if (!found) {
+    const myCreatedTasks = loadFromStorage(getUserStorageKey(MY_CREATED_TASKS_KEY), [])
+    found = myCreatedTasks.find((t: any) => t.id === taskId)
+  }
+  
+  if (!found) {
+    const myAcceptedTasks = loadFromStorage(getUserStorageKey(MY_ACCEPTED_TASKS_KEY), [])
+    found = myAcceptedTasks.find((t: any) => t.id === taskId)
+  }
+  
   if (found) {
     task.value = { ...task.value, ...found }
   }
