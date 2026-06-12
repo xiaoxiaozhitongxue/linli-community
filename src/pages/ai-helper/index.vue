@@ -403,6 +403,54 @@ const tasks = ref<any[]>([])
 const myCreatedTasks = ref<any[]>([])
 const myAcceptedTasks = ref<any[]>([])
 
+// 规范化状态值：后端可能用 pending/in_progress/completed 等
+function normalizeStatus(status: string): string {
+  if (!status) return 'open'
+  const s = String(status).toLowerCase()
+  if (s === 'open' || s === 'pending') return 'open'
+  if (s === 'in_progress' || s === 'ongoing' || s === 'accepted') return 'ongoing'
+  if (s === 'completed' || s === 'done') return 'completed'
+  return 'open'
+}
+
+// 把后端 API 返回的任务对象映射到前端 UI 字段
+function mapApiTask(t: any): any {
+  return {
+    id: t.id,
+    type: t.category || t.type || 'other',
+    title: t.title || '任务详情',
+    description: t.description || '',
+    reward: Number(t.reward) || 0,
+    distance: t.distance || 0,
+    responses: t.responses || 0,
+    creatorName: t.creator?.nickname || t.creatorName || '邻居',
+    creatorAvatar: t.creator?.avatar || t.creatorAvatar || '',
+    createTime: t.created_at || t.createTime || Date.now(),
+    status: normalizeStatus(t.status),
+    creatorRating: t.creator?.credit_score || t.creatorRating || 4.8,
+    creatorTasks: t.creator?.completed_count || t.creatorTasks || 0,
+    location: t.location || ''
+  }
+}
+
+// 尝试从后端获取任务列表
+async function fetchTasksFromApi(): Promise<any[] | null> {
+  try {
+    const res = await fetch('/functions/api/tasks?limit=20&sort=created_at')
+    if (!res.ok) return null
+    const json = await res.json()
+    if (json && Array.isArray(json.data)) {
+      return json.data.map(mapApiTask)
+    }
+    if (json && json.data && Array.isArray(json.data.items)) {
+      return json.data.items.map(mapApiTask)
+    }
+  } catch (e) {
+    // ignore, fallback to local
+  }
+  return null
+}
+
 // 统计数据
 const openTaskCount = computed(() => {
   return tasks.value.filter(t => t.status === 'open').length
@@ -526,15 +574,21 @@ const getStatusName = (status: string) => {
   return map[status] || status
 }
 
-onMounted(() => {
-  // 页面加载时使用用户专属键读取数据
-  const userTaskKey = getUserStorageKey('ai_helper_tasks')
-  const userCreatedKey = getUserStorageKey('ai_helper_my_created_tasks')
-  const userAcceptedKey = getUserStorageKey('ai_helper_my_accepted_tasks')
+onMounted(async () => {
+  // 优先尝试从 API 获取任务
+  const apiTasks = await fetchTasksFromApi()
+  if (apiTasks && apiTasks.length > 0) {
+    tasks.value = apiTasks
+  } else {
+    // 页面加载时使用用户专属键读取数据（localStorage 回退）
+    const userTaskKey = getUserStorageKey('ai_helper_tasks')
+    const userCreatedKey = getUserStorageKey('ai_helper_my_created_tasks')
+    const userAcceptedKey = getUserStorageKey('ai_helper_my_accepted_tasks')
 
-  tasks.value = loadFromStorage(userTaskKey, [])
-  myCreatedTasks.value = loadFromStorage(userCreatedKey, [])
-  myAcceptedTasks.value = loadFromStorage(userAcceptedKey, [])
+    tasks.value = loadFromStorage(userTaskKey, [])
+    myCreatedTasks.value = loadFromStorage(userCreatedKey, [])
+    myAcceptedTasks.value = loadFromStorage(userAcceptedKey, [])
+  }
 })
 </script>
 

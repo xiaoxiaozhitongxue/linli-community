@@ -38,11 +38,23 @@
         </div>
 
         <div class="quick-actions">
-          <div class="quick-item" v-for="action in quickActions" :key="action.id" @click="handleQuickAction(action)">
-            <div class="quick-icon" :style="{ background: action.bgColor }">
-              <span>{{ action.icon }}</span>
+          <div
+            class="quick-card"
+            v-for="action in quickActions"
+            :key="action.id"
+            :class="'quick-' + action.id"
+            @click="handleQuickAction(action)"
+          >
+            <div class="quick-card-inner">
+              <div class="quick-card-head">
+                <span class="quick-icon">{{ action.icon }}</span>
+                <span class="quick-name">{{ action.name }}</span>
+              </div>
+              <div class="quick-card-foot">
+                <span class="quick-hint">{{ action.id === 'health' ? healthBadge : action.hint }}</span>
+                <span class="quick-badge" v-if="action.id === 'help' && helpBadge">{{ helpBadge }}</span>
+              </div>
             </div>
-            <span class="quick-text">{{ action.name }}</span>
           </div>
         </div>
 
@@ -277,9 +289,57 @@ const banners = ref([
 ])
 
 const quickActions = ref([
-  { id: 'health', name: '健康打卡', icon: '❤️', bgColor: '#E8F5E9', path: '/pages/health/index' },
-  { id: 'help', name: '互助', icon: '🤝', bgColor: '#FFF3E0', path: '/pages/ai-helper/index' }
+  { id: 'health', name: '健康打卡', icon: '❤️', path: '/pages/health/index', hint: '记录每日状态', badge: '未打卡' },
+  { id: 'help', name: '邻里互助', icon: '🤝', path: '/pages/ai-helper/index', hint: '发布/接单', badge: '' }
 ])
+
+const healthBadge = ref('未打卡')
+const helpBadge = ref('')
+async function loadQuickBadges() {
+  // 健康打卡状态
+  try {
+    const stored = localStorage.getItem('linli_health_records')
+    if (stored) {
+      const records = JSON.parse(stored)
+      const today = new Date()
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      const hasChecked = records.some((r: any) => r.date === todayStr)
+      healthBadge.value = hasChecked ? '已打卡' : '去打卡'
+    } else {
+      healthBadge.value = '去打卡'
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  // 互助任务数量
+  try {
+    const res = await fetch('/functions/api/tasks?status=pending&limit=1')
+    if (res.ok) {
+      const data = await res.json()
+      if (data && data.data && data.data.total_pages) {
+        const total = data.data.total || 0
+        const stored = localStorage.getItem('ai_helper_tasks')
+        let fallback = 0
+        if (stored) {
+          const localTasks = JSON.parse(stored)
+          fallback = localTasks.filter((t: any) => t.status === 'open').length
+        }
+        helpBadge.value = `${total > 0 ? total : fallback}单待接`
+      }
+    }
+  } catch (e) {
+    // 使用 localStorage 回退
+    try {
+      const stored = localStorage.getItem('ai_helper_tasks')
+      if (stored) {
+        const localTasks = JSON.parse(stored)
+        const openCount = localTasks.filter((t: any) => t.status === 'open').length
+        helpBadge.value = `${openCount}单待接`
+      }
+    } catch (_) { /* ignore */ }
+  }
+}
 
 const activities = ref<Activity[]>([])
 const hotActivities = ref<Activity[]>([])
@@ -742,7 +802,7 @@ onMounted(() => {
   initAuth()
   statusBarHeight.value = 20
   loading.value = true
-  Promise.all([fetchPosts(1, true), fetchActivities()])
+  Promise.all([fetchPosts(1, true), fetchActivities(), loadQuickBadges()])
   startBannerAutoPlay()
   getLocation()
 })
@@ -973,57 +1033,80 @@ onUnmounted(() => {
 }
 
 .quick-actions {
-  display: flex;
-  justify-content: center;
-  gap: var(--spacing-2xl);
-  padding: var(--spacing-xl) var(--spacing-lg);
-  background: var(--color-bg-secondary);
-  margin: 0 var(--spacing-lg);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-lg);
   margin-bottom: var(--spacing-xl);
+}
+
+.quick-card {
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+}
+
+.quick-card:active {
+  transform: scale(0.97);
   box-shadow: var(--shadow-md);
-  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
 }
 
-.quick-actions:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
+.quick-health {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%);
 }
 
-.quick-item {
+.quick-help {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF7ED 100%);
+}
+
+.quick-card-inner {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  transition: transform 0.2s var(--transition-smooth);
-  min-height: var(--touch-min-size);
+  gap: var(--spacing-sm);
+  flex: 1;
 }
 
-.quick-item:active {
-  transform: scale(0.95);
+.quick-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .quick-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.quick-name {
+  font-size: 15px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.quick-card-foot {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  margin-bottom: var(--spacing-sm);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-spring);
+  justify-content: space-between;
 }
 
-.quick-item:hover .quick-icon {
-  transform: scale(1.08);
-}
-
-.quick-text {
+.quick-hint {
   font-size: 12px;
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+}
+
+.quick-badge {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
 }
 
 .section {
@@ -1939,20 +2022,23 @@ onUnmounted(() => {
   }
   
   .quick-actions {
-    padding: var(--spacing-2xl) var(--spacing-xl);
-    gap: var(--spacing-2xl);
+    max-width: 600px;
+    margin: 0 auto var(--spacing-xl);
   }
-  
+
+  .quick-card {
+    min-height: 108px;
+    padding: var(--spacing-xl);
+  }
+
+  .quick-name {
+    font-size: 16px;
+  }
+
   .quick-icon {
-    width: 56px;
-    height: 56px;
-    font-size: 28px;
+    font-size: 26px;
   }
-  
-  .quick-text {
-    font-size: 13px;
-  }
-  
+
   .section-header {
     padding: 0;
   }
@@ -2032,10 +2118,7 @@ onUnmounted(() => {
   
   .quick-actions {
     max-width: 700px;
-    margin: 0 auto var(--spacing-2xl);
-    border-radius: var(--radius-2xl);
-    padding: var(--spacing-2xl) var(--spacing-2xl);
-    gap: var(--spacing-3xl);
+    margin: 0 auto var(--spacing-xl);
   }
   
   .activity-scroll {
@@ -2083,8 +2166,7 @@ onUnmounted(() => {
   
   .quick-actions {
     max-width: 800px;
-    gap: var(--spacing-3xl);
-    padding: var(--spacing-2xl) var(--spacing-3xl);
+    margin: 0 auto var(--spacing-xl);
   }
   
   .section-header {
