@@ -37,12 +37,32 @@
           </div>
         </div>
 
-        <div class="quick-actions">
-          <div class="quick-item" v-for="action in quickActions" :key="action.id" @click="handleQuickAction(action)">
-            <div class="quick-icon" :style="{ background: action.bgColor }">
-              <span>{{ action.icon }}</span>
+        <div class="people-cards">
+          <div class="people-card health-card" @click="goToHealth">
+            <div class="people-card-main">
+              <span class="people-card-greeting">{{ healthGreeting }}</span>
+              <span class="people-card-title">已连续打卡 <strong>{{ healthStreak }}</strong> 天</span>
+              <span class="people-card-sub" v-if="healthCheckedToday">✓ 今天已打卡</span>
+              <span class="people-card-sub" v-else>点我去打卡 →</span>
             </div>
-            <span class="quick-text">{{ action.name }}</span>
+            <div class="people-card-side">
+              <span class="people-card-emoji">{{ healthMood }}</span>
+            </div>
+          </div>
+
+          <div class="people-card help-card" @click="goToHelper">
+            <div class="people-card-main">
+              <span class="people-card-greeting">邻里互帮</span>
+              <span class="people-card-title">
+                <strong v-if="openTaskCount > 0">{{ openTaskCount }}</strong>
+                <strong v-else>—</strong> 个待接单
+              </span>
+              <span class="people-card-sub" v-if="latestTask">{{ latestTask }}</span>
+              <span class="people-card-sub" v-else>有需要就来发布吧 →</span>
+            </div>
+            <div class="people-card-side">
+              <span class="people-card-emoji">🤝</span>
+            </div>
           </div>
         </div>
 
@@ -276,10 +296,81 @@ const banners = ref([
   { title: '社区创业沙龙', desc: '把兴趣变成生意，邻居先成为客户', bgColor: 'linear-gradient(135deg, #2196F3, #64B5F6)' }
 ])
 
-const quickActions = ref([
-  { id: 'health', name: '健康打卡', icon: '❤️', bgColor: '#E8F5E9', path: '/pages/health/index' },
-  { id: 'help', name: '互助', icon: '🤝', bgColor: '#FFF3E0', path: '/pages/ai-helper/index' }
-])
+// 健康 & 互助卡片（以人为中心的入口）
+const healthGreeting = ref('今天的你怎么样？')
+const healthStreak = ref(0)
+const healthCheckedToday = ref(false)
+const healthMood = ref('😊')
+
+const openTaskCount = ref(0)
+const latestTask = ref('')
+
+function refreshHealthStats() {
+  try {
+    const stored = localStorage.getItem('linli_health_records')
+    const records = stored ? JSON.parse(stored) : []
+    const today = new Date()
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    healthCheckedToday.value = records.some((r: any) => r.date === todayStr)
+    // 连续打卡天数（从今天往前数，连续有记录的天数）
+    let streak = 0
+    let cursor = new Date()
+    while (true) {
+      const s = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
+      if (records.some((r: any) => r.date === s)) {
+        streak++
+        cursor.setDate(cursor.getDate() - 1)
+      } else {
+        break
+      }
+    }
+    healthStreak.value = streak
+    // 根据连续天数给一个情绪表情
+    healthMood.value = healthCheckedToday.value
+      ? (streak >= 7 ? '💪' : streak >= 3 ? '😊' : '🙂')
+      : '🤗'
+    const hour = new Date().getHours()
+    healthGreeting.value = hour < 6 ? '深夜了，早点休息'
+      : hour < 11 ? '早上好，邻居！'
+      : hour < 14 ? '中午好，记得吃饭'
+      : hour < 18 ? '下午好，邻居！'
+      : hour < 22 ? '晚上好，辛苦了'
+      : '夜深了，记得休息'
+  } catch (e) {
+    console.error('读取健康打卡数据失败:', e)
+  }
+}
+
+function refreshHelperStats() {
+  try {
+    // 读取和 ai-helper 页面一致的 storage key
+    const userInfoStr = localStorage.getItem('userInfo')
+    const phone = (userInfoStr ? JSON.parse(userInfoStr).phone : null) || ''
+    const key = phone ? `ai_helper_tasks_${phone}` : 'ai_helper_tasks'
+    const stored = localStorage.getItem(key)
+    const tasks: any[] = stored ? JSON.parse(stored) : []
+    const openTasks = tasks.filter(t => !t.status || t.status === 'open')
+    openTaskCount.value = openTasks.length
+    if (openTasks.length > 0) {
+      const t = openTasks[0]
+      latestTask.value = `${t.creatorName || '邻居'}：${t.title || '需要帮助'}`
+    } else {
+      latestTask.value = ''
+    }
+  } catch (e) {
+    console.error('读取互助任务数据失败:', e)
+    openTaskCount.value = 0
+    latestTask.value = ''
+  }
+}
+
+function goToHealth() {
+  navigateTo('/pages/health/index')
+}
+
+function goToHelper() {
+  navigateTo('/pages/ai-helper/index')
+}
 
 const activities = ref<Activity[]>([])
 const hotActivities = ref<Activity[]>([])
@@ -743,8 +834,19 @@ onMounted(() => {
   statusBarHeight.value = 20
   loading.value = true
   Promise.all([fetchPosts(1, true), fetchActivities()])
+  refreshHealthStats()
+  refreshHelperStats()
   startBannerAutoPlay()
   getLocation()
+  // 每次回到本页都刷新一下卡片上的真实数据
+  try {
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        refreshHealthStats()
+        refreshHelperStats()
+      }
+    })
+  } catch (e) { /* noop */ }
 })
 
 onUnmounted(() => {
@@ -972,58 +1074,93 @@ onUnmounted(() => {
   background: var(--color-text-white);
 }
 
-.quick-actions {
-  display: flex;
-  justify-content: center;
-  gap: var(--spacing-2xl);
-  padding: var(--spacing-xl) var(--spacing-lg);
-  background: var(--color-bg-secondary);
-  margin: 0 var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
-}
-
-.quick-actions:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
-}
-
-.quick-item {
+.people-cards {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  transition: transform 0.2s var(--transition-smooth);
-  min-height: var(--touch-min-size);
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
-.quick-item:active {
-  transform: scale(0.95);
-}
-
-.quick-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+.people-card {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  margin-bottom: var(--spacing-sm);
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-spring);
+  min-height: 84px;
 }
 
-.quick-item:hover .quick-icon {
-  transform: scale(1.08);
+.people-card:active {
+  transform: scale(0.98);
 }
 
-.quick-text {
+.people-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.health-card {
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+}
+
+.help-card {
+  background: linear-gradient(135deg, #FFF7ED 0%, #FED7AA 100%);
+}
+
+.people-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.people-card-greeting {
+  font-size: 13px;
+  color: #047857;
+  font-weight: 500;
+}
+
+.help-card .people-card-greeting {
+  color: #C2410C;
+}
+
+.people-card-title {
+  font-size: 16px;
+  color: var(--color-text-primary);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.people-card-title strong {
+  color: #047857;
+  font-weight: 700;
+}
+
+.help-card .people-card-title strong {
+  color: #C2410C;
+}
+
+.people-card-sub {
   font-size: 12px;
   color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.people-card-side {
+  flex-shrink: 0;
+  margin-left: var(--spacing-md);
+}
+
+.people-card-emoji {
+  font-size: 34px;
+  line-height: 1;
 }
 
 .section {
@@ -1942,17 +2079,29 @@ onUnmounted(() => {
     padding: var(--spacing-2xl) var(--spacing-xl);
     gap: var(--spacing-2xl);
   }
-  
-  .quick-icon {
-    width: 56px;
-    height: 56px;
-    font-size: 28px;
+
+  .people-cards {
+    gap: var(--spacing-lg);
+    padding: 0 var(--spacing-xl);
   }
-  
-  .quick-text {
-    font-size: 13px;
+
+  .people-card {
+    padding: 20px 22px;
+    min-height: 96px;
   }
-  
+
+  .people-card-greeting {
+    font-size: 14px;
+  }
+
+  .people-card-title {
+    font-size: 18px;
+  }
+
+  .people-card-emoji {
+    font-size: 40px;
+  }
+
   .section-header {
     padding: 0;
   }
@@ -2037,6 +2186,11 @@ onUnmounted(() => {
     padding: var(--spacing-2xl) var(--spacing-2xl);
     gap: var(--spacing-3xl);
   }
+
+  .people-cards {
+    max-width: 700px;
+    margin: 0 auto var(--spacing-2xl);
+  }
   
   .activity-scroll {
     grid-template-columns: repeat(4, 1fr);
@@ -2085,6 +2239,10 @@ onUnmounted(() => {
     max-width: 800px;
     gap: var(--spacing-3xl);
     padding: var(--spacing-2xl) var(--spacing-3xl);
+  }
+
+  .people-cards {
+    max-width: 800px;
   }
   
   .section-header {

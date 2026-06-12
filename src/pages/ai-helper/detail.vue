@@ -3,12 +3,21 @@
     <div class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
       <div class="header-nav">
         <span class="back-btn" @click="goBack">←</span>
-        <span class="header-title">任务详情</span>
+        <span class="header-title">{{ taskNotFound ? '任务详情' : '任务详情' }}</span>
         <span class="placeholder"></span>
       </div>
     </div>
 
-    <div class="content" style="overflow-y: auto; padding-bottom: 100px;">
+    <div v-if="taskNotFound" class="empty-wrap">
+      <div class="empty-state">
+        <span class="empty-icon">🤷</span>
+        <span class="empty-title">任务已完成或不存在</span>
+        <span class="empty-desc">可能是任务状态变化，或者你从其他地方访问了这个任务</span>
+        <div class="empty-action" @click="goBack">返回任务广场</div>
+      </div>
+    </div>
+
+    <div v-else class="content" style="overflow-y: auto; padding-bottom: 100px;">
       <div class="task-card">
         <div class="task-type-tag" :class="'type-' + task.type">
           {{ getTypeName(task.type) }}
@@ -79,7 +88,7 @@
       </div>
     </div>
 
-    <div class="bottom-action">
+    <div v-if="!taskNotFound" class="bottom-action">
       <div class="action-buttons">
         <div class="contact-btn" @click="contactCreator">
           <span>💬</span>
@@ -137,6 +146,7 @@ const task = ref({
 const responders = ref<any[]>([])
 
 const isAccepted = ref(false)
+const taskNotFound = ref(false)
 
 const actionButtonText = computed(() => {
   if (task.value.status === 'completed') return '任务已完成'
@@ -144,20 +154,35 @@ const actionButtonText = computed(() => {
   return '接单'
 })
 
+// 默认种子任务（用于首次进入应用、或从外部链接点进来时，确保 ID 可找到）
+const SEED_TASKS = [
+  { id: '1', type: 'delivery', title: '帮忙取个快递', description: '菜鸟驿站，3个包裹，有密码，取件码1234', reward: 5, distance: 150, responses: 3, creatorName: '小红', creatorAvatar: 'https://i.pravatar.cc/100?img=4', createTime: '10分钟前', status: 'open', creatorRating: 4.8, creatorTasks: 23, location: '阳光社区 菜鸟驿站' },
+  { id: '2', type: 'shopping', title: '帮忙带份早餐', description: '永和大王，豆浆油条套餐，加个煎蛋', reward: 8, distance: 200, responses: 5, creatorName: '上班族小王', creatorAvatar: 'https://i.pravatar.cc/100?img=5', createTime: '20分钟前', status: 'open', creatorRating: 4.5, creatorTasks: 12, location: '永和大王 阳光社区店' },
+  { id: '3', type: 'pet', title: '代遛金毛半小时', description: '金毛很温顺，就在楼下花园，疫苗已打', reward: 15, distance: 80, responses: 2, creatorName: '铲屎官小刘', creatorAvatar: 'https://i.pravatar.cc/100?img=6', createTime: '1小时前', status: 'ongoing', creatorRating: 4.9, creatorTasks: 56, location: '阳光社区 花园' },
+  { id: '4', type: 'child', title: '帮忙接孩子', description: '阳光小学门口，4点15分，两个孩子，一个书包', reward: 25, distance: 300, responses: 1, creatorName: '双职工家庭', creatorAvatar: 'https://i.pravatar.cc/100?img=7', createTime: '2小时前', status: 'open', creatorRating: 4.6, creatorTasks: 8, location: '阳光小学 门口' },
+  { id: '5', type: 'delivery', title: '急！取文件快递', description: '顺丰快递，生鲜文件，需今天送到家', reward: 10, distance: 250, responses: 4, creatorName: '白领张小姐', creatorAvatar: 'https://i.pravatar.cc/100?img=9', createTime: '30分钟前', status: 'open', creatorRating: 4.7, creatorTasks: 35, location: '顺丰速递 社区店' },
+  { id: '6', type: 'shopping', title: '代买感冒药', description: '楼下药店，买感康两盒，可报销', reward: 12, distance: 50, responses: 6, creatorName: '独居老人家属', creatorAvatar: 'https://i.pravatar.cc/100?img=10', createTime: '15分钟前', status: 'open', creatorRating: 4.3, creatorTasks: 5, location: '阳光大药房' },
+  { id: '7', type: 'pet', title: '临时照看猫咪', description: '英短蓝猫，2岁，乖巧可爱，需出差3天', reward: 80, distance: 100, responses: 0, creatorName: '爱猫人士小林', creatorAvatar: 'https://i.pravatar.cc/100?img=11', createTime: '3小时前', status: 'open', creatorRating: 4.8, creatorTasks: 42, location: '阳光社区 3栋' },
+  { id: '8', type: 'child', title: '兴趣班接送', description: '每周六下午3点，舞蹈班，4点接回', reward: 25, distance: 400, responses: 2, creatorName: '辣妈小美', creatorAvatar: 'https://i.pravatar.cc/100?img=12', createTime: '5小时前', status: 'open', creatorRating: 4.9, creatorTasks: 67, location: '青少年宫' }
+]
+
 function loadFromStorage(key: string, defaultValue: any[]) {
   try {
     const stored = localStorage.getItem(key)
     if (stored) {
       const parsed = JSON.parse(stored)
-      // 确保返回数组
       if (Array.isArray(parsed)) {
         return parsed
       }
     }
+    // 没有数据 → 写入种子任务
+    const seeded = [...(defaultValue.length > 0 ? defaultValue : SEED_TASKS)]
+    localStorage.setItem(key, JSON.stringify(seeded))
+    return seeded
   } catch (e) {
     console.error(`加载数据失败: ${key}`, e)
   }
-  return defaultValue
+  return [...(defaultValue.length > 0 ? defaultValue : SEED_TASKS)]
 }
 
 function saveToStorage(key: string, data: any) {
@@ -193,6 +218,7 @@ onMounted(() => {
 
   if (!taskId) {
     console.warn('[详情页] 未传入任务ID')
+    taskNotFound.value = true
     return
   }
 
@@ -200,51 +226,45 @@ onMounted(() => {
   const createdKey = getUserStorageKey(MY_CREATED_TASKS_KEY)
   const acceptedKey = getUserStorageKey(MY_ACCEPTED_TASKS_KEY)
 
-  // 调试日志
-  console.log('[详情页] 任务ID:', taskId)
-  console.log('[详情页] 存储键:', storageKey)
-
   // 1. 优先从任务广场主存储加载（包含完整任务数据）
-  const tasks = loadFromStorage(storageKey, [])
-  console.log('[详情页] 任务广场数据:', tasks)
-
+  //    如果主存储为空，注入种子任务（避免首页点进来就看到空）
+  let tasks = loadFromStorage(storageKey, SEED_TASKS)
   let found = tasks.find((t: any) => t.id === taskId)
 
   // 2. 回退到"我的发布"存储
   if (!found) {
     const myCreatedTasks = loadFromStorage(createdKey, [])
-    console.log('[详情页] 我的发布数据:', myCreatedTasks)
     found = myCreatedTasks.find((t: any) => t.id === taskId)
   }
 
   // 3. 再回退到"我的接单"存储
   if (!found) {
     const myAcceptedTasks = loadFromStorage(acceptedKey, [])
-    console.log('[详情页] 我的接单数据:', myAcceptedTasks)
     found = myAcceptedTasks.find((t: any) => t.id === taskId)
   }
 
-  // 4. 用找到的数据更新 task，默认值兜底
+  // 4. 用找到的数据更新 task；否则标记为不存在
   if (found) {
-    console.log('[详情页] 找到任务数据:', found)
     task.value = {
       id: found.id || taskId,
       type: found.type || 'other',
       title: found.title || '任务详情',
       description: found.description || '暂无详细描述',
       reward: found.reward || 0,
-      location: found.location || '',
+      location: found.location || '未知',
       distance: found.distance || 0,
       responses: found.responses || 0,
-      createTime: found.createTime || '',
-      creatorName: found.creatorName || '',
-      creatorAvatar: found.creatorAvatar || '',
-      creatorRating: found.creatorRating || 0,
+      createTime: found.createTime || '刚刚',
+      creatorName: found.creatorName || '邻居',
+      creatorAvatar: found.creatorAvatar || 'https://i.pravatar.cc/100?img=1',
+      creatorRating: found.creatorRating || 4.8,
       creatorTasks: found.creatorTasks || 0,
       status: found.status || 'open'
     }
+    taskNotFound.value = false
   } else {
     console.warn('[详情页] 未找到任务，taskId:', taskId)
+    taskNotFound.value = true
   }
 })
 
@@ -338,6 +358,56 @@ const handleAction = () => {
 .page {
   min-height: 100vh;
   background-color: var(--color-bg-primary);
+}
+
+.empty-wrap {
+  padding: 80px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 320px;
+}
+
+.empty-state .empty-icon {
+  font-size: 56px;
+  margin-bottom: 16px;
+}
+
+.empty-state .empty-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+
+.empty-state .empty-desc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.empty-action {
+  padding: 10px 24px;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast);
+}
+
+.empty-action:active {
+  transform: scale(0.97);
 }
 
 .header {

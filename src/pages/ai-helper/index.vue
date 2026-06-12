@@ -377,13 +377,20 @@ function getUserDataKey(prefix: string): string {
   return prefix
 }
 
-// 从 localStorage 加载数据
+// 从 localStorage 加载数据（如果没有，则写入 defaultTasks 作为种子数据）
 function loadFromStorage(key: string, defaultValue: any[]) {
   try {
     const stored = localStorage.getItem(key)
     if (stored) {
-      return JSON.parse(stored)
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+      }
     }
+    // 没有数据：写入种子任务，确保后续详情页能找到对应 ID
+    const seeded = [...defaultValue]
+    localStorage.setItem(key, JSON.stringify(seeded))
+    return seeded
   } catch (e) {
     console.error(`加载数据失败: ${key}`, e)
   }
