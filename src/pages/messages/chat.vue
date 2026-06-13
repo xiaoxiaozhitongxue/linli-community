@@ -58,7 +58,6 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { navigateBack } from '../../utils/router'
 import { useRoute } from 'vue-router'
-import { loadUserData, saveUserData, loadUserInfo } from '../../utils/storage'
 
 interface ChatMessage {
   id: string
@@ -105,17 +104,18 @@ const loadMessages = () => {
     avatar: decodeURIComponent(route.query.avatar as string || 'https://i.pravatar.cc/100?img=10')
   }
 
-  // 加载我的头像（统一入口，按用户隔离）
-  const savedUser = loadUserInfo()
-  if (savedUser?.avatar) {
-    myAvatar.value = savedUser.avatar
+  // 加载我的头像
+  const storedUser = localStorage.getItem('linli_user')
+  if (storedUser) {
+    const user = JSON.parse(storedUser)
+    myAvatar.value = user.avatar || myAvatar.value
   }
 
-  // 聊天记录按"当前用户 + 聊天对象"隔离
-  const stored = loadUserData<ChatMessage[] | null>(getChatKey(), null)
+  const stored = localStorage.getItem(getChatKey())
   if (stored) {
-    messages.value = stored
+    messages.value = JSON.parse(stored)
   } else {
+    // Mock 初始消息
     messages.value = [
       {
         id: '1',
@@ -136,12 +136,11 @@ const loadMessages = () => {
         isSelf: false
       }
     ]
-    saveMessages()
   }
 }
 
 const saveMessages = () => {
-  saveUserData<ChatMessage[]>(getChatKey(), messages.value)
+  localStorage.setItem(getChatKey(), JSON.stringify(messages.value))
 }
 
 const sendMessage = () => {

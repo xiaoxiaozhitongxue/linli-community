@@ -81,7 +81,6 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { navigateBack } from '../../utils/router'
 import { useRoute } from 'vue-router'
-import { loadUserData, saveUserData, loadUserInfo } from '../../utils/storage'
 
 interface GroupMessage {
   id: string
@@ -144,11 +143,12 @@ const loadGroupChat = () => {
     memberCount: parseInt(route.query.members as string) || 0
   }
 
-  // 加载我的信息（统一入口，按用户隔离）
-  const savedUser = loadUserInfo()
-  if (savedUser) {
-    myAvatar.value = savedUser.avatar || myAvatar.value
-    myName.value = savedUser.nickname || '我'
+  // 加载我的信息
+  const storedUser = localStorage.getItem('linli_user')
+  if (storedUser) {
+    const user = JSON.parse(storedUser)
+    myAvatar.value = user.avatar || myAvatar.value
+    myName.value = user.nickname || '我'
   }
 
   // 加载群成员
@@ -160,11 +160,11 @@ const loadGroupChat = () => {
     { id: '5', name: '赵妹', avatar: 'https://i.pravatar.cc/100?img=30' }
   ]
 
-  // 群聊记录按"当前用户 + 群"隔离
-  const stored = loadUserData<GroupMessage[] | null>(getGroupKey(), null)
+  const stored = localStorage.getItem(getGroupKey())
   if (stored) {
-    messages.value = stored
+    messages.value = JSON.parse(stored)
   } else {
+    // Mock 初始消息
     const now = Date.now()
     messages.value = [
       {
@@ -214,12 +214,11 @@ const loadGroupChat = () => {
         isSelf: false
       }
     ]
-    saveMessages()
   }
 }
 
 const saveMessages = () => {
-  saveUserData<GroupMessage[]>(getGroupKey(), messages.value)
+  localStorage.setItem(getGroupKey(), JSON.stringify(messages.value))
 }
 
 const sendMessage = () => {

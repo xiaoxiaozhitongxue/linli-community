@@ -1,20 +1,40 @@
-import { get, post, put, del } from './request'
+// ==========================================================================
+//  统一 API 层（前端 "后端"）
+// ==========================================================================
+//
+//  设计原则
+//  --------
+//  1. **所有业务数据都走 storage.ts 中的 loadBusiness/saveBusiness**
+//  2. **严格按手机号隔离**：每个账号使用 linli_business_data_${phone}
+//  3. **后端权限校验**：修改/删除/接单等写操作必须是 owner 或合法状态
+//  4. **一任务一账号仅能接一次**：在 acceptTask 中校验 helper_phone/id
+//  5. **数据同步**：同一账号在任何页面修改后，其他页面重新加载会立即生效
+//
+//  模块
+//  ----
+//    authApi       登录/注册（手机号为身份标识）
+//    userApi       用户档案（profile 保存/获取，我的帖子/活动/收藏等）
+//    postsApi      邻里动态
+//    activitiesApi 活动中心
+//    tasksApi      互助任务（带发布者/接单者 owner 校验）
+//
+// ==========================================================================
+
 import {
-  loadUserData,
-  saveUserData,
-  loadUserInfo,
-  saveAuthInfo,
-  getCurrentUserPhone,
-  loadTaskList,
-  saveTaskList,
-  loadMyCreatedTasks,
-  saveMyCreatedTasks,
-  loadMyAcceptedTasks,
-  saveMyAcceptedTasks,
-  TASK_LIST_KEY,
-  TASK_MY_CREATED_KEY,
-  TASK_MY_ACCEPTED_KEY,
+  loadBusiness,
+  saveBusiness,
+  getCurrentUser,
+  isOwner,
+  requireLogin,
+  onLoginSuccess,
+  onLogout,
+  getUserStorageKey,
 } from './storage'
+import { get, post, put, del } from './request'
+
+// ========================================================================
+//  共享类型（与 storage.ts 中的业务数据对齐）
+// ========================================================================
 
 export interface User {
   id: string
@@ -38,64 +58,83 @@ export interface User {
 export interface Post {
   id: string
   user_id: string
+  user_phone: string       // 稳定身份标识（用于 owner 校验）
   content: string
   images?: string[]
   location?: string
   visibility: 'public' | 'community' | 'private'
   like_count: number
   comment_count: number
+  is_liked?: boolean
   created_at: number
   updated_at: number
-  user: User
-  is_liked?: boolean
+  user: Partial<User>
+  comments?: Comment[]
 }
 
 export interface Comment {
   id: string
   post_id: string
   user_id: string
+  user_phone: string
   parent_comment_id?: string
   content: string
   created_at: number
   updated_at: number
-  user: User
+  user: Partial<User>
 }
 
 export interface Activity {
   id: string
   user_id: string
+  user_phone: string
   title: string
   description: string
-  category: 'sports' | 'culture' | 'charity' | 'party' | 'other'
+  category: 'sports' | 'culture' | 'charity' | 'party' | 'other' | string
   location: string
   start_time: number
   end_time?: number
   max_participants?: number
   current_participants: number
   images?: string[]
-  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | string
   created_at: number
   updated_at: number
   user: Partial<User>
+  participants?: Array<{ id: string; user_id: string; user_phone: string; nickname: string; avatar?: string; joined_at: number; status: 'registered' | 'attended' | 'absent' }>
   is_participant?: boolean
-  participants?: Array<{
-    id: string
-    user_id: string
-    nickname: string
-    avatar?: string
-    joined_at: number
-    status: 'registered' | 'attended' | 'absent'
-  }>
 }
 
-export interface ActivityParticipant {
+export interface Task {
   id: string
-  activity_id: string
   user_id: string
-  nickname: string
-  avatar?: string
-  joined_at: number
-  status: 'registered' | 'attended' | 'absent'
+  user_phone: string        // 发布者手机号（稳定身份）
+  helper_id?: string        // 接单人的 id
+  helper_phone?: string     // 接单人的手机号（用于"一账号一任务"去重）
+  title: string
+  description: string
+  category: 'shopping' | 'delivery' | 'help' | 'companionship' | 'pet' | 'child' | 'other' | string
+  location: string
+  reward?: number | string
+  deadline?: number
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | string
+  created_at: number
+  updated_at: number
+  creator?: {
+    id: string
+    nickname: string
+    avatar?: string
+    credit_score: number
+    is_verified?: boolean
+    community?: string
+  }
+  helper?: {
+    id: string
+    nickname: string
+    avatar?: string
+    credit_score: number
+    is_verified?: boolean
+  }
 }
 
 export interface PaginatedResponse<T> {
@@ -111,611 +150,490 @@ export interface LikeResponse {
   like_count: number
 }
 
-export interface Topic {
-  id: string
-  name: string
-  posts: number
-  participants: number
-  emoji?: string
+// ========================================================================
+//  辅助工具：构造写入后立即落盘的统一入口
+// ========================================================================
+
+const COMMENTS_STORAGE_KEY = 'linli_comments'  // 评论单独放一个桶，方便查询
+
+function nowId(prefix: string = ''): string {
+  return `${prefix}${Date.now()}_${Math.floor(Math.random() * 1000)}`
 }
 
-export interface ChatRoom {
-  id: string
-  name: string
-  emoji: string
-  description: string
-  members: number
-  today_messages: number
-  bg_color: string
+function getUserCommentsKey(phone: string): string {
+  return `${COMMENTS_STORAGE_KEY}_${phone}`
 }
 
-export interface InterestGroup {
-  id: string
-  name: string
-  members: number
-  emoji: string
-  bg_color: string
-  is_joined: boolean
+function getUserComments(): { [postId: string]: Comment[] } {
+  const phone = getCurrentUser()?.phone || 'public'
+  const key = getUserCommentsKey(phone)
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw) return JSON.parse(raw)
+  } catch (e) {
+    console.error('[api] 读取评论失败:', e)
+  }
+  return {}
 }
 
-const MOCK_MODE = true
-
-// 统一的业务数据键（用户隔离层在 storage.ts 处理）
-const BUSINESS_DATA_KEY = 'linli_user_data'
-
-// 用户数据结构（与 store 保持一致）
-interface BusinessData {
-  posts: Post[]
-  activities: Activity[]
-  tasks: any[]
-  myCreatedTasks: any[]
-  myAcceptedTasks: any[]
-  messages: any[]
-  notifications: any[]
-}
-
-function initEmptyBusiness(): BusinessData {
-  return {
-    posts: [],
-    activities: [],
-    tasks: [],
-    myCreatedTasks: [],
-    myAcceptedTasks: [],
-    messages: [],
-    notifications: [],
+function saveUserComments(data: { [postId: string]: Comment[] }): void {
+  const phone = getCurrentUser()?.phone || 'public'
+  const key = getUserCommentsKey(phone)
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch (e) {
+    console.error('[api] 保存评论失败:', e)
   }
 }
 
-// 读取当前用户的业务数据（用户隔离）
-function loadBusiness(): BusinessData {
-  const data = loadUserData<BusinessData | null>(BUSINESS_DATA_KEY, null as any)
-  return data || initEmptyBusiness()
-}
-
-// 保存当前用户的业务数据（用户隔离，修改立即落盘）
-function saveBusiness(data: BusinessData): void {
-  saveUserData<BusinessData>(BUSINESS_DATA_KEY, data)
-}
-
-// 获取当前登录用户对象（从 localStorage 统一入口读）
-function getCurrentUser(): User | null {
-  const info = loadUserInfo()
-  return info || null
-}
-
-const mockUsers: User[] = [
-  {
-    id: '1',
-    phone: '13800138001',
-    nickname: '阳光社区小李',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop',
-    gender: 'male',
-    community: '阳光社区',
-    address: '1号楼101室',
-    bio: '喜欢分享生活点滴',
-    role: 'resident',
-    credit_score: 95,
-    is_verified: true,
-    created_at: Date.now() - 86400000 * 30,
-    updated_at: Date.now(),
-    last_active_at: Date.now() - 3600000
-  },
-  {
-    id: '2',
-    phone: '13800138002',
-    nickname: '热心肠王阿姨',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-    gender: 'female',
-    community: '阳光社区',
-    address: '2号楼202室',
-    bio: '社区志愿者，乐于助人',
-    role: 'volunteer',
-    credit_score: 98,
-    is_verified: true,
-    created_at: Date.now() - 86400000 * 60,
-    updated_at: Date.now(),
-    last_active_at: Date.now() - 7200000
-  },
-  {
-    id: '3',
-    phone: '13800138003',
-    nickname: '创业者张先生',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
-    gender: 'male',
-    community: '阳光社区',
-    address: '3号楼303室',
-    bio: '社区咖啡店主',
-    role: 'merchant',
-    credit_score: 92,
-    is_verified: true,
-    created_at: Date.now() - 86400000 * 45,
-    updated_at: Date.now(),
-    last_active_at: Date.now() - 1800000
-  }
-]
-
-const mockPosts: Post[] = [
-  {
-    id: '1',
-    user_id: '1',
-    content: '今天天气真好，带孩子在社区花园散步，发现花园里的花都开了！大家有空也出来晒晒太阳呀～',
-    images: [
-      'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400&h=400&fit=crop',
-      'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400&h=400&fit=crop'
-    ],
-    location: '阳光社区花园',
-    visibility: 'public',
-    like_count: 42,
-    comment_count: 8,
-    created_at: Date.now() - 3600000,
-    updated_at: Date.now() - 3600000,
-    user: mockUsers[0],
-    is_liked: false
-  },
-  {
-    id: '2',
-    user_id: '2',
-    content: '本周六上午9点在社区活动中心将举行老年人健康义诊活动，邀请了社区医院的医生为大家免费测量血压血糖，欢迎各位邻居参加！',
-    location: '阳光社区活动中心',
-    visibility: 'public',
-    like_count: 67,
-    comment_count: 15,
-    created_at: Date.now() - 86400000,
-    updated_at: Date.now() - 86400000,
-    user: mockUsers[1],
-    is_liked: false
-  },
-  {
-    id: '3',
-    user_id: '3',
-    content: '我的社区咖啡店新品试营业啦！本周六周日全场8折，欢迎邻居们来品尝！地址：阳光社区商业街12号',
-    images: [
-      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop',
-      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=400&fit=crop',
-      'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=400&fit=crop'
-    ],
-    visibility: 'public',
-    like_count: 89,
-    comment_count: 23,
-    created_at: Date.now() - 86400000 * 2,
-    updated_at: Date.now() - 86400000 * 2,
-    user: mockUsers[2],
-    is_liked: false
-  }
-]
-
-const mockComments: Comment[] = [
-  {
-    id: '1',
-    post_id: '1',
-    user_id: '2',
-    content: '是啊，今天确实很美！我也去了',
-    created_at: Date.now() - 3000000,
-    updated_at: Date.now() - 3000000,
-    user: mockUsers[1]
-  },
-  {
-    id: '2',
-    post_id: '1',
-    user_id: '3',
-    content: '晚上约个时间一起去呀！',
-    created_at: Date.now() - 2400000,
-    updated_at: Date.now() - 2400000,
-    user: mockUsers[2]
-  }
-]
-
-const mockActivities: Activity[] = [
-  {
-    id: '1',
-    user_id: '2',
-    title: '周末亲子烘焙活动',
-    description: '邀请社区的家长和小朋友一起参加亲子烘焙，制作美味蛋糕！',
-    category: 'other',
-    location: '阳光社区活动中心',
-    start_time: Date.now() + 86400000 * 2,
-    max_participants: 20,
-    current_participants: 15,
-    status: 'upcoming',
-    created_at: Date.now() - 86400000 * 3,
-    updated_at: Date.now() - 86400000 * 3,
-    user: mockUsers[1],
-    is_participant: false
-  },
-  {
-    id: '2',
-    user_id: '1',
-    title: '社区足球友谊赛',
-    description: '每周日上午9点在社区运动场举行足球友谊赛，欢迎足球爱好者报名参加！',
-    category: 'sports',
-    location: '阳光社区运动场',
-    start_time: Date.now() + 86400000 * 3,
-    max_participants: 22,
-    current_participants: 18,
-    status: 'upcoming',
-    created_at: Date.now() - 86400000 * 5,
-    updated_at: Date.now() - 86400000 * 5,
-    user: mockUsers[0],
-    is_participant: false
-  }
-]
-
-const mockLikeStates: Record<string, boolean> = {}
-
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    user_id: '2',
-    title: '帮忙取快递',
-    description: '帮忙在小区快递柜取个快递，是个小包裹，感谢！',
-    category: 'delivery',
-    location: '2号楼楼下',
-    reward: '5积分',
-    status: 'pending',
-    created_at: Date.now() - 3600000,
-    updated_at: Date.now() - 3600000,
-    creator: {
-      id: '2',
-      nickname: '热心肠王阿姨',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-      credit_score: 98,
-      is_verified: true,
-      community: '阳光社区'
-    }
-  },
-  {
-    id: '2',
-    user_id: '1',
-    title: '帮忙买些菜',
-    description: '明天上午帮忙在社区生鲜超市买些蔬菜，具体清单微信发',
-    category: 'shopping',
-    location: '1号楼',
-    reward: '10积分',
-    status: 'in_progress',
-    created_at: Date.now() - 7200000,
-    updated_at: Date.now() - 3600000,
-    creator: {
-      id: '1',
-      nickname: '阳光社区小李',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop',
-      credit_score: 95,
-      is_verified: true,
-      community: '阳光社区'
-    },
-    helper: {
-      id: '2',
-      nickname: '热心肠王阿姨',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-      credit_score: 98,
-      is_verified: true
-    }
-  }
-]
-
-export const postsApi = {
-  getPosts: (params?: { page?: number; limit?: number; sort?: string; order?: string; user_id?: string }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          if (biz.posts.length > 0) {
-            resolve({
-              items: biz.posts,
-              page: params?.page || 1,
-              limit: params?.limit || 10,
-              total: biz.posts.length,
-              total_pages: 1
-            })
-            return
-          }
-          resolve({ items: [], page: params?.page || 1, limit: params?.limit || 10, total: 0, total_pages: 1 })
-        }, 300)
-      })
-    }
-    return get<PaginatedResponse<Post>>('/api/posts', params)
-  },
-
-  createPost: (data: { content: string; images?: string[]; location?: string; visibility?: string }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const currentUser = getCurrentUser() || mockUsers[0]
-          const newPost: Post = {
-            id: Date.now().toString(),
-            user_id: currentUser.id || '1',
-            content: data.content,
-            images: data.images,
-            location: data.location,
-            visibility: data.visibility || 'public',
-            like_count: 0,
-            comment_count: 0,
-            created_at: Date.now(),
-            updated_at: Date.now(),
-            user: currentUser,
-            is_liked: false
-          }
-          // 保存到当前用户名下（自动隔离）
-          const biz = loadBusiness()
-          biz.posts.unshift(newPost)
-          saveBusiness(biz)
-          resolve(newPost)
-        }, 300)
-      })
-    }
-    return post<Post>('/api/posts', data)
-  },
-
-  likePost: (postId: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const post = biz.posts.find(p => p.id === postId)
-          if (post) {
-            const wasLiked = post.is_liked || false
-            post.is_liked = !wasLiked
-            post.like_count = (post.like_count || 0) + (wasLiked ? -1 : 1)
-            saveBusiness(biz)
-            resolve({ liked: !wasLiked, like_count: post.like_count })
-            return
-          }
-          resolve({ liked: false, like_count: 0 })
-        }, 200)
-      })
-    }
-    return post<LikeResponse>(`/api/posts/${postId}/like`)
-  },
-
-  getComments: (postId: string, params?: { page?: number; limit?: number }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const comments = mockComments.filter(c => c.post_id === postId)
-          resolve({
-            items: comments,
-            page: params?.page || 1,
-            limit: params?.limit || 10,
-            total: comments.length,
-            total_pages: 1
-          })
-        }, 300)
-      })
-    }
-    return get<PaginatedResponse<Comment>>(`/api/posts/${postId}/comments`, params)
-  },
-
-  createComment: (postId: string, data: { content: string; parent_comment_id?: string }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const currentUser = getCurrentUser() || mockUsers[0]
-          const newComment: Comment = {
-            id: Date.now().toString(),
-            post_id: postId,
-            user_id: currentUser.id || '1',
-            parent_comment_id: data.parent_comment_id,
-            content: data.content,
-            created_at: Date.now(),
-            updated_at: Date.now(),
-            user: currentUser
-          }
-          mockComments.unshift(newComment)
-          const post = mockPosts.find(p => p.id === postId)
-          if (post) post.comment_count++
-          resolve(newComment)
-        }, 300)
-      })
-    }
-    return post<Comment>(`/api/posts/${postId}/comments`, data)
-  }
-}
-
+// ========================================================================
+//  authApi —— 登录/注册
+// ========================================================================
 export const authApi = {
   login: (data: { phone: string; code: string; nickname?: string; community?: string }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          // 从 storage.ts 统一入口读取当前用户信息
-          const savedUser = loadUserInfo()
-          const phone = data.phone
+    return new Promise<{ token: string; user: User }>((resolve, reject) => {
+      setTimeout(() => {
+        if (!data.phone || !/^\d{6,}$/.test(data.phone)) {
+          reject(new Error('请输入正确的手机号'))
+          return
+        }
+        if (!data.code || data.code.length < 4) {
+          reject(new Error('请输入验证码'))
+          return
+        }
 
-          let user: User
-          if (savedUser && savedUser.phone === phone) {
-            user = {
-              ...savedUser,
-              nickname: data.nickname || savedUser.nickname || '邻里用户',
-              community: data.community || savedUser.community || '阳光社区',
-              updated_at: Date.now(),
-              last_active_at: Date.now(),
+        // 读取该手机号已有的档案（如果存在）
+        let existing: User | null = null
+        try {
+          const key = getUserStorageKey('linli_user_profile', data.phone)
+          const raw = localStorage.getItem(key)
+          if (raw) existing = JSON.parse(raw) as User
+        } catch (e) {
+          console.error('[auth] 读取旧档案失败:', e)
+        }
+
+        const now = Date.now()
+        const user: User = existing
+          ? {
+              ...existing,
+              nickname: data.nickname || existing.nickname || '邻里用户',
+              community: data.community || existing.community || '阳光社区',
+              updated_at: now,
+              last_active_at: now
             }
-          } else {
-            user = {
-              id: 'demo-user-' + Date.now(),
-              phone: phone,
+          : {
+              id: 'user_' + now,
+              phone: data.phone,
               nickname: data.nickname || '邻里用户',
-              avatar: savedUser?.avatar || '',
-              gender: savedUser?.gender,
-              birthday: savedUser?.birthday || '',
-              community: data.community || savedUser?.community || '阳光社区',
-              address: savedUser?.address || '',
-              bio: savedUser?.bio || '热爱社区，乐于助人',
-              role: savedUser?.role || 'resident',
-              credit_score: savedUser?.credit_score || 100,
+              avatar: '',
+              gender: undefined,
+              birthday: '',
+              community: data.community || '阳光社区',
+              address: '',
+              bio: '',
+              role: 'resident',
+              credit_score: 100,
               is_verified: true,
-              created_at: savedUser?.created_at || Date.now(),
-              updated_at: Date.now(),
-              last_active_at: Date.now(),
+              created_at: now,
+              updated_at: now,
+              last_active_at: now
             }
-          }
 
-          // 使用 storage.ts 保存登录态
-          const token = 'mock-token-' + Date.now()
-          saveAuthInfo(user, token)
+        // 持久化档案（下次登录同手机号时保留）
+        try {
+          localStorage.setItem(getUserStorageKey('linli_user_profile', data.phone), JSON.stringify(user))
+        } catch (e) {
+          console.error('[auth] 持久化用户档案失败:', e)
+        }
 
-          // 返回该账号（phone）的独立业务数据
-          const businessData = loadBusiness()
-
-          resolve({ token, user, userData: businessData })
-        }, 500)
-      })
-    }
-    return post<{ token: string; user: User }>('/api/auth/login', data)
-  },
-}
-
-export const userApi = {
-  getProfile: () => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          // 通过 storage.ts 统一入口读取
-          const savedUser = loadUserInfo()
-          if (savedUser) {
-            resolve(savedUser)
-            return
-          }
-          resolve(mockUsers[0])
-        }, 300)
-      })
-    }
-    return get<User>('/api/user/profile')
+        // 设置当前登录态 + 初始化该账号的业务数据
+        onLoginSuccess(user, 'token_' + now)
+        resolve({ token: 'token_' + now, user })
+      }, 400)
+    })
   },
 
-  updateProfile: (data: Partial<User>) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const savedUser = loadUserInfo()
-          if (savedUser) {
-            const updatedUser = { ...savedUser, ...data, updated_at: Date.now() }
-            const token = loadToken()
-            saveAuthInfo(updatedUser, token)
-            Object.assign(mockUsers[0], updatedUser)
-            resolve(updatedUser)
-            return
-          }
-          Object.assign(mockUsers[0], data, { updated_at: Date.now() })
-          resolve(mockUsers[0])
-        }, 300)
-      })
-    }
-    return put<User>('/api/user/profile', data)
-  },
-
-  getMyPosts: (params?: { page?: number; limit?: number }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const myPosts = mockPosts.filter(p => p.user_id === '1')
-          resolve({
-            items: myPosts,
-            page: params?.page || 1,
-            limit: params?.limit || 10,
-            total: myPosts.length,
-            total_pages: 1
-          })
-        }, 300)
-      })
-    }
-    return get<PaginatedResponse<Post>>('/api/user/posts', params)
-  },
-
-  getMyActivities: (params?: { page?: number; limit?: number }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            items: mockActivities,
-            page: params?.page || 1,
-            limit: params?.limit || 10,
-            total: mockActivities.length,
-            total_pages: 1
-          })
-        }, 300)
-      })
-    }
-    return get<PaginatedResponse<Activity>>('/api/user/activities', params)
-  },
-
-  getMyFavorites: (params?: { page?: number; limit?: number }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            items: [],
-            page: params?.page || 1,
-            limit: params?.limit || 10,
-            total: 0,
-            total_pages: 1
-          })
-        }, 300)
-      })
-    }
-    return get<PaginatedResponse<{ id: string; target_type: 'post' | 'comment' | 'activity'; target_id: string; created_at: number; target?: any }>>('/api/user/favorites', params)
-  },
-
-  toggleFavorite: (targetType: 'post' | 'comment' | 'activity', targetId: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({ favorited: true })
-        }, 300)
-      })
-    }
-    return post<{ favorited: boolean }>('/api/user/favorites', { target_type: targetType, target_id: targetId })
-  },
-
-  getOnlineUsers: () => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(mockUsers)
-        }, 300)
-      })
-    }
-    return get<User[]>('/api/users?online=true')
+  logout: () => {
+    onLogout()
+    return Promise.resolve({ success: true })
   }
 }
 
-export const activitiesApi = {
-  getActivities: (params?: { page?: number; limit?: number; status?: string; category?: string; sort?: string; order?: string }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          if (biz.activities.length > 0) {
-            resolve({
-              items: biz.activities,
-              pagination: {
-                page: params?.page || 1,
-                limit: params?.limit || 10,
-                total: biz.activities.length,
-                totalPages: 1
-              }
-            })
-            return
-          }
-          resolve({
-            items: [],
-            pagination: { page: params?.page || 1, limit: params?.limit || 10, total: 0, totalPages: 1 }
-          })
-        }, 300)
-      })
-    }
-    return get<PaginatedData<Activity>>('/api/activities', params)
+// ========================================================================
+//  userApi —— 用户档案（profile 保存/获取 / 我发布的 / 我的收藏）
+// ========================================================================
+export const userApi = {
+  getProfile: (): Promise<User> => {
+    return new Promise((resolve, reject) => {
+      const cur = getCurrentUser()
+      if (!cur) {
+        reject(new Error('未登录'))
+        return
+      }
+      // 优先从该手机号的独立档案读取，保持与 profile 编辑保存一致
+      try {
+        const key = getUserStorageKey('linli_user_profile', cur.phone)
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          parsed.last_active_at = Date.now()
+          // 同步回 userInfo，保证首页显示一致
+          localStorage.setItem('userInfo', JSON.stringify(parsed))
+          resolve(parsed as User)
+          return
+        }
+      } catch (e) {
+        console.error('[user] getProfile 读取独立档案失败:', e)
+      }
+      // fallback：返回当前 userInfo
+      resolve(cur)
+    })
   },
 
-  getActivity: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const activity = biz.activities.find((a: Activity) => a.id === id)
-          resolve(activity || null)
-        }, 300)
+  updateProfile: (partial: Partial<User>): Promise<User> => {
+    return new Promise((resolve, reject) => {
+      const cur = getCurrentUser()
+      if (!cur) {
+        reject(new Error('未登录，无法保存'))
+        return
+      }
+
+      // 新老字段合并：以独立档案为主（保留历史字段），再合并新字段
+      let saved: User = cur
+      try {
+        const key = getUserStorageKey('linli_user_profile', cur.phone)
+        const raw = localStorage.getItem(key)
+        if (raw) saved = JSON.parse(raw)
+      } catch (e) {
+        console.error('[user] updateProfile 读取独立档案失败:', e)
+      }
+
+      const merged: User = {
+        ...saved,
+        ...partial,
+        updated_at: Date.now(),
+        last_active_at: Date.now()
+      }
+
+      try {
+        localStorage.setItem(getUserStorageKey('linli_user_profile', cur.phone), JSON.stringify(merged))
+        localStorage.setItem('userInfo', JSON.stringify(merged))
+        resolve(merged)
+      } catch (e) {
+        console.error('[user] updateProfile 持久化失败:', e)
+        reject(new Error('保存失败，请稍后重试'))
+      }
+    })
+  },
+
+  getMyPosts: (): Promise<PaginatedResponse<Post>> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const biz = loadBusiness()
+        const u = getCurrentUser()
+        const myPosts = u
+          ? biz.posts.filter(p => p.user_phone === u.phone || p.user_id === u.id || p.user_id === u.phone)
+          : []
+        resolve({
+          items: myPosts.slice().sort((a, b) => b.created_at - a.created_at),
+          page: 1,
+          limit: myPosts.length,
+          total: myPosts.length,
+          total_pages: 1
+        })
+      } catch (e) {
+        reject(e)
+      }
+    })
+  },
+
+  getMyActivities: (): Promise<PaginatedResponse<Activity>> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const biz = loadBusiness()
+        const u = getCurrentUser()
+        const my = u
+          ? biz.activities.filter(a =>
+              a.user_phone === u.phone ||
+              a.user_id === u.id ||
+              a.user_id === u.phone ||
+              (a.participants && a.participants.some(p => p.user_phone === u.phone))
+            )
+          : []
+        resolve({
+          items: my.slice().sort((a, b) => b.created_at - a.created_at),
+          page: 1,
+          limit: my.length,
+          total: my.length,
+          total_pages: 1
+        })
+      } catch (e) {
+        reject(e)
+      }
+    })
+  },
+
+  getTaskStats: (): Promise<{ published: number; accepted: number; total: number }> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const biz = loadBusiness()
+        const u = getCurrentUser()
+        if (!u) {
+          resolve({ published: 0, accepted: 0, total: 0 })
+          return
+        }
+        const published = biz.tasks.filter(t => t.user_phone === u.phone || t.user_id === u.id).length
+        const accepted = biz.tasks.filter(t => t.helper_phone === u.phone || t.helper_id === u.id).length
+        resolve({ published, accepted, total: published + accepted })
+      } catch (e) {
+        reject(e)
+      }
+    })
+  },
+
+  getOnlineUsers: (): Promise<User[]> => {
+    return new Promise(resolve => {
+      const cur = getCurrentUser()
+      const users: User[] = []
+      if (cur) {
+        users.push({ ...cur, is_online: true })
+      }
+      // 演示账号
+      users.push(
+        {
+          id: 'demo-neighbour-1',
+          phone: '13811112222',
+          nickname: '热心邻居张阿姨',
+          avatar: '',
+          community: '阳光社区',
+          role: 'volunteer',
+          credit_score: 98,
+          is_verified: true,
+          created_at: Date.now() - 86400000 * 30,
+          updated_at: Date.now(),
+          last_active_at: Date.now() - 1000 * 60 * 2,
+          is_online: true
+        },
+        {
+          id: 'demo-neighbour-2',
+          phone: '13811113333',
+          nickname: '社区达人李先生',
+          avatar: '',
+          community: '阳光社区',
+          role: 'resident',
+          credit_score: 92,
+          is_verified: true,
+          created_at: Date.now() - 86400000 * 60,
+          updated_at: Date.now(),
+          last_active_at: Date.now() - 1000 * 60 * 15,
+          is_online: true
+        }
+      )
+      resolve(users)
+    })
+  }
+}
+
+// ========================================================================
+//  postsApi —— 邻里动态
+// ========================================================================
+export const postsApi = {
+  getPosts: (params?: { page?: number; limit?: number; sort?: string; order?: string; user_id?: string }): Promise<PaginatedResponse<Post>> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const biz = loadBusiness()
+        const items = biz.posts.slice().sort((a, b) => b.created_at - a.created_at)
+        resolve({
+          items,
+          page: params?.page || 1,
+          limit: params?.limit || items.length,
+          total: items.length,
+          total_pages: 1
+        })
+      }, 200)
+    })
+  },
+
+  getPost: (id: string): Promise<Post | null> => {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        const biz = loadBusiness()
+        const p = biz.posts.find(x => x.id === id) || null
+        resolve(p)
+      }, 200)
+    })
+  },
+
+  createPost: (data: { content: string; images?: string[]; location?: string; visibility?: string }): Promise<Post> => {
+    return new Promise((resolve, reject) => {
+      const u = requireLogin()
+      if (!data.content || data.content.trim().length === 0) {
+        reject(new Error('请填写动态内容'))
+        return
+      }
+
+      const now = Date.now()
+      const newPost: Post = {
+        id: nowId('p_'),
+        user_id: u.id || u.phone,
+        user_phone: u.phone,
+        content: data.content.trim(),
+        images: data.images || [],
+        location: data.location || '',
+        visibility: (data.visibility as any) || 'public',
+        like_count: 0,
+        comment_count: 0,
+        is_liked: false,
+        created_at: now,
+        updated_at: now,
+        user: {
+          id: u.id || u.phone,
+          nickname: u.nickname,
+          avatar: u.avatar,
+          community: u.community,
+          credit_score: u.credit_score
+        },
+        comments: []
+      }
+
+      const biz = loadBusiness()
+      biz.posts.unshift(newPost)
+      saveBusiness(biz)
+      setTimeout(() => resolve(newPost), 150)
+    })
+  },
+
+  likePost: (postId: string): Promise<LikeResponse> => {
+    return new Promise((resolve) => {
+      const biz = loadBusiness()
+      const target = biz.posts.find(p => p.id === postId)
+      if (!target) {
+        resolve({ liked: false, like_count: 0 })
+        return
+      }
+      const wasLiked = target.is_liked
+      target.is_liked = !wasLiked
+      target.like_count = Math.max(0, (target.like_count || 0) + (wasLiked ? -1 : 1))
+      target.updated_at = Date.now()
+      saveBusiness(biz)
+      resolve({ liked: target.is_liked, like_count: target.like_count })
+    })
+  },
+
+  deletePost: (postId: string): Promise<{ success: boolean }> => {
+    return new Promise((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const idx = biz.posts.findIndex(p => p.id === postId)
+      if (idx < 0) {
+        reject(new Error('动态不存在或已删除'))
+        return
+      }
+      const target = biz.posts[idx]
+      // 后端式鉴权：仅发布者本人可删除
+      if (!(target.user_phone && target.user_phone === u.phone) &&
+          !(target.user_id && (target.user_id === u.id || target.user_id === u.phone))) {
+        reject(new Error('只能删除自己发布的内容'))
+        return
+      }
+      biz.posts.splice(idx, 1)
+      saveBusiness(biz)
+      resolve({ success: true })
+    })
+  },
+
+  getComments: (postId: string): Promise<PaginatedResponse<Comment>> => {
+    return new Promise(resolve => {
+      const all = getUserComments()
+      const list = (all[postId] || []).slice().sort((a, b) => a.created_at - b.created_at)
+      resolve({
+        items: list,
+        page: 1,
+        limit: list.length,
+        total: list.length,
+        total_pages: 1
       })
-    }
-    return get<Activity>(`/api/activities/${id}`)
+    })
+  },
+
+  createComment: (postId: string, data: { content: string }): Promise<Comment> => {
+    return new Promise((resolve, reject) => {
+      const u = requireLogin()
+      if (!data.content || data.content.trim().length === 0) {
+        reject(new Error('请输入评论内容'))
+        return
+      }
+      const biz = loadBusiness()
+      const post = biz.posts.find(p => p.id === postId)
+      if (!post) {
+        reject(new Error('动态不存在或已删除'))
+        return
+      }
+      const now = Date.now()
+      const c: Comment = {
+        id: nowId('c_'),
+        post_id: postId,
+        user_id: u.id || u.phone,
+        user_phone: u.phone,
+        content: data.content.trim(),
+        created_at: now,
+        updated_at: now,
+        user: { id: u.id || u.phone, nickname: u.nickname, avatar: u.avatar }
+      }
+      const all = getUserComments()
+      if (!all[postId]) all[postId] = []
+      all[postId].push(c)
+      saveUserComments(all)
+
+      // 同步计数
+      post.comment_count = (post.comment_count || 0) + 1
+      post.updated_at = now
+      saveBusiness(biz)
+      resolve(c)
+    })
+  }
+}
+
+// ========================================================================
+//  activitiesApi —— 活动中心
+// ========================================================================
+export const activitiesApi = {
+  getActivities: (params?: {
+    page?: number
+    limit?: number
+    status?: string
+    category?: string
+    sort?: string
+    order?: string
+  }): Promise<PaginatedResponse<Activity>> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const biz = loadBusiness()
+        let items = biz.activities.slice()
+        if (params?.category && params.category !== 'all') {
+          items = items.filter(a => a.category === params?.category)
+        }
+        if (params?.status && params.status !== 'all') {
+          items = items.filter(a => a.status === params?.status)
+        }
+        items.sort((a, b) => b.created_at - a.created_at)
+        resolve({
+          items,
+          page: params?.page || 1,
+          limit: params?.limit || items.length,
+          total: items.length,
+          total_pages: 1
+        })
+      }, 200)
+    })
+  },
+
+  getActivity: (id: string): Promise<Activity | null> => {
+    return new Promise((resolve) => {
+      const biz = loadBusiness()
+      const a = biz.activities.find(x => x.id === id) || null
+      resolve(a)
+    })
   },
 
   createActivity: (data: {
@@ -727,533 +645,451 @@ export const activitiesApi = {
     end_time?: string
     max_participants?: number
     images?: string[]
-  }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const currentUser = getCurrentUser() || mockUsers[0]
-          const newActivity: Activity = {
-            id: Date.now().toString(),
-            user_id: currentUser.id || '1',
-            title: data.title,
-            description: data.description,
-            category: data.category as any,
-            location: data.location,
-            start_time: new Date(data.start_time).getTime(),
-            max_participants: data.max_participants,
-            current_participants: 1,
-            status: 'upcoming',
-            created_at: Date.now(),
-            updated_at: Date.now(),
-            user: currentUser,
-            is_participant: true
-          }
-          const biz = loadBusiness()
-          biz.activities.unshift(newActivity)
-          saveBusiness(biz)
-          resolve(newActivity)
-        }, 300)
-      })
-    }
-    return post<Activity>('/api/activities', data)
+  }): Promise<Activity> => {
+    return new Promise((resolve, reject) => {
+      const u = requireLogin()
+      if (!data.title || data.title.trim().length === 0) {
+        reject(new Error('请填写活动标题'))
+        return
+      }
+      if (!data.location || data.location.trim().length === 0) {
+        reject(new Error('请填写活动地点'))
+        return
+      }
+      const now = Date.now()
+      const activity: Activity = {
+        id: nowId('a_'),
+        user_id: u.id || u.phone,
+        user_phone: u.phone,
+        title: data.title.trim(),
+        description: data.description.trim(),
+        category: data.category || 'other',
+        location: data.location.trim(),
+        start_time: data.start_time ? new Date(data.start_time).getTime() : now,
+        end_time: data.end_time ? new Date(data.end_time).getTime() : undefined,
+        max_participants: data.max_participants,
+        current_participants: 1,
+        images: data.images || [],
+        status: 'upcoming',
+        created_at: now,
+        updated_at: now,
+        user: {
+          id: u.id || u.phone,
+          nickname: u.nickname,
+          avatar: u.avatar,
+          community: u.community
+        },
+        participants: [{
+          id: nowId('p_'),
+          user_id: u.id || u.phone,
+          user_phone: u.phone,
+          nickname: u.nickname,
+          avatar: u.avatar,
+          joined_at: now,
+          status: 'registered'
+        }],
+        is_participant: true
+      }
+
+      const biz = loadBusiness()
+      biz.activities.unshift(activity)
+      saveBusiness(biz)
+      resolve(activity)
+    })
   },
 
   joinActivity: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const activity = biz.activities.find((a: Activity) => a.id === id)
-          if (activity && !activity.is_participant) {
-            activity.is_participant = true
-            activity.current_participants++
-            saveBusiness(biz)
-          }
-          resolve({
-            id: Date.now().toString(),
-            activity_id: id,
-            user_id: (getCurrentUser()?.id) || '1',
-            joined_at: Date.now(),
-            status: 'registered'
-          })
-        }, 300)
+    return new Promise((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const activity = biz.activities.find(a => a.id === id)
+      if (!activity) {
+        reject(new Error('活动不存在'))
+        return
+      }
+
+      if (activity.max_participants && (activity.current_participants || 0) >= activity.max_participants) {
+        reject(new Error('活动名额已满'))
+        return
+      }
+
+      const participants = activity.participants || []
+      const already = participants.some(p => p.user_phone === u.phone || p.user_id === u.id)
+      if (already) {
+        reject(new Error('您已经报名，不能重复报名'))
+        return
+      }
+
+      participants.push({
+        id: nowId('p_'),
+        user_id: u.id || u.phone,
+        user_phone: u.phone,
+        nickname: u.nickname,
+        avatar: u.avatar,
+        joined_at: Date.now(),
+        status: 'registered'
       })
-    }
-    return post<ActivityParticipant>(`/api/activities/${id}/join`)
+      activity.participants = participants
+      activity.current_participants = participants.length
+      activity.is_participant = true
+      activity.updated_at = Date.now()
+      saveBusiness(biz)
+      resolve({ success: true, id })
+    })
   },
 
   leaveActivity: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const activity = biz.activities.find((a: Activity) => a.id === id)
-          if (activity && activity.is_participant) {
-            activity.is_participant = false
-            activity.current_participants--
-            saveBusiness(biz)
-          }
-          resolve({ success: true })
-        }, 300)
-      })
-    }
-    return del(`/api/activities/${id}/leave`)
+    return new Promise((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const activity = biz.activities.find(a => a.id === id)
+      if (!activity) {
+        reject(new Error('活动不存在'))
+        return
+      }
+      const participants = (activity.participants || []).filter(p =>
+        !(p.user_phone === u.phone || p.user_id === u.id || p.user_id === u.phone)
+      )
+      activity.participants = participants
+      activity.current_participants = participants.length
+      activity.is_participant = false
+      activity.updated_at = Date.now()
+      saveBusiness(biz)
+      resolve({ success: true })
+    })
   },
 
-  updateActivity: (id: string, data: Partial<{
-    title: string
-    description: string
-    category: string
-    location: string
-    start_time: string
-    end_time?: string
-    max_participants?: number
-    images?: string[]
-    status?: string
-  }>) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const activity = mockActivities.find(a => a.id === id)
-          if (activity) {
-            Object.assign(activity, {
-              ...data,
-              start_time: data.start_time ? new Date(data.start_time).getTime() : activity.start_time,
-              end_time: data.end_time ? new Date(data.end_time).getTime() : activity.end_time
-            })
-            resolve(activity)
-          }
-        }, 300)
-      })
-    }
-    return put<Activity>(`/api/activities/${id}`, data)
+  updateActivity: (id: string, data: Partial<Activity>) => {
+    return new Promise((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const idx = biz.activities.findIndex(a => a.id === id)
+      if (idx < 0) {
+        reject(new Error('活动不存在'))
+        return
+      }
+      const activity = biz.activities[idx]
+      // 后端式鉴权：仅发布者可编辑
+      if (!(activity.user_phone === u.phone || activity.user_id === u.id || activity.user_id === u.phone)) {
+        reject(new Error('仅活动发布者可以修改'))
+        return
+      }
+      const updated = {
+        ...activity,
+        ...data,
+        start_time: (data as any).start_time && typeof (data as any).start_time === 'string'
+          ? new Date((data as any).start_time).getTime()
+          : (data as any).start_time || activity.start_time,
+        updated_at: Date.now()
+      }
+      biz.activities[idx] = updated
+      saveBusiness(biz)
+      resolve(updated)
+    })
   },
 
   deleteActivity: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const index = mockActivities.findIndex(a => a.id === id)
-          if (index > -1) {
-            mockActivities.splice(index, 1)
-          }
-          resolve({ id })
-        }, 300)
-      })
-    }
-    return del<{ id: string }>(`/api/activities/${id}`)
+    return new Promise((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const idx = biz.activities.findIndex(a => a.id === id)
+      if (idx < 0) {
+        reject(new Error('活动不存在'))
+        return
+      }
+      const activity = biz.activities[idx]
+      if (!(activity.user_phone === u.phone || activity.user_id === u.id || activity.user_id === u.phone)) {
+        reject(new Error('仅活动发布者可以删除'))
+        return
+      }
+      biz.activities.splice(idx, 1)
+      saveBusiness(biz)
+      resolve({ success: true, id })
+    })
   }
 }
 
-export interface Task {
-  id: string
-  user_id: string
-  helper_id?: string
-  title: string
-  description: string
-  category: 'shopping' | 'delivery' | 'help' | 'companionship' | 'other'
-  location: string
-  reward?: string
-  deadline?: number
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-  created_at: number
-  updated_at: number
-  creator?: {
-    id: string
-    nickname: string
-    avatar?: string
-    credit_score: number
-    is_verified: boolean
-    community?: string
-  }
-  helper?: {
-    id: string
-    nickname: string
-    avatar?: string
-    credit_score: number
-    is_verified: boolean
-  }
-}
-
-export interface MatchUser {
-  id: string
-  name: string
-  avatar?: string
-  role?: string
-  community?: string
-  bio?: string
-  rating: number
-  distance: number
-  completedTasks: number
-  cancelledTasks?: number
-  completionRate?: number
-  isVerified: boolean
-  isVolunteer?: boolean
-  sameCommunity?: boolean
-  tags: string[]
-  matchScore?: number
-  matchReasons?: string[]
-}
-
-export interface MatchResponse {
-  matches: MatchUser[]
-  total: number
-}
-
-export interface CreateTaskData {
-  title: string
-  description: string
-  category?: 'shopping' | 'delivery' | 'help' | 'companionship' | 'other'
-  location: string
-  reward?: string
-  deadline?: string
-}
-
-export interface UpdateTaskData {
-  title?: string
-  description?: string
-  category?: 'shopping' | 'delivery' | 'help' | 'companionship' | 'other'
-  location?: string
-  reward?: string
-  deadline?: string
-}
-
-export interface TaskActionData {
-  action: 'accept' | 'complete' | 'cancel'
-}
-
-export interface MyTasksResponse {
-  items: Task[]
-  stats: {
-    total: number
-    published: {
-      all: number
-      pending: number
-      in_progress: number
-      completed: number
-    }
-    accepted: {
-      all: number
-      pending: number
-      in_progress: number
-      completed: number
-    }
-  }
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
-
-export interface ApiResponse<T = any> {
-  success: boolean
-  message: string
-  data: T
-  timestamp: number
-}
-
-export interface PaginatedData<T> {
-  items: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
+// ========================================================================
+//  tasksApi —— 互助任务
+// ========================================================================
+//  关键保障：
+//  - 发布任务：必须登录；任务带 user_phone
+//  - 接单：必须登录；不能接自己发布的；一账号一任务仅能接一次
+//  - 完成/取消：仅任务发布者或接单人可以操作
+// ========================================================================
 
 export const tasksApi = {
-  // 获取任务列表
-  getTasks: (params?: {
-    page?: number
-    limit?: number
-    status?: string
-    category?: string
-    user_id?: string
-    helper_id?: string
-    sort?: 'created_at' | 'deadline' | 'status' | 'category'
-    order?: 'asc' | 'desc'
-  }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const tasks = biz.tasks
-          let filtered = [...tasks]
-          if (params?.status) {
-            filtered = filtered.filter((t: Task) => t.status === params.status)
-          }
-          if (params?.category) {
-            filtered = filtered.filter((t: Task) => t.category === params.category)
-          }
-          resolve({
-            items: filtered,
-            pagination: {
-              page: params?.page || 1,
-              limit: params?.limit || 10,
-              total: filtered.length,
-              totalPages: 1,
-            },
-          })
-        }, 300)
-      })
-    }
-    return get<PaginatedData<Task>>('/api/tasks', params)
+  getTasks: (params?: { page?: number; limit?: number; status?: string; category?: string }) => {
+    return new Promise<{ items: Task[]; total: number; page: number; limit: number }>((resolve) => {
+      setTimeout(() => {
+        const biz = loadBusiness()
+        let items = biz.tasks || []
+
+        if (params?.status) {
+          const s = String(params.status).toLowerCase()
+          const key = s === 'open' ? 'pending' : s === 'ongoing' ? 'in_progress' : s
+          items = items.filter(t => t.status === key)
+        }
+        if (params?.category && params.category !== 'all') {
+          items = items.filter(t => t.category === params?.category)
+        }
+        items = items.slice().sort((a, b) => b.created_at - a.created_at)
+
+        const limit = params?.limit || items.length
+        const page = params?.page || 1
+        const start = (page - 1) * limit
+        const paged = items.slice(start, start + limit)
+
+        resolve({ items: paged, total: items.length, page, limit })
+      }, 150)
+    })
   },
 
-  // 创建任务
-  createTask: (data: CreateTaskData) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const currentUser = getCurrentUser() || mockUsers[0]
-          const newTask: Task = {
-            id: Date.now().toString(),
-            user_id: currentUser.id,
-            title: data.title,
-            description: data.description,
-            category: (data.category as Task['category']) || 'other',
-            location: data.location,
-            reward: data.reward,
-            deadline: data.deadline ? new Date(data.deadline).getTime() : undefined,
-            status: 'pending',
-            created_at: Date.now(),
-            updated_at: Date.now(),
-            creator: {
-              id: currentUser.id,
-              nickname: currentUser.nickname || '邻里用户',
-              avatar: currentUser.avatar,
-              credit_score: currentUser.credit_score || 100,
-              is_verified: !!currentUser.is_verified,
-              community: currentUser.community,
-            },
-          }
-          const biz = loadBusiness()
-          biz.tasks.unshift(newTask)
-          saveBusiness(biz)
-          resolve(newTask)
-        }, 300)
-      })
-    }
-    return post<Task>('/api/tasks', data)
-  },
-
-  // 获取任务详情
   getTask: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const task = biz.tasks.find((t: Task) => t.id === id)
-          resolve(task || null)
-        }, 300)
-      })
-    }
-    return get<Task>(`/api/tasks/${id}`)
+    return new Promise<Task | null>((resolve) => {
+      setTimeout(() => {
+        const biz = loadBusiness()
+        const task = (biz.tasks || []).find(t => t.id === id) || null
+        resolve(task)
+      }, 100)
+    })
   },
 
-  // 更新任务
-  updateTask: (id: string, data: UpdateTaskData) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const task = biz.tasks.find((t: Task) => t.id === id)
-          if (task) {
-            if (data.deadline) {
-              task.deadline = new Date(data.deadline).getTime()
-              const { deadline, ...rest } = data
-              Object.assign(task, rest, { updated_at: Date.now() })
-            } else {
-              Object.assign(task, data, { updated_at: Date.now() })
-            }
-            saveBusiness(biz)
-          }
-          resolve(task)
-        }, 300)
-      })
-    }
-    return put<Task>(`/api/tasks/${id}`, data)
-  },
-
-  // 删除任务
-  deleteTask: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const index = biz.tasks.findIndex((t: Task) => t.id === id)
-          if (index > -1) {
-            biz.tasks.splice(index, 1)
-            saveBusiness(biz)
-          }
-          resolve({ id })
-        }, 300)
-      })
-    }
-    return del<{ id: string }>(`/api/tasks/${id}`)
-  },
-
-  // 接单
-  acceptTask: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const currentUser = getCurrentUser() || mockUsers[0]
-          const biz = loadBusiness()
-          const task = biz.tasks.find((t: Task) => t.id === id)
-          if (task) {
-            task.status = 'in_progress'
-            task.helper_id = currentUser.id
-            task.helper = {
-              id: currentUser.id,
-              nickname: currentUser.nickname || '邻里用户',
-              avatar: currentUser.avatar,
-              credit_score: currentUser.credit_score || 100,
-              is_verified: !!currentUser.is_verified,
-            }
-            saveBusiness(biz)
-          }
-          resolve(task)
-        }, 300)
-      })
-    }
-    return post<Task>(`/api/tasks/${id}/accept`)
-  },
-
-  // 完成任务
-  completeTask: (id: string) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const task = biz.tasks.find((t: Task) => t.id === id)
-          if (task) {
-            task.status = 'completed'
-            task.updated_at = Date.now()
-            saveBusiness(biz)
-          }
-          resolve(task)
-        }, 300)
-      })
-    }
-    return post<Task>(`/api/tasks/${id}/complete`)
-  },
-
-  // 任务操作（accept/complete/cancel）
-  taskAction: (id: string, data: TaskActionData) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const task = biz.tasks.find((t: Task) => t.id === id)
-          if (task) {
-            if (data.action === 'cancel') {
-              task.status = 'cancelled'
-              task.updated_at = Date.now()
-              saveBusiness(biz)
-            }
-          }
-          resolve(task)
-        }, 300)
-      })
-    }
-    return post<Task>(`/api/tasks/${id}`, data)
-  },
-
-  // 获取我的任务
-  getMyTasks: (params?: {
-    page?: number
-    limit?: number
-    type?: 'all' | 'published' | 'accepted'
+  createTask: (data: {
+    title: string
+    description: string
+    category?: string
+    location: string
+    reward?: string | number
   }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const biz = loadBusiness()
-          const currentUser = getCurrentUser() || mockUsers[0]
-          const all = biz.tasks
-
-          const published = all.filter((t: Task) => t.user_id === currentUser.id)
-          const accepted = all.filter((t: Task) => t.helper_id === currentUser.id)
-
-          const type = params?.type || 'all'
-          let items: Task[] = []
-          if (type === 'published') {
-            items = published
-          } else if (type === 'accepted') {
-            items = accepted
-          } else {
-            items = [...published, ...accepted].filter(
-              (t, i, arr) => arr.findIndex((x) => x.id === t.id) === i
-            )
-          }
-
-          resolve({
-            items,
-            stats: {
-              total: all.length,
-              published: {
-                all: published.length,
-                pending: published.filter((t: Task) => t.status === 'pending').length,
-                in_progress: published.filter((t: Task) => t.status === 'in_progress').length,
-                completed: published.filter((t: Task) => t.status === 'completed').length,
-              },
-              accepted: {
-                all: accepted.length,
-                pending: accepted.filter((t: Task) => t.status === 'pending').length,
-                in_progress: accepted.filter((t: Task) => t.status === 'in_progress').length,
-                completed: accepted.filter((t: Task) => t.status === 'completed').length,
-              },
-            },
-            pagination: {
-              page: params?.page || 1,
-              limit: params?.limit || 10,
-              total: items.length,
-              totalPages: 1,
-            },
-          })
-        }, 300)
-      })
-    }
-    return get<MyTasksResponse>('/api/tasks/my', params)
+    return new Promise<Task>((resolve, reject) => {
+      const u = requireLogin()
+      if (!data.title || data.title.trim().length === 0) {
+        reject(new Error('请填写任务标题'))
+        return
+      }
+      if (!data.description || data.description.trim().length === 0) {
+        reject(new Error('请描述任务内容'))
+        return
+      }
+      if (!data.location || data.location.trim().length === 0) {
+        reject(new Error('请填写服务地点'))
+        return
+      }
+      const now = Date.now()
+      const task: Task = {
+        id: 't_' + now + '_' + Math.floor(Math.random() * 1000),
+        user_id: u.id || u.phone,
+        user_phone: u.phone,
+        title: data.title.trim(),
+        description: data.description.trim(),
+        category: (data.category as Task['category']) || 'other',
+        location: data.location.trim(),
+        reward: typeof data.reward === 'string' ? parseFloat(data.reward) || 0 : Number(data.reward) || 0,
+        status: 'pending',
+        created_at: now,
+        updated_at: now,
+        creator: {
+          id: u.id || u.phone,
+          nickname: u.nickname || '邻里用户',
+          avatar: u.avatar || '',
+          credit_score: u.credit_score || 100,
+          is_verified: true,
+          community: u.community || ''
+        }
+      }
+      const biz = loadBusiness()
+      biz.tasks.unshift(task)
+      saveBusiness(biz)
+      resolve(task)
+    })
   },
 
-  // AI 匹配推荐
-  getMatches: (params?: { task_id?: string; category?: string; limit?: number }) => {
-    if (MOCK_MODE) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            matches: [
-              {
-                id: '2',
-                name: '热心肠王阿姨',
-                avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-                role: 'volunteer',
-                community: '阳光社区',
-                bio: '社区志愿者，乐于助人',
-                rating: 4.9,
-                distance: 0.1,
-                completedTasks: 56,
-                completionRate: 98,
-                isVerified: true,
-                isVolunteer: true,
-                sameCommunity: true,
-                tags: ['热心', '准时', '细心'],
-                matchScore: 98,
-                matchReasons: ['同社区', '志愿者', '高评分'],
-              },
-            ],
-            total: 1,
-          })
-        }, 300)
-      })
-    }
-    return get<MatchResponse>('/api/tasks/match', params)
+  acceptTask: (id: string) => {
+    return new Promise<Task>((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const tasks = biz.tasks || []
+      const idx = tasks.findIndex(t => t.id === id)
+      if (idx < 0) {
+        reject(new Error('任务不存在或已删除'))
+        return
+      }
+      const task = tasks[idx]
+
+      if (task.status !== 'pending') {
+        reject(new Error('当前任务状态不可接单'))
+        return
+      }
+
+      // 1) 不能接自己发布的
+      const isSelf =
+        (task.user_phone && task.user_phone === u.phone) ||
+        (task.user_id && (task.user_id === u.id || task.user_id === u.phone))
+      if (isSelf) {
+        reject(new Error('不能接自己发布的任务'))
+        return
+      }
+
+      // 2) 一账号一任务仅能接一次
+      const alreadyAccepted =
+        (task.helper_phone && task.helper_phone === u.phone) ||
+        (task.helper_id && (task.helper_id === u.id || task.helper_id === u.phone))
+      if (alreadyAccepted) {
+        reject(new Error('您已接过此任务，不能重复接单'))
+        return
+      }
+
+      const updated: Task = {
+        ...task,
+        status: 'in_progress',
+        helper_id: u.id || u.phone,
+        helper_phone: u.phone,
+        helper: {
+          id: u.id || u.phone,
+          nickname: u.nickname || '邻里用户',
+          avatar: u.avatar || '',
+          credit_score: u.credit_score || 100,
+          is_verified: true
+        },
+        updated_at: Date.now()
+      }
+      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
+      saveBusiness(biz)
+      resolve(updated)
+    })
   },
+
+  completeTask: (id: string) => {
+    return new Promise<Task>((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const tasks = biz.tasks || []
+      const idx = tasks.findIndex(t => t.id === id)
+      if (idx < 0) {
+        reject(new Error('任务不存在'))
+        return
+      }
+      const task = tasks[idx]
+      // 发布者 / 接单人 都可以完成
+      const isPublisher =
+        (task.user_phone && task.user_phone === u.phone) ||
+        (task.user_id && (task.user_id === u.id || task.user_id === u.phone))
+      const isHelper =
+        (task.helper_phone && task.helper_phone === u.phone) ||
+        (task.helper_id && (task.helper_id === u.id || task.helper_id === u.phone))
+      if (!isPublisher && !isHelper) {
+        reject(new Error('仅发布者或接单人可以完成任务'))
+        return
+      }
+
+      const updated: Task = { ...task, status: 'completed', updated_at: Date.now() }
+      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
+      saveBusiness(biz)
+      resolve(updated)
+    })
+  },
+
+  cancelTask: (id: string) => {
+    return new Promise<Task>((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const tasks = biz.tasks || []
+      const idx = tasks.findIndex(t => t.id === id)
+      if (idx < 0) {
+        reject(new Error('任务不存在'))
+        return
+      }
+      const task = tasks[idx]
+      const isPublisher =
+        (task.user_phone && task.user_phone === u.phone) ||
+        (task.user_id && (task.user_id === u.id || task.user_id === u.phone))
+      if (!isPublisher) {
+        reject(new Error('仅发布者可以取消任务'))
+        return
+      }
+      const updated: Task = { ...task, status: 'cancelled', updated_at: Date.now() }
+      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
+      saveBusiness(biz)
+      resolve(updated)
+    })
+  },
+
+  updateTask: (id: string, data: Partial<Task>) => {
+    return new Promise<Task>((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const tasks = biz.tasks || []
+      const idx = tasks.findIndex(t => t.id === id)
+      if (idx < 0) {
+        reject(new Error('任务不存在'))
+        return
+      }
+      const task = tasks[idx]
+      if (!isOwner(task)) {
+        reject(new Error('仅发布者可以修改任务'))
+        return
+      }
+      const updated: Task = { ...task, ...data, updated_at: Date.now() }
+      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
+      saveBusiness(biz)
+      resolve(updated)
+    })
+  },
+
+  deleteTask: (id: string) => {
+    return new Promise<{ id: string }>((resolve, reject) => {
+      const u = requireLogin()
+      const biz = loadBusiness()
+      const tasks = biz.tasks || []
+      const idx = tasks.findIndex(t => t.id === id)
+      if (idx < 0) {
+        reject(new Error('任务不存在'))
+        return
+      }
+      const task = tasks[idx]
+      if (!isOwner(task)) {
+        reject(new Error('仅发布者可以删除任务'))
+        return
+      }
+      biz.tasks = [...tasks.slice(0, idx), ...tasks.slice(idx + 1)]
+      saveBusiness(biz)
+      resolve({ id })
+    })
+  },
+
+  getMyTasks: () => {
+    return new Promise<{
+      published: Task[]
+      accepted: Task[]
+      all: Task[]
+      stats: { published: number; accepted: number; total: number }
+    }>((resolve) => {
+      setTimeout(() => {
+        const biz = loadBusiness()
+        const u = getCurrentUser()
+        let published: Task[] = []
+        let accepted: Task[] = []
+
+        if (u) {
+          published = (biz.tasks || []).filter(t =>
+            (t.user_phone && t.user_phone === u.phone) ||
+            (t.user_id && (t.user_id === u.id || t.user_id === u.phone))
+          )
+          accepted = (biz.tasks || []).filter(t =>
+            (t.helper_phone && t.helper_phone === u.phone) ||
+            (t.helper_id && (t.helper_id === u.id || t.helper_id === u.phone))
+          )
+        }
+        published = published.slice().sort((a, b) => b.created_at - a.created_at)
+        accepted = accepted.slice().sort((a, b) => b.created_at - a.created_at)
+
+        resolve({
+          published, accepted,
+          all: [...published, ...accepted],
+          stats: { published: published.length, accepted: accepted.length, total: published.length + accepted.length }
+        })
+      }, 150)
+    })
+  }
 }
-
-

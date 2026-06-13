@@ -130,7 +130,6 @@ import { ref, computed } from 'vue'
 import { navigateTo, navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { tasksApi } from '../../utils/api'
-import { getCurrentUser } from '../../utils/storage'
 
 const statusBarHeight = ref(20)
 
@@ -141,7 +140,7 @@ const categories = [
   { value: 'companionship', label: '陪护', icon: '👥' },
   { value: 'pet', label: '宠物', icon: '🐕' },
   { value: 'child', label: '儿童', icon: '👶' },
-  { value: 'other', label: '其他', icon: '📝' },
+  { value: 'other', label: '其他', icon: '📝' }
 ]
 
 const form = ref({
@@ -150,15 +149,13 @@ const form = ref({
   category: 'delivery',
   location: '',
   reward: 0,
-  enableAI: true,
+  enableAI: true
 })
 
 const canSubmit = computed(() => {
-  return (
-    form.value.title.trim().length >= 2 &&
-    form.value.description.trim().length >= 5 &&
-    form.value.location.trim().length > 0
-  )
+  return form.value.title.trim().length >= 2 &&
+         form.value.description.trim().length >= 5 &&
+         form.value.location.trim().length > 0
 })
 
 const goBack = () => {
@@ -168,9 +165,9 @@ const goBack = () => {
 const submitTask = async () => {
   if (!canSubmit.value) {
     if (form.value.title.trim().length < 2) {
-      toastInfo('请输入任务标题（至少2个字）')
+      toastInfo('请输入任务标题（至少 2 个字）')
     } else if (form.value.description.trim().length < 5) {
-      toastInfo('请详细描述任务内容（至少5个字）')
+      toastInfo('请详细描述任务内容（至少 5 个字）')
     } else if (!form.value.location.trim()) {
       toastInfo('请输入服务地点')
     } else {
@@ -179,24 +176,22 @@ const submitTask = async () => {
     return
   }
 
-  const u = getCurrentUser()
   try {
-    // 通过统一 API 层创建任务（自动按当前用户手机号隔离保存）
     await tasksApi.createTask({
       title: form.value.title.trim(),
       description: form.value.description.trim(),
-      category: form.value.category as any,
+      category: form.value.category,
       location: form.value.location.trim(),
-      reward: Number(form.value.reward) || 0,
+      reward: Number(form.value.reward) || 0
     })
     toastSuccess('任务发布成功')
     setTimeout(() => {
       navigateTo('/pages/ai-helper/index')
-    }, 1000)
-  } catch (e) {
-    console.error('[publish] 发布任务失败:', e)
-    toastSuccess('任务发布成功')
-    setTimeout(() => navigateTo('/pages/ai-helper/index'), 1000)
+    }, 800)
+  } catch (e: any) {
+    const msg = e?.message || '发布失败，请稍后重试'
+    toastInfo(msg)
+    console.error('[ai-helper/publish] createTask 失败:', e)
   }
 }
 </script>

@@ -250,7 +250,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuth } from '../../store/index'
 import { userApi, tasksApi } from '../../utils/api'
-import { navigateTo } from '../../utils/router'
+import { navigateTo, getUserStorageKey } from '../../utils/router'
 import { toastInfo } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
 
@@ -259,9 +259,22 @@ const statusBarHeight = ref(20)
 const loading = ref(false)
 const hasUnreadNotification = ref(true)
 
+const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
+const MY_ACCEPTED_TASKS_KEY = 'ai_helper_my_accepted_tasks'
+
 const taskStats = ref({
-  published: { all: 0, pending: 0, in_progress: 0, completed: 0 },
-  accepted: { all: 0, pending: 0, in_progress: 0, completed: 0 },
+  published: {
+    all: 0,
+    pending: 0,
+    in_progress: 0,
+    completed: 0
+  },
+  accepted: {
+    all: 0,
+    pending: 0,
+    in_progress: 0,
+    completed: 0
+  }
 })
 
 const getRoleName = (role: string) => {
@@ -290,23 +303,25 @@ const loadUserProfile = async () => {
 
 const loadTaskStats = async () => {
   try {
-    // 通过统一 API 层获取我的任务（数据按当前用户手机号隔离）
-    const res: any = await tasksApi.getMyTasks()
-    const stats = res?.stats || { published: { all: 0, pending: 0, in_progress: 0, completed: 0 }, accepted: { all: 0, pending: 0, in_progress: 0, completed: 0 } }
-    taskStats.value = {
-      published: {
-        all: stats.published?.all || 0,
-        pending: stats.published?.pending || 0,
-        in_progress: stats.published?.in_progress || stats.published?.ongoing || 0,
-        completed: stats.published?.completed || 0,
-      },
-      accepted: {
-        all: stats.accepted?.all || 0,
-        pending: stats.accepted?.pending || 0,
-        in_progress: stats.accepted?.in_progress || stats.accepted?.ongoing || 0,
-        completed: stats.accepted?.completed || 0,
-      },
+    const result = await tasksApi.getMyTasks()
+    const myPublished = result.published || []
+    const myAccepted = result.accepted || []
+
+    const published = {
+      all: myPublished.length,
+      pending: myPublished.filter((t: any) => t.status === 'pending' || t.status === 'open').length,
+      in_progress: myPublished.filter((t: any) => t.status === 'in_progress' || t.status === 'ongoing').length,
+      completed: myPublished.filter((t: any) => t.status === 'completed' || t.status === 'pending_confirm').length
     }
+
+    const accepted = {
+      all: myAccepted.length,
+      pending: myAccepted.filter((t: any) => t.status === 'pending' || t.status === 'open').length,
+      in_progress: myAccepted.filter((t: any) => t.status === 'in_progress' || t.status === 'ongoing').length,
+      completed: myAccepted.filter((t: any) => t.status === 'completed' || t.status === 'pending_confirm').length
+    }
+
+    taskStats.value = { published, accepted }
   } catch (error) {
     console.error('加载任务统计失败:', error)
   }

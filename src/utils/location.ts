@@ -479,25 +479,41 @@ async function nominatimReverseGeocode(
   lat: number,
   lng: number
 ): Promise<{ city: string; district: string; address: string }> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 6000)  // 6 秒超时 — 拿不到地址就走兜底
   try {
     const url =
       'https://nominatim.openstreetmap.org/reverse?format=json&accept-language=zh-CN' +
       `&lat=${lat}&lon=${lng}&zoom=14`
-    const resp = await fetch(url, { headers: { 'User-Agent': 'LinLiCommunity/1.0' } })
+    const resp = await fetch(url, { signal: controller.signal })
+    clearTimeout(timeoutId)
     if (!resp.ok) {
+      console.warn('[location][Nominatim] HTTP 错误:', resp.status)
       return { city: '', district: '', address: '' }
     }
-    const data = await resp.json()
+    // 容错：响应可能不是合法 JSON（Nominatim 429/503 会返回 HTML）
+    const text = await resp.text()
+    let data: any
+    try {
+      data = JSON.parse(text)
+    } catch (jsonErr) {
+      console.warn('[location][Nominatim] 响应非 JSON，已跳过')
+      return { city: '', district: '', address: '' }
+    }
     const addr = data.address || {}
-    // OSM 对中文城市的返回字段差异较大，尝试按优先级收集
     const city =
       addr.city || addr.town || addr.municipality || addr.village || addr.county ||
       addr.state || addr.state_district || ''
     const district = addr.suburb || addr.neighbourhood || addr.district || addr.quarter || ''
     const address = data.display_name || `${city} ${district}`
     return { city, district, address }
-  } catch (e) {
-    console.warn('[location] Nominatim 逆地理编码失败：', e)
+  } catch (e: any) {
+    clearTimeout(timeoutId)
+    if (e?.name === 'AbortError') {
+      console.warn('[location][Nominatim] 6 秒超时，跳过逆地理编码')
+    } else {
+      console.warn('[location][Nominatim] 逆地理编码失败：', e)
+    }
     return { city: '', district: '', address: '' }
   }
 }

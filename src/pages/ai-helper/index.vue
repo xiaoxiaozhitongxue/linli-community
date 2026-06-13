@@ -216,33 +216,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { navigateTo } from '../../utils/router'
-import { toastSuccess } from '../../utils/toast'
-import { tasksApi } from '../../utils/api'
-import { getCurrentUser } from '../../utils/storage'
+import { toastSuccess, toastInfo } from '../../utils/toast'
+import { tasksApi, type Task } from '../../utils/api'
+
+const STORAGE_KEY = 'ai_helper_tasks'
 
 const statusBarHeight = ref(20)
-const selectedCategory = ref('all')
-const statusFilter = ref('open')
+const selectedCategory = ref<string>('all')
+const statusFilter = ref<string>('open')  // open | all | in_progress | completed
 
-// 前端 UI 展示用的任务对象（包含 type / creatorName 等）
-interface UITask {
-  id: string
-  type: string
-  title: string
-  description: string
-  reward: number
-  distance: number
-  responses: number
-  creatorName: string
-  creatorAvatar: string
-  createTime: string | number
-  status: 'open' | 'ongoing' | 'completed' | 'pending' | string
-  creatorRating: number
-  creatorTasks: number
-  location: string
-}
+const tasks = ref<any[]>([])
 
-// 规范化状态值
+// 规范化状态值：后端可能用 pending/in_progress/completed 等
 function normalizeStatus(status: string): string {
   if (!status) return 'open'
   const s = String(status).toLowerCase()
@@ -252,38 +237,51 @@ function normalizeStatus(status: string): string {
   return 'open'
 }
 
-// 把后端 API 任务对象映射到前端 UI 字段
-function mapApiTaskToUI(t: any): UITask {
-  const u = getCurrentUser()
-  const creator = t.creator || {}
+// 尝试从后端获取任务列表 → 统一通过 tasksApi 读取
+async function reloadTasks() {
+  try {
+    const result = await tasksApi.getTasks()
+    tasks.value = (result.items || []).map(mapApiTask)
+  } catch (e: any) {
+    console.error('[ai-helper/index] 任务列表加载失败：', e?.message || e)
+  }
+}
+
+// 把后端 API 返回的任务对象映射到前端 UI 字段
+function mapApiTask(t: any): any {
   return {
     id: t.id,
     type: t.category || t.type || 'other',
     title: t.title || '任务详情',
     description: t.description || '',
     reward: Number(t.reward) || 0,
-    distance: t.distance || Math.floor(Math.random() * 500) + 50,
+    distance: t.distance || 0,
     responses: t.responses || 0,
-    creatorName: creator.nickname || creator.name || t.creatorName || '邻里用户',
-    creatorAvatar: creator.avatar || t.creatorAvatar || 'https://i.pravatar.cc/100?img=8',
+    creatorName: t.creator?.nickname || t.creatorName || '邻居',
+    creatorAvatar: t.creator?.avatar || t.creatorAvatar || '',
     createTime: t.created_at || t.createTime || Date.now(),
     status: normalizeStatus(t.status),
-    creatorRating: creator.credit_score
-      ? Number((creator.credit_score / 20).toFixed(1))
-      : t.creatorRating || 4.8,
-    creatorTasks: creator.completed_count || t.creatorTasks || (u ? 10 : 0),
-    location: t.location || '阳光社区',
+    creatorRating: t.creator?.credit_score || t.creatorRating || 4.8,
+    creatorTasks: t.creator?.completed_count || t.creatorTasks || 0,
+    location: t.location || ''
   }
 }
 
-const tasks = ref<UITask[]>([])
+// 尝试从后端获取任务列表（保留向后兼容：直接 fetch 作为 fallback）
+async function fetchTasksFromApi(): Promise<any[] | null> {
+  return null
+}
 
+// 统计数据
 const openTaskCount = computed(() => {
-  return tasks.value.filter((t) => t.status === 'open').length
+  return tasks.value.filter(t => t.status === 'open').length
 })
 
 const todayCount = computed(() => {
-  return tasks.value.filter((t) => t.status === 'open' || t.status === 'ongoing').length
+  // 简化统计：今天发布的任务数
+  return tasks.value.filter(t => {
+    return t.status === 'open' || t.status === 'ongoing'
+  }).length
 })
 
 // 获取分类名称
@@ -294,60 +292,72 @@ const getCategoryName = (category: string) => {
     shopping: '买菜',
     pet: '遛狗',
     child: '接孩子',
-    other: '其他',
+    other: '其他'
   }
   return map[category] || ''
 }
 
-// 获取某分类的待接单数量
+// 获取某个分类的待接单任务数量
 const getCategoryOpenCount = (category: string) => {
-  if (category === 'all') return openTaskCount.value
-  return tasks.value.filter((t) => t.type === category && t.status === 'open').length
+  if (category === 'all') {
+    return openTaskCount.value
+  }
+  return tasks.value.filter(t => 
+    t.type === category && t.status === 'open'
+  ).length
 }
 
+// 筛选任务
 const filteredTasks = computed(() => {
   let result = [...tasks.value]
+  
+  // 按分类筛选
   if (selectedCategory.value !== 'all') {
-    result = result.filter((t) => t.type === selectedCategory.value)
+    result = result.filter(t => t.type === selectedCategory.value)
   }
+  
+  // 按状态筛选（默认只显示待接单）
   if (statusFilter.value !== 'all') {
-    result = result.filter((t) => t.status === statusFilter.value)
+    result = result.filter(t => t.status === statusFilter.value)
   }
+  
+  // 按时间排序（最新的在前）
   result.sort((a, b) => {
-    const ta = typeof a.createTime === 'number' ? a.createTime : new Date(a.createTime).getTime()
-    const tb = typeof b.createTime === 'number' ? b.createTime : new Date(b.createTime).getTime()
-    return tb - ta
+    const timeA = new Date(a.createTime).getTime() || 0
+    const timeB = new Date(b.createTime).getTime() || 0
+    return timeB - timeA
   })
+  
   return result
 })
 
+// 选择分类
 const selectCategory = (category: string) => {
   selectedCategory.value = category
 }
 
+// 设置状态筛选
 const setStatusFilter = (status: string) => {
   statusFilter.value = status
 }
 
-const goToTaskDetail = (task: UITask) => {
+const goToTaskDetail = (task: any) => {
   navigateTo(`/pages/ai-helper/detail?id=${task.id}`)
 }
 
-const respondToTask = async (task: UITask, event: Event) => {
+const respondToTask = async (task: any, event: Event) => {
   event.stopPropagation()
-  if (task.status !== 'open') return
   if (!window.confirm('确定要接下这个任务吗？')) return
-
-  // 通过统一 API 层接单（自动按当前用户手机号隔离保存）
-  await tasksApi.acceptTask(task.id)
-
-  // 更新本地 UI 状态
-  const idx = tasks.value.findIndex((t) => t.id === task.id)
-  if (idx !== -1) {
-    tasks.value[idx].status = 'ongoing'
-    tasks.value[idx].responses++
+  try {
+    await tasksApi.acceptTask(task.id)
+    toastSuccess('接单成功')
+    // 重新加载任务列表（本地数据已更新），前端状态立即更新
+    await reloadTasks()
+  } catch (e: any) {
+    const msg = e?.message || '接单失败，请稍后重试'
+    toastInfo(msg)
+    console.error('[ai-helper/index] acceptTask 失败:', e)
   }
-  toastSuccess('接单成功')
 }
 
 const getTypeName = (type: string) => {
@@ -356,7 +366,7 @@ const getTypeName = (type: string) => {
     shopping: '买菜',
     pet: '遛狗',
     child: '接孩子',
-    other: '其他',
+    other: '其他'
   }
   return map[type] || type
 }
@@ -366,20 +376,14 @@ const getStatusName = (status: string) => {
     open: '待接单',
     ongoing: '进行中',
     pending_confirm: '待确认',
-    completed: '已完成',
+    completed: '已完成'
   }
   return map[status] || status
 }
 
 onMounted(async () => {
-  try {
-    const res = await tasksApi.getTasks()
-    const list: any[] = (res && (res as any).items) || (Array.isArray(res) ? (res as any) : [])
-    tasks.value = list.map(mapApiTaskToUI)
-  } catch (e) {
-    console.error('[ai-helper] 加载任务失败:', e)
-    tasks.value = []
-  }
+  // 统一通过 tasksApi.getTasks 读取，支持账号隔离与状态筛选
+  await reloadTasks()
 })
 </script>
 

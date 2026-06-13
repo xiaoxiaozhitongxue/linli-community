@@ -264,6 +264,63 @@ const statusBarHeight = ref(20)
 const communityName = ref('点击定位')
 const locating = ref(false)
 const locationResult = ref<LocationResult | null>(null)
+let lastAutoLocateAt = 0          // 上次自动定位的时间戳（用于去抖）
+let hardResetTimer: any = null    // 组件级硬重置（20s 还没完成则强制恢复）
+let pageHiddenAt = 0              // visibilitychange 时记住页面什么时候隐藏的
+
+async function chooseLocation(opts: { auto?: boolean } = {}) {
+  // 1) 已经在定位中：直接 skip（防止重复触发）
+  if (locating.value) return
+
+  // 2) 自动定位的 60 秒去抖
+  const now = Date.now()
+  if (opts.auto && now - lastAutoLocateAt < 60 * 1000) {
+    return
+  }
+  lastAutoLocateAt = now
+
+  locating.value = true
+
+  // 3) 组件级 20 秒硬重置：
+  //    如果底层任何一个 Promise 都永远不 resolve，这里兜底强制把 locating 复位，
+  //    并保留当前的 communityName（不回退成"点击定位"）
+  if (hardResetTimer) clearTimeout(hardResetTimer)
+  hardResetTimer = setTimeout(() => {
+    console.warn('[index] 定位超过 20 秒仍未返回 — 已强制复位')
+    if (locating.value) {
+      locating.value = false
+      // 没有定位到新地址的情况下：如果之前有地址就保留，否则显示"点击定位"
+      if (!communityName.value || communityName.value === '点击定位') {
+        communityName.value = '点击定位'
+      }
+      toastInfo('定位超时，稍后点击地址栏重试')
+    }
+  }, 20000)
+
+  try {
+    const result = await getLocation({ forceRefresh: true })
+    locationResult.value = result
+    // 展示策略：优先展示真实城市·区域；注册社区仅在拿不到地理编码时作为兜底
+    const display = pickDisplayCommunity(result, user.value?.community)
+    communityName.value = display
+    const place = (result.city && result.district)
+      ? `${result.city} ${result.district}`
+      : (result.address || display)
+    toastSuccess(`已定位到 ${place}`)
+    console.log('[index] chooseLocation 完成, result =', result, 'display =', display)
+  } catch (err: any) {
+    // 失败不覆盖已有的社区名 — 用户可能之前已经定位成功过
+    const msg = err?.message || '定位失败，请稍后重试'
+    console.warn('[index] 定位失败:', err)
+    if (!opts.auto) toastInfo(msg)
+  } finally {
+    locating.value = false
+    if (hardResetTimer) {
+      clearTimeout(hardResetTimer)
+      hardResetTimer = null
+    }
+  }
+}
 const refreshing = ref(false)
 const loading = ref(false)
 const loadingMore = ref(false)
@@ -625,29 +682,6 @@ function getActivityCoverBg(category: string) {
   return map[category] || '#F5F5F0'
 }
 
-async function chooseLocation() {
-  if (locating.value) return
-  locating.value = true
-  try {
-    const result = await getLocation({ forceRefresh: true })
-    locationResult.value = result
-    // 展示策略：优先展示真实城市·区域；注册社区仅在拿不到地理编码时作为兜底
-    const display = pickDisplayCommunity(result, user.value?.community)
-    communityName.value = display
-    const place = (result.city && result.district)
-      ? `${result.city} ${result.district}`
-      : (result.address || display)
-    toastSuccess(`已定位到 ${place}`)
-    console.log('[index] chooseLocation 完成, user =', user.value, 'result =', result, 'display =', display)
-  } catch (err: any) {
-    const msg = err?.message || '定位失败，请稍后重试'
-    toastInfo(msg)
-    console.error('[index] 定位失败:', err)
-  } finally {
-    locating.value = false
-  }
-}
-
 function goToSearch() {
   navigateTo('/pages/search/index')
 }
@@ -742,26 +776,37 @@ onMounted(() => {
 
   // 每次进入首页自动定位一次（稍延迟，等首屏资源加载完毕后再触发）
   const runAutoLocate = () => {
-    if (locating.value) return
-    chooseLocation().catch((err) => {
+    chooseLocation({ auto: true }).catch((err) => {
       console.warn('[index] 自动定位出错（非阻塞错误）:', err)
     })
   }
   const autoTimer = setTimeout(runAutoLocate, 600)
 
-  // 页面切到可见（从其他 tab/app 切回来）时重新定位
+  // visibilitychange：页面从不可见切回可见时定位
+  // — 只有页面隐藏超过 30 秒才重新定位
+  // — 且遵守 60s 全局去抖
+  // — 避免每次切回首页时触发新地址
   const onVisibility = () => {
+    if (document.visibilityState === 'hidden') {
+      pageHiddenAt = Date.now()
+      return
+    }
     if (document.visibilityState === 'visible') {
-      // 稍微延迟一下避免与 onMounted 重复触发
-      clearTimeout(autoTimer)
-      setTimeout(runAutoLocate, 400)
+      if (pageHiddenAt > 0 && (Date.now() - pageHiddenAt > 30 * 1000)) {
+        setTimeout(runAutoLocate, 300)
+      }
     }
   }
   document.addEventListener('visibilitychange', onVisibility)
 
   // 记录清理标记
   ;(window as any).__indexCleanup = () => {
+    clearTimeout(autoTimer)
     document.removeEventListener('visibilitychange', onVisibility)
+    if (hardResetTimer) {
+      clearTimeout(hardResetTimer)
+      hardResetTimer = null
+    }
   }
 })
 

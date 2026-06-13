@@ -123,68 +123,62 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { navigateTo, navigateBackSmart } from '../../utils/router'
-import { toastSuccess } from '../../utils/toast'
+import { toastSuccess, toastInfo } from '../../utils/toast'
 import { tasksApi } from '../../utils/api'
 
 const statusBarHeight = ref(20)
 const currentTab = ref('published')
 const statusFilter = ref('all')
+const loading = ref(false)
 
 const publishedTasks = ref<any[]>([])
 const acceptedTasks = ref<any[]>([])
 
-// 统一加载：通过 tasksApi 获取当前用户（按手机号隔离）的所有任务
+function mapTask(t: any): any {
+  return {
+    id: t.id,
+    type: t.category || t.type || 'other',
+    title: t.title || '任务详情',
+    description: t.description || '',
+    reward: Number(t.reward) || 0,
+    location: t.location || '',
+    status: normalizeStatus(t.status),
+    updateTime: t.updated_at || t.created_at || Date.now()
+  }
+}
+
+function normalizeStatus(status: string): string {
+  if (!status) return 'open'
+  const s = String(status).toLowerCase()
+  if (s === 'open' || s === 'pending') return 'open'
+  if (s === 'in_progress' || s === 'ongoing') return 'ongoing'
+  if (s === 'completed' || s === 'done') return 'completed'
+  if (s === 'cancelled' || s === 'canceled') return 'cancelled'
+  return status
+}
+
 async function loadTasks() {
+  loading.value = true
   try {
-    const res: any = await tasksApi.getMyTasks()
-    const items: any[] = res?.items || []
-    const currentUser: any = await import('../../utils/storage').then(
-      (m) => (m as any).getCurrentUser?.() || null
-    )
-    const uid = currentUser?.id || ''
-
-    // 根据 user_id 与 helper_id 分区为我发布的 / 我接受的
-    const published: any[] = []
-    const accepted: any[] = []
-
-    items.forEach((t) => {
-      if (t.user_id === uid) published.push(t)
-      if (t.helper_id === uid) accepted.push(t)
-    })
-
-    // 如果 API 返回没有细分（为空），则再通过 items 自身的字段过滤兜底
-    if (published.length === 0 && accepted.length === 0) {
-      items.forEach((t) => {
-        if (t.user_id && t.user_id !== '') published.push(t)
-        else if (t.helper_id && t.helper_id !== '') accepted.push(t)
-      })
-    }
-
-    publishedTasks.value = published
-    acceptedTasks.value = accepted
-  } catch (e) {
-    console.error('[my-tasks] 加载任务失败:', e)
-    publishedTasks.value = []
-    acceptedTasks.value = []
+    const result = await tasksApi.getMyTasks()
+    publishedTasks.value = (result.published || []).map(mapTask)
+    acceptedTasks.value = (result.accepted || []).map(mapTask)
+  } catch (e: any) {
+    console.error('[profile/my-tasks] 加载任务失败:', e)
+    toastInfo('加载任务失败')
+  } finally {
+    loading.value = false
   }
 }
 
 const currentTasks = computed(() => {
-  return currentTab.value === 'published' ? publishedTasks.value : acceptedTasks.value
+  if (currentTab.value === 'published') return publishedTasks.value
+  return acceptedTasks.value
 })
 
 const filteredTasks = computed(() => {
   if (statusFilter.value === 'all') return currentTasks.value
-  // 同时兼容多种状态字段表示方式
-  return currentTasks.value.filter((t) => {
-    const s = (t.status || '').toLowerCase()
-    const target = statusFilter.value.toLowerCase()
-    if (s === target) return true
-    // 兼容: open == pending, ongoing == in_progress
-    if (target === 'open' && (s === 'open' || s === 'pending')) return true
-    if (target === 'ongoing' && (s === 'ongoing' || s === 'in_progress')) return true
-    return false
-  })
+  return currentTasks.value.filter((t: any) => t.status === statusFilter.value)
 })
 
 const getEmptyText = () => {
@@ -203,58 +197,65 @@ const getCategoryName = (category: string) => {
     delivery: '快递',
     pet: '宠物',
     child: '儿童',
-    help: '帮忙',
-    companionship: '陪护',
-    other: '其他',
+    other: '其他'
   }
-  return map[category] || map[(category || '').toLowerCase()] || '其他'
+  return map[category] || '其他'
 }
 
 const getStatusName = (status: string) => {
   const map: Record<string, string> = {
     open: '待接单',
-    pending: '待接单',
     ongoing: '进行中',
-    in_progress: '进行中',
     pending_confirm: '待确认',
     completed: '已完成',
-    cancelled: '已取消',
+    cancelled: '已取消'
   }
-  return map[status] || status || '未处理'
+  return map[status] || status
 }
 
 const switchTab = (tab: string) => {
   currentTab.value = tab
   statusFilter.value = 'all'
+  loadTasks()
 }
 
-// 接单人完成任务 - 通过 tasksApi 持久化
+// 接单人完成任务
 const completeTask = async (task: any) => {
   if (!window.confirm('确定要提交完成申请吗？')) return
   try {
     await tasksApi.completeTask(task.id)
-  } catch (e) {
-    console.error('[my-tasks] completeTask 失败:', e)
+    toastSuccess('已提交完成申请')
+    await loadTasks()
+  } catch (e: any) {
+    toastInfo(e?.message || '操作失败，请稍后重试')
+    console.error('[profile/my-tasks] completeTask 失败:', e)
   }
-  await loadTasks()
-  toastSuccess('已提交完成申请，等待发布人确认')
 }
 
-// 发布人确认完成 - 通过 tasksApi 持久化
+// 发布人确认完成
 const confirmTask = async (task: any) => {
   if (!window.confirm('确认任务已完成吗？')) return
   try {
     await tasksApi.completeTask(task.id)
-  } catch (e) {
-    console.error('[my-tasks] confirmTask 失败:', e)
+    toastSuccess('任务已完成！感谢互帮互助')
+    await loadTasks()
+  } catch (e: any) {
+    toastInfo(e?.message || '操作失败，请稍后重试')
+    console.error('[profile/my-tasks] confirmTask 失败:', e)
   }
-  await loadTasks()
-  toastSuccess('任务已完成！感谢互帮互助')
 }
 
-const goBack = () => navigateBackSmart()
-const goToTaskDetail = (id: string) => navigateTo(`/pages/ai-helper/detail?id=${id}`)
-const goToHelperPage = () => navigateTo('/pages/ai-helper/index')
+const goBack = () => {
+  navigateBackSmart()
+}
+
+const goToTaskDetail = (id: string) => {
+  navigateTo(`/pages/ai-helper/detail?id=${id}`)
+}
+
+const goToHelperPage = () => {
+  navigateTo('/pages/ai-helper/index')
+}
 
 onMounted(async () => {
   statusBarHeight.value = 20
