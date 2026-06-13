@@ -304,21 +304,21 @@ const loadUserProfile = async () => {
 const loadTaskStats = async () => {
   try {
     const result = await tasksApi.getMyTasks()
-    const myCreatedTasks = result.published || []
-    const myAcceptedTasks = result.accepted || []
+    const myPublished = result.published || []
+    const myAccepted = result.accepted || []
 
     const published = {
-      all: myCreatedTasks.length,
-      pending: myCreatedTasks.filter((t: any) => t.status === 'pending' || t.status === 'open').length,
-      in_progress: myCreatedTasks.filter((t: any) => t.status === 'in_progress' || t.status === 'ongoing').length,
-      completed: myCreatedTasks.filter((t: any) => t.status === 'completed' || t.status === 'pending_confirm').length
+      all: myPublished.length,
+      pending: myPublished.filter((t: any) => t.status === 'pending' || t.status === 'open').length,
+      in_progress: myPublished.filter((t: any) => t.status === 'in_progress' || t.status === 'ongoing').length,
+      completed: myPublished.filter((t: any) => t.status === 'completed' || t.status === 'pending_confirm').length
     }
 
     const accepted = {
-      all: myAcceptedTasks.length,
-      pending: myAcceptedTasks.filter((t: any) => t.status === 'pending' || t.status === 'open').length,
-      in_progress: myAcceptedTasks.filter((t: any) => t.status === 'in_progress' || t.status === 'ongoing').length,
-      completed: myAcceptedTasks.filter((t: any) => t.status === 'completed' || t.status === 'pending_confirm').length
+      all: myAccepted.length,
+      pending: myAccepted.filter((t: any) => t.status === 'pending' || t.status === 'open').length,
+      in_progress: myAccepted.filter((t: any) => t.status === 'in_progress' || t.status === 'ongoing').length,
+      completed: myAccepted.filter((t: any) => t.status === 'completed' || t.status === 'pending_confirm').length
     }
 
     taskStats.value = { published, accepted }

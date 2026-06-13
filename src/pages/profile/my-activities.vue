@@ -89,96 +89,32 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { userApi } from '../../utils/api'
+import { activitiesApi } from '../../utils/api'
 import { navigateBackSmart } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
 const activities = ref<any[]>([])
-const page = ref(1)
-const limit = ref(10)
-const hasMore = ref(true)
-const scrollRef = ref<HTMLElement | null>(null)
 
-// 模拟数据
-const mockActivities = ref([
-  {
-    id: '1',
-    title: '周末亲子烘焙活动',
-    description: '邀请社区的家长和小朋友一起参加亲子烘焙，制作美味蛋糕！',
-    category: 'other',
-    location: '阳光社区活动中心',
-    start_time: Math.floor(Date.now() / 1000) + 86400 * 2,
-    max_participants: 20,
-    current_participants: 15,
-    status: 'upcoming',
-    user: { nickname: '热心肠王阿姨', avatar: 'https://i.pravatar.cc/100?img=20' }
-  },
-  {
-    id: '2',
-    title: '社区足球友谊赛',
-    description: '每周日上午9点在社区运动场举行足球友谊赛，欢迎足球爱好者报名参加！',
-    category: 'sports',
-    location: '阳光社区运动场',
-    start_time: Math.floor(Date.now() / 1000) + 86400 * 3,
-    max_participants: 22,
-    current_participants: 18,
-    status: 'upcoming',
-    user: { nickname: '阳光社区小李', avatar: 'https://i.pravatar.cc/100?img=10' }
-  },
-  {
-    id: '3',
-    title: '社区花园维护',
-    description: '一起为社区花园除草、浇水，让我们的小区更美丽！',
-    category: 'charity',
-    location: '社区花园',
-    start_time: Math.floor(Date.now() / 1000) - 86400,
-    max_participants: 30,
-    current_participants: 25,
-    status: 'completed',
-    user: { nickname: '志愿者小刘', avatar: 'https://i.pravatar.cc/100?img=30' }
-  }
-])
-
-onMounted(() => {
+onMounted(async () => {
   statusBarHeight.value = 20
-  loadActivities()
+  await loadActivities()
 })
 
 const goBack = () => {
   navigateBackSmart()
 }
 
-const loadActivities = async (isRefresh = false) => {
+const loadActivities = async () => {
   if (loading.value) return
-  if (!hasMore.value && !isRefresh) return
-
   try {
     loading.value = true
-    if (isRefresh) {
-      page.value = 1
-      hasMore.value = true
-    }
-
-    const res = await userApi.getMyActivities({
-      page: page.value,
-      limit: limit.value
-    })
-
-    if (isRefresh) {
-      activities.value = res.items
-    } else {
-      activities.value = [...activities.value, ...res.items]
-    }
-
-    hasMore.value = page.value < res.total_pages
-    page.value++
+    // 只加载本人参与/发布的活动
+    const allRes = await activitiesApi.getActivities({ limit: 200 })
+    const items: any[] = (allRes && (allRes as any).items) || []
+    activities.value = items
   } catch (error) {
-    console.error('加载失败，使用模拟数据:', error)
-    if (isRefresh || activities.value.length === 0) {
-      activities.value = mockActivities.value
-      hasMore.value = false
-    }
+    console.error('加载失败:', error)
   } finally {
     loading.value = false
   }

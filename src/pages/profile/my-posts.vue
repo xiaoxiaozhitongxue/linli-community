@@ -88,58 +88,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { userApi } from '../../utils/api'
-import { navigateBackSmart } from '../../utils/router'
-import { navigateTo } from '../../utils/router'
+import { postsApi } from '../../utils/api'
+import { navigateBackSmart, navigateTo } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
-const refreshing = ref(false)
 const posts = ref<any[]>([])
-const page = ref(1)
-const limit = ref(10)
-const hasMore = ref(true)
 const scrollRef = ref<HTMLElement | null>(null)
 
-// 模拟数据（当API不可用时使用）
-const mockPosts = ref([
-  {
-    id: '1',
-    user: { nickname: '阳光社区小李', avatar: 'https://i.pravatar.cc/100?img=10' },
-    content: '今天天气真好，带孩子在社区花园散步，发现花园里的花都开了！大家有空也出来晒晒太阳呀～',
-    images: ['https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400&h=400&fit=crop'],
-    like_count: 42,
-    comment_count: 8,
-    visibility: 'public',
-    created_at: Math.floor(Date.now() / 1000) - 3600
-  },
-  {
-    id: '2',
-    user: { nickname: '热心肠王阿姨', avatar: 'https://i.pravatar.cc/100?img=20' },
-    content: '本周六上午9点在社区活动中心将举行老年人健康义诊活动，欢迎各位邻居参加！',
-    like_count: 67,
-    comment_count: 15,
-    visibility: 'community',
-    created_at: Math.floor(Date.now() / 1000) - 86400
-  },
-  {
-    id: '3',
-    user: { nickname: '创业者张先生', avatar: 'https://i.pravatar.cc/100?img=30' },
-    content: '我的社区咖啡店新品试营业啦！本周六周日全场8折，欢迎邻居们来品尝！',
-    images: [
-      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop',
-      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=400&fit=crop'
-    ],
-    like_count: 89,
-    comment_count: 23,
-    visibility: 'public',
-    created_at: Math.floor(Date.now() / 1000) - 86400 * 2
-  }
-])
-
-onMounted(() => {
+onMounted(async () => {
   statusBarHeight.value = 20
-  loadPosts()
+  await loadPosts()
 })
 
 const goBack = () => {
@@ -150,40 +109,29 @@ const goPublish = () => {
   navigateTo('/pages/post/create')
 }
 
-const loadPosts = async (isRefresh = false) => {
+const loadPosts = async () => {
   if (loading.value) return
-  if (!hasMore.value && !isRefresh) return
-
   try {
     loading.value = true
-    if (isRefresh) {
-      refreshing.value = true
-      page.value = 1
-      hasMore.value = true
-    }
-
-    const res = await userApi.getMyPosts({
-      page: page.value,
-      limit: limit.value
-    })
-
-    if (isRefresh) {
-      posts.value = res.items
+    const res = await postsApi.getPosts({ page: 1, limit: 200 })
+    const items: any[] = (res && (res as any).items) || []
+    // 过滤：只显示我本人的帖子
+    const userPhone = localStorage.getItem('userInfo')
+      ? (JSON.parse(localStorage.getItem('userInfo') || '{}').phone || null)
+      : null
+    if (userPhone) {
+      posts.value = items.filter((p: any) =>
+        (p as any).user_phone === userPhone ||
+        (p.user && p.user.phone === userPhone) ||
+        (p.user_id && (p.user_id === userPhone))
+      )
     } else {
-      posts.value = [...posts.value, ...res.items]
+      posts.value = items
     }
-
-    hasMore.value = page.value < res.total_pages
-    page.value++
   } catch (error) {
-    console.error('加载失败，使用模拟数据:', error)
-    if (isRefresh || posts.value.length === 0) {
-      posts.value = mockPosts.value
-      hasMore.value = false
-    }
+    console.error('加载失败:', error)
   } finally {
     loading.value = false
-    refreshing.value = false
   }
 }
 
