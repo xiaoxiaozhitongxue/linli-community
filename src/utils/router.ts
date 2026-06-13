@@ -129,11 +129,19 @@ export function clearPageHistory() {
 export function navigateTo(url: string, query?: Record<string, any>) {
   const router = ensureRouter()
   if (router) {
-    router.push({ path: url, query }).catch((err: any) => {
-      if (err.name !== 'NavigationDuplicated' && err.name !== 'NavigationCancelled') {
-        console.error('导航失败', err)
-      }
-    })
+    if (query) {
+      router.push({ path: url, query }).catch((err: any) => {
+        if (err.name !== 'NavigationDuplicated' && err.name !== 'NavigationCancelled') {
+          console.error('导航失败', err)
+        }
+      })
+    } else {
+      router.push(url).catch((err: any) => {
+        if (err.name !== 'NavigationDuplicated' && err.name !== 'NavigationCancelled') {
+          console.error('导航失败', err)
+        }
+      })
+    }
   }
 }
 

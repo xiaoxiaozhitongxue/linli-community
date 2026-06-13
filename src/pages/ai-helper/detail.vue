@@ -89,15 +89,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { navigateBackSmart } from '../../utils/router'
-import { toastSuccess, toastError } from '../../utils/toast'
+import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { tasksApi, type Task } from '../../utils/api'
 
 const route = useRoute()
 const statusBarHeight = ref(20)
-const loading = ref(false)
+const loading = ref(true)
 
 interface TaskDetail {
   id: string
@@ -179,24 +179,41 @@ onMounted(async () => {
   const taskId = (route.query.id as string) || (route.query.taskId as string)
   if (!taskId) {
     toastError('缺少任务ID')
+    loading.value = false
     return
   }
+  await fetchTask(taskId)
+})
+
+async function fetchTask(id: string) {
   loading.value = true
+  task.value = null
   try {
-    const apiTask = await tasksApi.getTask(taskId)
+    const apiTask = await tasksApi.getTask(id)
     if (apiTask) {
       task.value = mapApiTaskToLocal(apiTask)
     } else {
-      // 找不到任务：不显示空状态，避免迷惑用户，提示未找到
       task.value = null
+      toastInfo('未找到该任务')
     }
   } catch (e: any) {
     console.error('[ai-helper/detail] 加载任务失败:', e)
     task.value = null
+    toastError('加载任务失败')
   } finally {
     loading.value = false
   }
-})
+}
+
+// 监听路由参数变化（当从详情页跳到另一个详情页时）
+watch(
+  () => route.query.id,
+  (newId) => {
+    if (newId) {
+      fetchTask(newId as string)
+    }
+  }
+)
 </script>
 
 <style scoped>

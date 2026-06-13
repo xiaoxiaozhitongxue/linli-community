@@ -106,18 +106,11 @@ export function isLoggedIn(): boolean {
 export function onLoginSuccess(user: User, token: string): void {
   safeSet(USER_INFO_KEY, user)
   safeSet(TOKEN_KEY, token)
-  // 首次登录时若 business_data 不存在则初始化
+  // 首次登录时若 business_data 不存在则初始化（带演示任务，让用户立刻看到可操作的内容）
   const key = getUserStorageKey(BUSINESS_KEY, user.phone)
   const existing = safeGet<any | null>(key, null)
   if (!existing) {
-    const now = Date.now()
-    safeSet(key, {
-      posts: [],
-      activities: [],
-      tasks: [],
-      created_at: now,
-      updated_at: now
-    })
+    safeSet(key, getDefaultBusiness())
   }
 }
 
@@ -281,17 +274,34 @@ function getDefaultBusiness(): BusinessData {
 export function loadBusiness(): BusinessData {
   const key = getUserStorageKey(BUSINESS_KEY)
   const raw = safeGet<BusinessData | null>(key, null)
-  if (raw && Array.isArray(raw.posts) && Array.isArray(raw.tasks) && Array.isArray(raw.activities)) {
-    // 兼容性修复：如果缺字段补默认
-    return {
-      posts: raw.posts,
-      activities: raw.activities,
-      tasks: raw.tasks,
-      created_at: raw.created_at || Date.now(),
-      updated_at: raw.updated_at || Date.now()
+  if (raw) {
+    // 合并：保留已保存的任务/帖子/活动，缺失的数组补空
+    const hasAnyData =
+      (Array.isArray(raw.tasks) && raw.tasks.length > 0) ||
+      (Array.isArray(raw.posts) && raw.posts.length > 0) ||
+      (Array.isArray(raw.activities) && raw.activities.length > 0)
+    if (hasAnyData) {
+      return {
+        posts: Array.isArray(raw.posts) ? raw.posts : [],
+        activities: Array.isArray(raw.activities) ? raw.activities : [],
+        tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
+        created_at: raw.created_at || Date.now(),
+        updated_at: raw.updated_at || Date.now()
+      }
+    }
+    // 空数据（全为空数组）：首次登录初始化，用演示数据填充
+    // 但如果是明确保存的空数据（比如用户删光了），则保持空
+    if (raw.created_at && raw.updated_at) {
+      return {
+        posts: Array.isArray(raw.posts) ? raw.posts : [],
+        activities: Array.isArray(raw.activities) ? raw.activities : [],
+        tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
+        created_at: raw.created_at,
+        updated_at: raw.updated_at
+      }
     }
   }
-  // 首次进入：返回演示数据（包含 demo 任务），但用户自己发布的内容会写入时再落盘
+  // 首次进入（无任何存储）：返回演示数据
   const demo = getDefaultBusiness()
   if (getCurrentUser()) {
     safeSet(key, demo)
