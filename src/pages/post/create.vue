@@ -856,4 +856,18 @@ async function publishPost() {
     transform: scale(1);
   }
 }
+
+@media (min-width: 1024px) {
+  .nav-header {
+    left: var(--nav-sidebar-width, 220px);
+  }
+
+  .bottom-bar {
+    left: var(--nav-sidebar-width, 220px);
+  }
+
+  .modal-overlay {
+    left: var(--nav-sidebar-width, 220px);
+  }
+}
 </style>

@@ -15,7 +15,6 @@
       >
         <span class="nav-item-icon">{{ item.icon }}</span>
         <span class="nav-item-label">{{ item.label }}</span>
-        <div v-if="isActive(item.path)" class="nav-item-indicator"></div>
       </div>
     </div>
 
@@ -92,7 +91,17 @@ function goToLogin() {
   gap: 10px;
   padding: 24px 20px 20px;
   cursor: pointer;
-  border-bottom: 1px solid var(--color-border-light);
+  position: relative;
+}
+
+.nav-brand::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-border-light) 0%, var(--color-primary-soft) 50%, var(--color-border-light) 100%);
 }
 
 .brand-emoji {
@@ -122,15 +131,36 @@ function goToLogin() {
   padding: 12px 16px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: all var(--transition-smooth);
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--color-primary-gradient);
+  border-radius: 0 3px 3px 0;
+  transition: height var(--transition-smooth);
 }
 
 .nav-item:hover {
   background: var(--hover-bg-subtle);
 }
 
+.nav-item:hover::before {
+  height: 20px;
+}
+
 .nav-item.active {
-  background: var(--color-primary-soft);
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.08) 0%, rgba(255, 138, 92, 0.12) 100%);
+}
+
+.nav-item.active::before {
+  height: 26px;
 }
 
 .nav-item-icon {
@@ -151,20 +181,19 @@ function goToLogin() {
   font-weight: var(--font-weight-semibold);
 }
 
-.nav-item-indicator {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 24px;
-  background: var(--color-primary);
-  border-radius: 0 3px 3px 0;
-}
-
 .nav-footer {
   padding: 16px;
-  border-top: 1px solid var(--color-border-light);
+  position: relative;
+}
+
+.nav-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-border-light) 0%, var(--color-primary-soft) 50%, var(--color-border-light) 100%);
 }
 
 .user-info {

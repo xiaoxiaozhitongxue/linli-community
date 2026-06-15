@@ -641,4 +641,14 @@ watch(
     transform: translateX(-50%);
   }
 }
+
+@media (min-width: 1024px) {
+  .bottom-action {
+    left: var(--nav-sidebar-width, 220px);
+    right: auto;
+    transform: none;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+}
 </style>

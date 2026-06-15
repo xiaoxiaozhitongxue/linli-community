@@ -1,0 +1,9 @@
+- [x] 活动详情页 nav-header 桌面端不重叠侧边栏
+- [x] 活动详情页 bottom-bar 桌面端不重叠侧边栏
+- [x] 任务详情页 bottom-action 桌面端不重叠侧边栏
+- [x] 发布页面 nav-header 桌面端不重叠侧边栏
+- [x] 发布页面 bottom-bar 桌面端不重叠侧边栏
+- [x] 首页刷新指示器桌面端不重叠侧边栏
+- [x] SideNav hover 效果精致
+- [x] SideNav 激活项有明显视觉反馈
+- [x] 构建成功无编译错误

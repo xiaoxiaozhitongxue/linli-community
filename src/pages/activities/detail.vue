@@ -1002,5 +1002,17 @@ onMounted(() => {
   .detail-content {
     max-width: 800px;
   }
+
+  .nav-header {
+    left: var(--nav-sidebar-width, 220px);
+  }
+
+  .bottom-bar {
+    left: var(--nav-sidebar-width, 220px);
+  }
+
+  .loading-overlay {
+    left: var(--nav-sidebar-width, 220px);
+  }
 }
 </style>

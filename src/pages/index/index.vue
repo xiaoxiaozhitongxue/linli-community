@@ -2159,6 +2159,10 @@ onUnmounted(() => {
   .feed-card {
     padding: var(--spacing-2xl);
   }
+
+  .refresh-indicator {
+    left: var(--nav-sidebar-width, 220px);
+  }
 }
 
 @media (min-width: 1440px) {
