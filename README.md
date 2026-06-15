@@ -437,12 +437,30 @@ API调用封装在 [src/utils/api.ts](./src/utils/api.ts)，支持：
 
 ## 🛠️ 已知修复与改进（Bug 修复日志）
 
+### 已修复问题
+
+- **桌面端宽度显示问题**：桌面端页面未铺满整个屏幕，修改全局样式设置 `body` 和 `#app` 的 `width` 为 `100%`，调整响应式布局
+- **定位闪烁和橙色区域错位**：优化定位逻辑，添加定位状态管理，优化CSS过渡动画，修复Web端定位时黑字闪烁和橙色区域加载错位问题
+- **桌面端发帖按钮消失**：修复 `FloatingPublishButton.vue` 组件的CSS，确保按钮在桌面端可见，并调整位置避免被侧边栏遮挡
+- **互助任务详情页加载失败**：修复后端API响应格式问题，将 `createPaginatedResponse` 函数返回的嵌套pagination对象改为扁平结构
+- **登录成功后无法跳转首页**：使用 `window.location.replace()` 进行跳转，确保登录状态正确保存后立即重定向
+- **数据存储迁移**：将数据存储从 localStorage 迁移到 Cloudflare D1 云端数据库，确保多设备数据同步
+- **测试账号登录问题**：修复 users 表缺少 password 字段问题，添加测试账号（手机号：17276701841，密码：123456）
+- **数据库连接配置**：更新 `wrangler.toml` 中的 D1 数据库 ID 为正确值 `420190fe-57fa-475d-9948-af57eeaedb26`
+- **API响应格式问题**：修复分页响应格式，确保前端正确解析
+- **发布任务后不显示**：修改发布页面，使用 `window.location.href` 强制刷新互助页面，确保新任务显示
 - **定位重复声明**：`pages/index/index.vue` 中 `chooseLocation` 函数重复声明导致构建失败，已清理重复声明
 - **visibilitychange 语法错误**：首页定位监听中缺少右括号，已修复
 - **任务详情"未找到任务"**：任务数据分散在多个 localStorage key（`ai_helper_tasks`、`my_created_tasks` 等），重构为统一的 `business_data.tasks`，详情页通过 `tasksApi.getTask(id)` 正确查询
 - **重复接单问题**：同一账号可多次接取同一任务，在 `tasksApi.acceptTask` 中加入手机号 / 身份双重校验
 - **页面跳转不同步**：首页、个人中心、我的任务均改为从 `tasksApi.getMyTasks` 读取统计与列表，确保数据实时一致
 - **分散的 localStorage 键**：移除多处直接读写 `ai_helper_*` 的代码，统一通过 `storage.ts` + `api.ts` 管理
+
+### 功能优化
+
+- **关于我们页面**：更新联系方式（邮箱：renrenrenzm@163.com；电话：xxxxxxxxxx；网站：https://yunzhui.pages.dev/）
+- **响应式布局优化**：改进桌面端和移动端的布局适配，确保良好的用户体验
+- **登录/注册页面优化**：整合登录和注册到同一页面，使用标签切换模式，实现流畅切换
 
 ## 🚦 构建与验证
 

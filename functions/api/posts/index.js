@@ -90,6 +90,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   try {
+    // 检查用户是否已登录（中间件应该已经设置了 context.user）
+    if (!context.user) {
+      return createErrorResponse(401, '未授权', '请先登录')
+    }
+
     const db = getDb(context)
     const body = await parseJsonBody(context.request)
 

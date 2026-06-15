@@ -385,158 +385,38 @@ export const userApi = {
 // ========================================================================
 export const postsApi = {
   getPosts: (params?: { page?: number; limit?: number; sort?: string; order?: string; user_id?: string }): Promise<PaginatedResponse<Post>> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const biz = loadBusiness()
-        const items = biz.posts.slice().sort((a, b) => b.created_at - a.created_at)
-        resolve({
-          items,
-          page: params?.page || 1,
-          limit: params?.limit || items.length,
-          total: items.length,
-          total_pages: 1
-        })
-      }, 200)
-    })
+    return get<PaginatedResponse<Post>>('/api/posts', params)
   },
 
-  getPost: (id: string): Promise<Post | null> => {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        const biz = loadBusiness()
-        const p = biz.posts.find(x => x.id === id) || null
-        resolve(p)
-      }, 200)
-    })
+  getPost: (id: string): Promise<Post> => {
+    return get<Post>(`/api/posts/${id}`)
   },
 
   createPost: (data: { content: string; images?: string[]; location?: string; visibility?: string }): Promise<Post> => {
-    return new Promise((resolve, reject) => {
-      const u = requireLogin()
-      if (!data.content || data.content.trim().length === 0) {
-        reject(new Error('请填写动态内容'))
-        return
-      }
-
-      const now = Date.now()
-      const newPost: Post = {
-        id: nowId('p_'),
-        user_id: u.id || u.phone,
-        user_phone: u.phone,
-        content: data.content.trim(),
-        images: data.images || [],
-        location: data.location || '',
-        visibility: (data.visibility as any) || 'public',
-        like_count: 0,
-        comment_count: 0,
-        is_liked: false,
-        created_at: now,
-        updated_at: now,
-        user: {
-          id: u.id || u.phone,
-          nickname: u.nickname,
-          avatar: u.avatar,
-          community: u.community,
-          credit_score: u.credit_score
-        },
-        comments: []
-      }
-
-      const biz = loadBusiness()
-      biz.posts.unshift(newPost)
-      saveBusiness(biz)
-      setTimeout(() => resolve(newPost), 150)
-    })
+    return post<Post>('/api/posts', {
+      content: data.content.trim(),
+      images: data.images || [],
+      location: data.location || '',
+      visibility: data.visibility || 'public'
+    }, { showError: true })
   },
 
   likePost: (postId: string): Promise<LikeResponse> => {
-    return new Promise((resolve) => {
-      const biz = loadBusiness()
-      const target = biz.posts.find(p => p.id === postId)
-      if (!target) {
-        resolve({ liked: false, like_count: 0 })
-        return
-      }
-      const wasLiked = target.is_liked
-      target.is_liked = !wasLiked
-      target.like_count = Math.max(0, (target.like_count || 0) + (wasLiked ? -1 : 1))
-      target.updated_at = Date.now()
-      saveBusiness(biz)
-      resolve({ liked: target.is_liked, like_count: target.like_count })
-    })
+    return post<LikeResponse>(`/api/posts/${postId}/like`, {}, { showError: false })
   },
 
   deletePost: (postId: string): Promise<{ success: boolean }> => {
-    return new Promise((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const idx = biz.posts.findIndex(p => p.id === postId)
-      if (idx < 0) {
-        reject(new Error('动态不存在或已删除'))
-        return
-      }
-      const target = biz.posts[idx]
-      // 后端式鉴权：仅发布者本人可删除
-      if (!(target.user_phone && target.user_phone === u.phone) &&
-          !(target.user_id && (target.user_id === u.id || target.user_id === u.phone))) {
-        reject(new Error('只能删除自己发布的内容'))
-        return
-      }
-      biz.posts.splice(idx, 1)
-      saveBusiness(biz)
-      resolve({ success: true })
-    })
+    return del<{ success: boolean }>(`/api/posts/${postId}`, {}, { showError: true })
   },
 
   getComments: (postId: string): Promise<PaginatedResponse<Comment>> => {
-    return new Promise(resolve => {
-      const all = getUserComments()
-      const list = (all[postId] || []).slice().sort((a, b) => a.created_at - b.created_at)
-      resolve({
-        items: list,
-        page: 1,
-        limit: list.length,
-        total: list.length,
-        total_pages: 1
-      })
-    })
+    return get<PaginatedResponse<Comment>>(`/api/posts/${postId}/comments`)
   },
 
   createComment: (postId: string, data: { content: string }): Promise<Comment> => {
-    return new Promise((resolve, reject) => {
-      const u = requireLogin()
-      if (!data.content || data.content.trim().length === 0) {
-        reject(new Error('请输入评论内容'))
-        return
-      }
-      const biz = loadBusiness()
-      const post = biz.posts.find(p => p.id === postId)
-      if (!post) {
-        reject(new Error('动态不存在或已删除'))
-        return
-      }
-      const now = Date.now()
-      const c: Comment = {
-        id: nowId('c_'),
-        post_id: postId,
-        user_id: u.id || u.phone,
-        user_phone: u.phone,
-        content: data.content.trim(),
-        created_at: now,
-        updated_at: now,
-        user: { id: u.id || u.phone, nickname: u.nickname, avatar: u.avatar }
-      }
-      const all = getUserComments()
-      if (!all[postId]) all[postId] = []
-      all[postId].push(c)
-      saveUserComments(all)
-
-      // 同步计数
-      post.comment_count = (post.comment_count || 0) + 1
-      post.updated_at = now
-      saveBusiness(biz)
-      resolve(c)
-    })
+    return post<Comment>(`/api/posts/${postId}/comments`, {
+      content: data.content.trim()
+    }, { showError: true })
   }
 }
 
@@ -766,52 +646,11 @@ export const activitiesApi = {
 
 export const tasksApi = {
   getTasks: (params?: { page?: number; limit?: number; status?: string; category?: string }) => {
-    return new Promise<{ items: Task[]; total: number; page: number; limit: number }>((resolve) => {
-      setTimeout(() => {
-        const biz = loadBusiness()
-        let items = biz.tasks || []
-
-        if (params?.status) {
-          const s = String(params.status).toLowerCase()
-          const key = s === 'open' ? 'pending' : s === 'ongoing' ? 'in_progress' : s
-          items = items.filter(t => t.status === key)
-        }
-        if (params?.category && params.category !== 'all') {
-          items = items.filter(t => t.category === params?.category)
-        }
-        items = items.slice().sort((a, b) => b.created_at - a.created_at)
-
-        const limit = params?.limit || items.length
-        const page = params?.page || 1
-        const start = (page - 1) * limit
-        const paged = items.slice(start, start + limit)
-
-        resolve({ items: paged, total: items.length, page, limit })
-      }, 150)
-    })
+    return get<{ items: Task[]; total: number; page: number; limit: number }>('/api/tasks', params)
   },
 
   getTask: (id: string) => {
-    return new Promise<Task | null>((resolve) => {
-      // 添加5秒超时保护
-      const timeoutId = setTimeout(() => {
-        console.warn('[api] getTask 超时, id =', id)
-        resolve(null)
-      }, 5000)
-
-      try {
-        setTimeout(() => {
-          clearTimeout(timeoutId)
-          const biz = loadBusiness()
-          const task = (biz.tasks || []).find(t => t.id === id) || null
-          resolve(task)
-        }, 100)
-      } catch (e) {
-        clearTimeout(timeoutId)
-        console.error('[api] getTask 异常:', e)
-        resolve(null)
-      }
-    })
+    return get<Task>(`/api/tasks/${id}`)
   },
 
   createTask: (data: {
@@ -821,234 +660,41 @@ export const tasksApi = {
     location: string
     reward?: string | number
   }) => {
-    return new Promise<Task>((resolve, reject) => {
-      const u = requireLogin()
-      if (!data.title || data.title.trim().length === 0) {
-        reject(new Error('请填写任务标题'))
-        return
-      }
-      if (!data.description || data.description.trim().length === 0) {
-        reject(new Error('请描述任务内容'))
-        return
-      }
-      if (!data.location || data.location.trim().length === 0) {
-        reject(new Error('请填写服务地点'))
-        return
-      }
-      const now = Date.now()
-      const task: Task = {
-        id: 't_' + now + '_' + Math.floor(Math.random() * 1000),
-        user_id: u.id || u.phone,
-        user_phone: u.phone,
-        title: data.title.trim(),
-        description: data.description.trim(),
-        category: (data.category as Task['category']) || 'other',
-        location: data.location.trim(),
-        reward: typeof data.reward === 'string' ? parseFloat(data.reward) || 0 : Number(data.reward) || 0,
-        status: 'pending',
-        created_at: now,
-        updated_at: now,
-        creator: {
-          id: u.id || u.phone,
-          nickname: u.nickname || '邻里用户',
-          avatar: u.avatar || '',
-          credit_score: u.credit_score || 100,
-          is_verified: true,
-          community: u.community || ''
-        }
-      }
-      const biz = loadBusiness()
-      biz.tasks.unshift(task)
-      saveBusiness(biz)
-      resolve(task)
-    })
+    return post<Task>('/api/tasks', {
+      title: data.title.trim(),
+      description: data.description.trim(),
+      category: data.category || 'other',
+      location: data.location.trim(),
+      reward: typeof data.reward === 'string' ? parseFloat(data.reward) || 0 : Number(data.reward) || 0
+    }, { showError: true })
   },
 
   acceptTask: (id: string) => {
-    return new Promise<Task>((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const tasks = biz.tasks || []
-      const idx = tasks.findIndex(t => t.id === id)
-      if (idx < 0) {
-        reject(new Error('任务不存在或已删除'))
-        return
-      }
-      const task = tasks[idx]
-
-      if (task.status !== 'pending') {
-        reject(new Error('当前任务状态不可接单'))
-        return
-      }
-
-      // 1) 不能接自己发布的
-      const isSelf =
-        (task.user_phone && task.user_phone === u.phone) ||
-        (task.user_id && (task.user_id === u.id || task.user_id === u.phone))
-      if (isSelf) {
-        reject(new Error('不能接自己发布的任务'))
-        return
-      }
-
-      // 2) 一账号一任务仅能接一次
-      const alreadyAccepted =
-        (task.helper_phone && task.helper_phone === u.phone) ||
-        (task.helper_id && (task.helper_id === u.id || task.helper_id === u.phone))
-      if (alreadyAccepted) {
-        reject(new Error('您已接过此任务，不能重复接单'))
-        return
-      }
-
-      const updated: Task = {
-        ...task,
-        status: 'in_progress',
-        helper_id: u.id || u.phone,
-        helper_phone: u.phone,
-        helper: {
-          id: u.id || u.phone,
-          nickname: u.nickname || '邻里用户',
-          avatar: u.avatar || '',
-          credit_score: u.credit_score || 100,
-          is_verified: true
-        },
-        updated_at: Date.now()
-      }
-      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
-      saveBusiness(biz)
-      resolve(updated)
-    })
+    return post<Task>(`/api/tasks/${id}/accept`, {}, { showError: true })
   },
 
   completeTask: (id: string) => {
-    return new Promise<Task>((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const tasks = biz.tasks || []
-      const idx = tasks.findIndex(t => t.id === id)
-      if (idx < 0) {
-        reject(new Error('任务不存在'))
-        return
-      }
-      const task = tasks[idx]
-      // 发布者 / 接单人 都可以完成
-      const isPublisher =
-        (task.user_phone && task.user_phone === u.phone) ||
-        (task.user_id && (task.user_id === u.id || task.user_id === u.phone))
-      const isHelper =
-        (task.helper_phone && task.helper_phone === u.phone) ||
-        (task.helper_id && (task.helper_id === u.id || task.helper_id === u.phone))
-      if (!isPublisher && !isHelper) {
-        reject(new Error('仅发布者或接单人可以完成任务'))
-        return
-      }
-
-      const updated: Task = { ...task, status: 'completed', updated_at: Date.now() }
-      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
-      saveBusiness(biz)
-      resolve(updated)
-    })
+    return post<Task>(`/api/tasks/${id}/complete`, {}, { showError: true })
   },
 
   cancelTask: (id: string) => {
-    return new Promise<Task>((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const tasks = biz.tasks || []
-      const idx = tasks.findIndex(t => t.id === id)
-      if (idx < 0) {
-        reject(new Error('任务不存在'))
-        return
-      }
-      const task = tasks[idx]
-      const isPublisher =
-        (task.user_phone && task.user_phone === u.phone) ||
-        (task.user_id && (task.user_id === u.id || task.user_id === u.phone))
-      if (!isPublisher) {
-        reject(new Error('仅发布者可以取消任务'))
-        return
-      }
-      const updated: Task = { ...task, status: 'cancelled', updated_at: Date.now() }
-      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
-      saveBusiness(biz)
-      resolve(updated)
-    })
+    return post<Task>(`/api/tasks/${id}/cancel`, {}, { showError: true })
   },
 
   updateTask: (id: string, data: Partial<Task>) => {
-    return new Promise<Task>((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const tasks = biz.tasks || []
-      const idx = tasks.findIndex(t => t.id === id)
-      if (idx < 0) {
-        reject(new Error('任务不存在'))
-        return
-      }
-      const task = tasks[idx]
-      if (!isOwner(task)) {
-        reject(new Error('仅发布者可以修改任务'))
-        return
-      }
-      const updated: Task = { ...task, ...data, updated_at: Date.now() }
-      biz.tasks = [...tasks.slice(0, idx), updated, ...tasks.slice(idx + 1)]
-      saveBusiness(biz)
-      resolve(updated)
-    })
+    return put<Task>(`/api/tasks/${id}`, data, { showError: true })
   },
 
   deleteTask: (id: string) => {
-    return new Promise<{ id: string }>((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const tasks = biz.tasks || []
-      const idx = tasks.findIndex(t => t.id === id)
-      if (idx < 0) {
-        reject(new Error('任务不存在'))
-        return
-      }
-      const task = tasks[idx]
-      if (!isOwner(task)) {
-        reject(new Error('仅发布者可以删除任务'))
-        return
-      }
-      biz.tasks = [...tasks.slice(0, idx), ...tasks.slice(idx + 1)]
-      saveBusiness(biz)
-      resolve({ id })
-    })
+    return del<{ id: string }>(`/api/tasks/${id}`, {}, { showError: true })
   },
 
   getMyTasks: () => {
-    return new Promise<{
+    return get<{
       published: Task[]
       accepted: Task[]
       all: Task[]
       stats: { published: number; accepted: number; total: number }
-    }>((resolve) => {
-      setTimeout(() => {
-        const biz = loadBusiness()
-        const u = getCurrentUser()
-        let published: Task[] = []
-        let accepted: Task[] = []
-
-        if (u) {
-          published = (biz.tasks || []).filter(t =>
-            (t.user_phone && t.user_phone === u.phone) ||
-            (t.user_id && (t.user_id === u.id || t.user_id === u.phone))
-          )
-          accepted = (biz.tasks || []).filter(t =>
-            (t.helper_phone && t.helper_phone === u.phone) ||
-            (t.helper_id && (t.helper_id === u.id || t.helper_id === u.phone))
-          )
-        }
-        published = published.slice().sort((a, b) => b.created_at - a.created_at)
-        accepted = accepted.slice().sort((a, b) => b.created_at - a.created_at)
-
-        resolve({
-          published, accepted,
-          all: [...published, ...accepted],
-          stats: { published: published.length, accepted: accepted.length, total: published.length + accepted.length }
-        })
-      }, 150)
-    })
+    }>('/api/tasks/my')
   }
 }

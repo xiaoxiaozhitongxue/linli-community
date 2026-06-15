@@ -14,9 +14,15 @@ interface RequestConfig {
 }
 
 interface ResponseData<T = any> {
-  code: number
+  success: boolean
   message: string
   data: T
+  timestamp?: number
+  error?: {
+    code: number
+    message: string
+    details?: any
+  }
 }
 
 function getToken(): string {
@@ -81,14 +87,14 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
           uiHideLoading()
         }
         
-        if (response.code === 200 || response.code === 201) {
+        if (response.success) {
           resolve(response.data)
         } else {
           if (needError) {
             showError(response.message || '请求失败')
           }
           
-          if (response.code === 401) {
+          if (response.error?.code === 401) {
             try {
               localStorage.removeItem('token')
               localStorage.removeItem('userInfo')

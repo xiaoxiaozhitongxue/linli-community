@@ -1,90 +1,84 @@
-# 邻里社区APP - 全面质量检查与修复
+# 邻里社区APP - 全面质量检查和修复
 
-## Overview
-- **Summary**: 作为顶级产品经理、UI设计、开发、测试人员，全面检查代码、排查BUG、修复设计问题，并更新文档
-- **Purpose**: 确保应用质量达到生产级别，所有功能正常可用
-- **Target Users**: 应用用户和开发团队
+## 概述
+- **Summary**: 系统检查所有代码，排查BUG和设计不合理之处，修复后更新README并推送GitHub
+- **Purpose**: 确保应用功能完整、稳定，用户体验流畅
+- **Target Users**: 电脑端和手机端用户
 
-## Goals
-- 全面检查所有页面的设计、数据、交互跳转、显示问题
-- 排查并修复代码中的BUG
-- 更新README文档
-- 推送代码到GitHub
+## 目标
+- 修复所有已知BUG
+- 优化响应式布局
+- 确保数据存储和API正常工作
+- 更新文档并推送GitHub
 
-## Non-Goals (Out of Scope)
-- 不添加新功能
-- 不重构现有架构
-- 不修改数据库schema
+## 背景与上下文
+当前问题汇总：
+1. 桌面端发帖按钮消失
+2. 首页定位时橙色区域错位闪烁
+3. 互助任务详情页加载问题
+4. 登录成功后跳转问题
+5. 响应式布局优化
 
-## Background & Context
-项目已完成基础功能开发，现在需要进行全面质量检查，确保所有功能稳定可用。
+## 功能需求
 
-## Functional Requirements
-- **FR-1**: 所有页面正常显示，无布局错乱
-- **FR-2**: 所有交互跳转正常工作
-- **FR-3**: 用户数据正确存储和读取
-- **FR-4**: 所有API调用正常
-- **FR-5**: README文档更新到最新状态
+### FR-1: 修复桌面端悬浮发布按钮显示问题
+- 确保在桌面端首页和互助页面显示悬浮发布按钮
 
-## Non-Functional Requirements
-- **NFR-1**: 页面加载响应时间 < 2秒
-- **NFR-2**: 界面美观，符合设计规范
-- **NFR-3**: 代码结构清晰，无明显bug
+### FR-2: 修复首页定位闪烁问题
+- 优化定位状态管理
+- 修复橙色区域错位问题
 
-## Constraints
-- **Technical**: Vue 3 + TypeScript + Vite
-- **Business**: 无新增功能，只修复问题
-- **Dependencies**: 前端项目，依赖npm包
+### FR-3: 修复互助任务详情页加载问题
+- 确保任务详情正常加载
+- 修复API调用问题
 
-## Assumptions
-- 项目已配置好git仓库
-- npm依赖已安装
-- 构建工具可用
+### FR-4: 确保登录和页面跳转正常
+- 登录成功后正确跳转首页
+- 确保认证状态正确保存
 
-## Acceptance Criteria
+### FR-5: 优化响应式布局
+- 桌面端布局优化
+- 控件对齐优化
 
-### AC-1: 首页检查
+### FR-6: 更新README文档并推送GitHub
+
+## 验收标准
+
+### AC-1: 桌面端悬浮按钮显示正常
+- **Given**: 用户在桌面端访问首页或互助页面
+- **When**: 页面加载完成
+- **Then**: 悬浮发布按钮显示在右下角
+- **Verification**: `human-judgment`
+
+### AC-2: 首页定位无闪烁
 - **Given**: 用户打开首页
-- **When**: 页面加载完成
-- **Then**: 首页布局正常，橙色状态栏无闪烁，定位功能正常
+- **When**: 定位过程中
+- **Then**: 无黑字闪烁和区域错位
 - **Verification**: `human-judgment`
 
-### AC-2: 互助页面检查
-- **Given**: 用户进入互助页面
-- **When**: 页面加载完成
-- **Then**: 任务列表正常显示，任务详情页可正常打开
+### AC-3: 任务详情页正常加载
+- **Given**: 用户点击任务卡片
+- **When**: 进入任务详情页
+- **Then**: 任务详情正常显示，无加载错误
 - **Verification**: `human-judgment`
 
-### AC-3: 活动页面检查
-- **Given**: 用户进入活动页面
-- **When**: 页面加载完成
-- **Then**: 活动列表正常显示，活动详情页可正常打开
+### AC-4: 登录跳转正常
+- **Given**: 用户输入正确的账号密码
+- **When**: 点击登录按钮
+- **Then**: 登录成功并跳转到首页
 - **Verification**: `human-judgment`
 
-### AC-4: 个人中心检查
-- **Given**: 用户进入个人中心
-- **When**: 页面加载完成
-- **Then**: 用户信息正常显示，各子页面可正常访问
+### AC-5: 响应式布局良好
+- **Given**: 在不同设备上访问
+- **When**: 调整浏览器窗口大小
+- **Then**: 页面布局正常适配
 - **Verification**: `human-judgment`
 
-### AC-5: 数据存储检查
-- **Given**: 用户创建任务/帖子/活动
-- **When**: 数据保存
-- **Then**: 数据正确保存到localStorage
+### AC-6: 项目正常构建和部署
+- **Given**: 完成所有修复
+- **When**: 运行npm run build
+- **Then**: 构建成功
 - **Verification**: `programmatic`
 
-### AC-6: README更新
-- **Given**: 检查完成后
-- **When**: 更新README
-- **Then**: README包含项目简介、技术栈、安装运行说明
-- **Verification**: `human-judgment`
-
-### AC-7: GitHub推送
-- **Given**: 所有修复完成
-- **When**: 执行git push
-- **Then**: 代码成功推送到GitHub
-- **Verification**: `programmatic`
-
-## Open Questions
-- [ ] 是否有已知的bug需要优先修复？
-- [ ] README文档的具体内容要求？
+## 待解决问题
+- 无重大未知问题

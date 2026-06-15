@@ -473,25 +473,35 @@ const handleLogin = async () => {
       phone: loginForm.phone,
       password: loginForm.password
     })
+    
+    console.log('登录API返回:', result)
+    
+    // 确保返回的数据结构正确
+    if (!result.token || !result.user) {
+      throw new Error('登录数据异常')
+    }
+    
     setUser(result.user, result.token, result.userData)
-
+    
+    // 立即同步写入 localStorage
+    localStorage.setItem('token', result.token)
+    localStorage.setItem('userInfo', JSON.stringify(result.user))
+    
     hideLoading()
     loginForm.isLoading = false
-    toastSuccess('登录成功')
-
-    setTimeout(() => {
-      const redirectPath = getAndClearLoginRedirect()
-      if (redirectPath) {
-        window.location.hash = '#' + redirectPath
-      } else {
-        window.location.hash = '#/pages/index/index'
-      }
-      window.location.reload()
-    }, 500)
+    
+    // 立即跳转，不等待toast动画
+    const redirectPath = getAndClearLoginRedirect()
+    const targetPath = redirectPath || '/pages/index/index'
+    
+    // 使用最直接的方式跳转
+    window.location.replace(window.location.origin + window.location.pathname + '#' + targetPath)
+    
   } catch (e: any) {
     hideLoading()
     loginForm.isLoading = false
     const message = e?.message || '登录失败'
+    console.error('登录错误:', e)
     showGlobalError(message)
   }
 }

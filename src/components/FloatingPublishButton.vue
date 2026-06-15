@@ -121,6 +121,17 @@ const handleMenuItemClick = (item: { id: string }) => {
   flex-direction: column;
   align-items: flex-end;
   isolation: isolate;
+  /* 确保按钮始终可见 */
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 桌面端：调整位置，避免被侧边栏遮挡 */
+@media (min-width: 1024px) {
+  .floating-publish-container {
+    right: calc(20px + env(safe-area-inset-right));
+    bottom: calc(80px + var(--spacing-lg));
+  }
 }
 
 .mask-overlay {

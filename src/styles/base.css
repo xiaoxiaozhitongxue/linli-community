@@ -142,7 +142,7 @@
   /* 响应式断点 - Web端最大宽度约束 */
   --container-max-width: 100%;
   --container-padding: var(--spacing-lg);
-  --app-max-width: 500px;
+  --app-max-width: 100%;
   --app-tablet-width: 768px;
   --app-desktop-width: 1024px;
   --app-large-desktop-width: 1440px;

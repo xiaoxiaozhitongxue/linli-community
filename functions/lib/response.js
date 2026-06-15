@@ -41,12 +41,10 @@ export function createPaginatedResponse(items, page, limit, total, message = 'æˆ
   return createResponse(
     {
       items,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      page,
+      limit,
+      total,
+      total_pages: Math.ceil(total / limit)
     },
     message
   )

@@ -213,7 +213,8 @@ const submitTask = async () => {
     })
     toastSuccess('任务发布成功')
     setTimeout(() => {
-      navigateTo('/pages/ai-helper/index')
+      // 使用 window.location 强制刷新页面，确保新任务能显示
+      window.location.href = window.location.origin + window.location.pathname + '#/pages/ai-helper/index'
     }, 800)
   } catch (e: any) {
     const msg = e?.message || '发布失败，请稍后重试'
