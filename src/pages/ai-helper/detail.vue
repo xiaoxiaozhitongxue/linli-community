@@ -94,6 +94,10 @@ import { useRoute } from 'vue-router'
 import { navigateBackSmart, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { tasksApi, type Task } from '../../utils/api'
+import { useAuth } from '../../store'
+import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
+
+const { isLoggedIn } = useAuth()
 
 const STORAGE_KEY = 'ai_helper_tasks'
 const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
@@ -175,6 +179,14 @@ function loadFromStorage(key: string, defaultValue: any[]) {
 async function handleAccept() {
   const t = task.value
   if (!t) return
+  
+  // 添加登录验证
+  if (!isLoggedIn.value) {
+    setLoginRedirect(window.location.hash.replace('#', '') || '/pages/ai-helper/detail')
+    showLoginGuide()
+    return
+  }
+  
   if (t.status !== 'open' && t.status !== 'pending') {
     toastError('此任务当前不可接单')
     return

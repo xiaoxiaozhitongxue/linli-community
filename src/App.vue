@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Toast from './components/Toast.vue'
 import BottomTabBar from './components/BottomTabBar.vue'
+import SideNav from './components/SideNav.vue'
 import FloatingPublishButton from './components/FloatingPublishButton.vue'
 import { useAuth } from './store'
 import { showLoginGuide, setLoginRedirect } from './utils/auth'
@@ -10,6 +11,12 @@ import { showLoginGuide, setLoginRedirect } from './utils/auth'
 const route = useRoute()
 const router = useRouter()
 const { initAuth, isLoggedIn } = useAuth()
+
+const isDesktop = ref(false)
+
+const checkScreenSize = () => {
+  isDesktop.value = window.innerWidth >= 1024
+}
 
 // 判断是否显示底部导航栏的页面
 const showTabBar = computed(() => {
@@ -92,20 +99,37 @@ onMounted(() => {
   initAuth()
   recordActiveTime()
   checkInactiveStatus()
+  checkScreenSize()
+  window.addEventListener('resize', checkScreenSize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize)
 })
 </script>
 
 <template>
   <div class="app-container">
-    <router-view v-slot="{ Component }">
-      <transition name="page-slide" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
-    <BottomTabBar v-if="showTabBar" />
+    <!-- 桌面端左侧导航栏 -->
+    <SideNav v-if="isDesktop" />
+
+    <!-- 主内容区 -->
+    <div class="main-content" :class="{ desktop: isDesktop }">
+      <router-view v-slot="{ Component }">
+        <transition name="page-slide" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </div>
+
+    <!-- 移动端底部导航栏 -->
+    <BottomTabBar v-if="showTabBar && !isDesktop" />
+
     <Toast />
+
+    <!-- 移动端悬浮发布按钮 -->
     <FloatingPublishButton 
-      v-if="showFloatingPublishButton"
+      v-if="showFloatingPublishButton && !isDesktop"
       @publish-post="handlePublishPost"
       @publish-activity="handlePublishActivity"
       @publish-help="handlePublishHelp"
@@ -118,6 +142,23 @@ onMounted(() => {
 
 .app-container {
   min-height: 100vh;
-  padding-bottom: 65px; /* 为底部导航栏留出空间 */
+  display: flex;
+}
+
+.main-content {
+  flex: 1;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+.main-content.desktop {
+  margin-left: var(--nav-sidebar-width, 220px);
+  padding-bottom: 0;
+}
+
+@media (max-width: 1023px) {
+  .app-container {
+    padding-bottom: 65px;
+  }
 }
 </style>

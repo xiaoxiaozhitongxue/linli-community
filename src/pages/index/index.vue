@@ -2105,11 +2105,15 @@ onUnmounted(() => {
 
 @media (min-width: 1024px) {
   .page-wrapper {
-    max-width: 700px;
+    max-width: 900px;
   }
   
   .status-content {
-    max-width: 700px;
+    max-width: 900px;
+  }
+  
+  .status-bar {
+    left: var(--nav-sidebar-width, 220px);
   }
   
   .banner-section {
@@ -2118,35 +2122,36 @@ onUnmounted(() => {
   
   .banner-swiper {
     height: 180px;
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto;
   }
   
   .quick-actions {
-    max-width: 700px;
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 900px;
     margin: 0 auto var(--spacing-xl);
   }
   
   .activity-scroll {
     grid-template-columns: repeat(4, 1fr);
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto;
   }
   
   .recent-activity-scroll {
     grid-template-columns: repeat(3, 1fr);
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto;
   }
   
   .section-header {
-    max-width: 700px;
+    max-width: 900px;
     margin-left: auto;
     margin-right: auto;
   }
   
   .feed-list {
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 0;
   }
@@ -2158,37 +2163,37 @@ onUnmounted(() => {
 
 @media (min-width: 1440px) {
   .page-wrapper {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .status-content {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .banner-swiper {
-    max-width: 800px;
+    max-width: 1000px;
     height: 200px;
   }
   
   .quick-actions {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto var(--spacing-xl);
   }
   
   .section-header {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .activity-scroll {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .recent-activity-scroll {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .feed-list {
-    max-width: 800px;
+    max-width: 1000px;
     padding: 0;
   }
 }

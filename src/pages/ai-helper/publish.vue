@@ -126,10 +126,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { navigateTo, navigateBackSmart, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { tasksApi } from '../../utils/api'
+import { useAuth } from '../../store'
+import { setLoginRedirect } from '../../utils/auth'
+
+const { isLoggedIn, user } = useAuth()
 
 const statusBarHeight = ref(20)
 
@@ -250,6 +254,13 @@ const submitTask = async () => {
     console.error('[ai-helper/publish] 本地存储保存失败:', e)
   }
 }
+
+onMounted(() => {
+  if (!isLoggedIn.value) {
+    setLoginRedirect('/pages/ai-helper/publish')
+    navigateTo('/pages/login/index')
+  }
+})
 </script>
 
 <style scoped>

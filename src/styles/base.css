@@ -207,33 +207,40 @@ body {
   max-width: 100%;
 }
 
-/* Web端最大宽度约束 */
-@media (min-width: 500px) {
+/* 移动端：全宽 */
+@media (max-width: 767px) {
   #app {
-    max-width: var(--app-max-width);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.08);
+    max-width: 100%;
+  }
+}
+
+/* 平板端：全宽 */
+@media (min-width: 768px) {
+  #app {
+    max-width: 100%;
     min-height: 100vh;
   }
 }
 
-/* 平板端宽度约束 */
-@media (min-width: 768px) {
-  #app {
-    max-width: 600px;
-  }
-}
-
-/* 桌面端宽度约束 */
+/* 桌面端：左侧导航 + 右侧内容布局 */
 @media (min-width: 1024px) {
+  :root {
+    --nav-sidebar-width: 220px;
+  }
   #app {
-    max-width: 700px;
+    max-width: 100%;
+    flex-direction: row;
   }
 }
 
-/* 大屏幕优化 */
+/* 大屏幕：限制最大宽度居中 */
 @media (min-width: 1440px) {
+  :root {
+    --nav-sidebar-width: 250px;
+  }
   #app {
-    max-width: 800px;
+    max-width: 1400px;
+    margin: 0 auto;
   }
 }
 

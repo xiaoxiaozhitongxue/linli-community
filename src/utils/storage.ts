@@ -175,91 +175,114 @@ export interface BusinessData {
 
 const BUSINESS_KEY = 'linli_business_data'
 
-function getDefaultBusiness(): BusinessData {
+// ========================================================================
+// 账号1: 13811112222 (热心邻居张阿姨) 的示例数据
+// ========================================================================
+function getAccount1Business(): BusinessData {
   const now = Date.now()
   return {
-    posts: [],
-    activities: [],
+    posts: [
+      {
+        id: 'post-account1-1',
+        content: '今天天气真好，大家有空可以出来活动活动！顺便分享一下我今天做的点心🍪',
+        images: [],
+        location: '阳光社区',
+        visibility: 'public',
+        user_id: '13811112222',
+        user: {
+          id: '13811112222',
+          nickname: '热心邻居张阿姨',
+          avatar: 'https://i.pravatar.cc/100?img=1'
+        },
+        like_count: 12,
+        comment_count: 5,
+        is_liked: false,
+        created_at: now - 1000 * 60 * 30,
+        updated_at: now - 1000 * 60 * 30
+      },
+      {
+        id: 'post-account1-2',
+        content: '阳光社区的老年活动中心下周要举办健康讲座，有兴趣的邻居可以报名参加。',
+        images: [],
+        location: '阳光社区活动中心',
+        visibility: 'public',
+        user_id: '13811112222',
+        user: {
+          id: '13811112222',
+          nickname: '热心邻居张阿姨',
+          avatar: 'https://i.pravatar.cc/100?img=1'
+        },
+        like_count: 8,
+        comment_count: 3,
+        is_liked: false,
+        created_at: now - 1000 * 60 * 120,
+        updated_at: now - 1000 * 60 * 120
+      }
+    ],
+    activities: [
+      {
+        id: 'activity-account1-1',
+        title: '周末乒乓球友谊赛',
+        description: '社区乒乓球爱好者交流活动，新手友好！欢迎大家积极参与。',
+        category: 'sports',
+        location: '阳光社区活动中心',
+        start_time: (now + 86400000 * 3) / 1000,
+        end_time: (now + 86400000 * 3 + 7200000) / 1000,
+        max_participants: 20,
+        current_participants: 8,
+        images: [],
+        status: 'upcoming',
+        user_id: '13811112222',
+        user: {
+          id: '13811112222',
+          nickname: '热心邻居张阿姨',
+          avatar: 'https://i.pravatar.cc/100?img=1'
+        },
+        is_participant: false,
+        created_at: now - 86400000,
+        updated_at: now - 86400000
+      }
+    ],
     tasks: [
       {
-        id: 'demo-1',
+        id: 'demo-account1-1',
         title: '帮忙取个快递',
         description: '菜鸟驿站，3 个包裹，取件码 1234。\n包裹大小适中，不太重。',
         category: 'delivery',
         location: '阳光社区·菜鸟驿站',
         reward: 5,
         status: 'pending',
-        user_id: 'demo-publisher-1',
-        user_phone: 'demo-publisher-1',
+        user_id: '13811112222',
+        user_phone: '13811112222',
         creator: {
-          id: 'demo-publisher-1',
-          nickname: '阳光社区小李',
-          avatar: '',
-          credit_score: 95,
+          id: '13811112222',
+          nickname: '热心邻居张阿姨',
+          avatar: 'https://i.pravatar.cc/100?img=1',
+          credit_score: 98,
           community: '阳光社区'
         },
         created_at: now - 1000 * 60 * 10,
         updated_at: now - 1000 * 60 * 10
       },
       {
-        id: 'demo-2',
-        title: '帮忙带份早餐',
-        description: '永和大王，豆浆油条套餐，加个煎蛋。',
-        category: 'shopping',
-        location: '永和大王·阳光社区店',
-        reward: 8,
+        id: 'demo-account1-2',
+        title: '帮忙浇花',
+        description: '出差三天，家里阳台的花需要浇水。有时间的邻居帮忙看一下。',
+        category: 'help',
+        location: '阳光社区·3号楼',
+        reward: 3,
         status: 'pending',
-        user_id: 'demo-publisher-2',
-        user_phone: 'demo-publisher-2',
+        user_id: '13811112222',
+        user_phone: '13811112222',
         creator: {
-          id: 'demo-publisher-2',
-          nickname: '上班族小王',
-          avatar: '',
-          credit_score: 92,
-          community: '阳光社区'
-        },
-        created_at: now - 1000 * 60 * 20,
-        updated_at: now - 1000 * 60 * 20
-      },
-      {
-        id: 'demo-3',
-        title: '代遛金毛半小时',
-        description: '金毛很温顺，就在楼下花园，疫苗已打。',
-        category: 'pet',
-        location: '阳光社区·花园',
-        reward: 15,
-        status: 'in_progress',
-        user_id: 'demo-publisher-3',
-        user_phone: 'demo-publisher-3',
-        creator: {
-          id: 'demo-publisher-3',
-          nickname: '铲屎官小刘',
-          avatar: '',
+          id: '13811112222',
+          nickname: '热心邻居张阿姨',
+          avatar: 'https://i.pravatar.cc/100?img=1',
           credit_score: 98,
           community: '阳光社区'
         },
         created_at: now - 1000 * 60 * 60,
         updated_at: now - 1000 * 60 * 60
-      },
-      {
-        id: 'demo-4',
-        title: '帮忙接孩子',
-        description: '阳光小学门口，4 点 15 分，两个孩子。',
-        category: 'child',
-        location: '阳光小学·门口',
-        reward: 25,
-        status: 'pending',
-        user_id: 'demo-publisher-4',
-        user_phone: 'demo-publisher-4',
-        creator: {
-          id: 'demo-publisher-4',
-          nickname: '双职工家庭',
-          avatar: '',
-          credit_score: 90,
-          community: '阳光社区'
-        },
-        created_at: now - 1000 * 60 * 120,
-        updated_at: now - 1000 * 60 * 120
       }
     ],
     created_at: now,
@@ -267,11 +290,159 @@ function getDefaultBusiness(): BusinessData {
   }
 }
 
+// ========================================================================
+// 账号2: 13811113333 (社区达人李先生) 的示例数据
+// ========================================================================
+function getAccount2Business(): BusinessData {
+  const now = Date.now()
+  return {
+    posts: [
+      {
+        id: 'post-account2-1',
+        content: '推荐社区旁边新开的咖啡店，味道很不错！环境也很舒适，适合周末来坐坐。☕',
+        images: ['https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400'],
+        location: '阳光社区',
+        visibility: 'public',
+        user_id: '13811113333',
+        user: {
+          id: '13811113333',
+          nickname: '社区达人李先生',
+          avatar: 'https://i.pravatar.cc/100?img=2'
+        },
+        like_count: 15,
+        comment_count: 6,
+        is_liked: false,
+        created_at: now - 1000 * 60 * 45,
+        updated_at: now - 1000 * 60 * 45
+      },
+      {
+        id: 'post-account2-2',
+        content: '二手闲置物品转让：九成新的儿童自行车，有需要的邻居可以联系我。',
+        images: [],
+        location: '阳光社区',
+        visibility: 'public',
+        user_id: '13811113333',
+        user: {
+          id: '13811113333',
+          nickname: '社区达人李先生',
+          avatar: 'https://i.pravatar.cc/100?img=2'
+        },
+        like_count: 5,
+        comment_count: 2,
+        is_liked: false,
+        created_at: now - 1000 * 60 * 180,
+        updated_at: now - 1000 * 60 * 180
+      }
+    ],
+    activities: [
+      {
+        id: 'activity-account2-1',
+        title: '社区读书会',
+        description: '本周读书分享会，欢迎爱读书的邻居们参加！',
+        category: 'culture',
+        location: '阳光社区图书馆',
+        start_time: (now + 86400000 * 5) / 1000,
+        end_time: (now + 86400000 * 5 + 5400000) / 1000,
+        max_participants: 15,
+        current_participants: 6,
+        images: [],
+        status: 'upcoming',
+        user_id: '13811113333',
+        user: {
+          id: '13811113333',
+          nickname: '社区达人李先生',
+          avatar: 'https://i.pravatar.cc/100?img=2'
+        },
+        is_participant: false,
+        created_at: now - 86400000 * 2,
+        updated_at: now - 86400000 * 2
+      }
+    ],
+    tasks: [
+      {
+        id: 'demo-account2-1',
+        title: '帮忙带份早餐',
+        description: '永和大王，豆浆油条套餐，加个煎蛋。',
+        category: 'shopping',
+        location: '永和大王·阳光社区店',
+        reward: 8,
+        status: 'pending',
+        user_id: '13811113333',
+        user_phone: '13811113333',
+        creator: {
+          id: '13811113333',
+          nickname: '社区达人李先生',
+          avatar: 'https://i.pravatar.cc/100?img=2',
+          credit_score: 92,
+          community: '阳光社区'
+        },
+        created_at: now - 1000 * 60 * 20,
+        updated_at: now - 1000 * 60 * 20
+      },
+      {
+        id: 'demo-account2-2',
+        title: '代遛金毛半小时',
+        description: '金毛很温顺，就在楼下花园，疫苗已打。',
+        category: 'pet',
+        location: '阳光社区·花园',
+        reward: 15,
+        status: 'pending',
+        user_id: '13811113333',
+        user_phone: '13811113333',
+        creator: {
+          id: '13811113333',
+          nickname: '社区达人李先生',
+          avatar: 'https://i.pravatar.cc/100?img=2',
+          credit_score: 92,
+          community: '阳光社区'
+        },
+        created_at: now - 1000 * 60 * 90,
+        updated_at: now - 1000 * 60 * 90
+      },
+      {
+        id: 'demo-account2-3',
+        title: '帮忙接孩子',
+        description: '阳光小学门口，4 点 15 分，两个孩子。',
+        category: 'child',
+        location: '阳光小学·门口',
+        reward: 25,
+        status: 'pending',
+        user_id: '13811113333',
+        user_phone: '13811113333',
+        creator: {
+          id: '13811113333',
+          nickname: '社区达人李先生',
+          avatar: 'https://i.pravatar.cc/100?img=2',
+          credit_score: 92,
+          community: '阳光社区'
+        },
+        created_at: now - 1000 * 60 * 150,
+        updated_at: now - 1000 * 60 * 150
+      }
+    ],
+    created_at: now,
+    updated_at: now
+  }
+}
+
+function getDefaultBusiness(phone?: string): BusinessData {
+  if (phone === '13811112222') return getAccount1Business()
+  if (phone === '13811113333') return getAccount2Business()
+  return {
+    posts: [],
+    activities: [],
+    tasks: [],
+    created_at: Date.now(),
+    updated_at: Date.now()
+  }
+}
+
 /**
  * 加载当前登录用户名下的业务数据
- * 未登录时返回默认空数据 + 演示任务（首页展示用），但禁止写
+ * 未登录时返回空数据，登录时根据手机号初始化对应的示例数据
  */
 export function loadBusiness(): BusinessData {
+  const user = getCurrentUser()
   const key = getUserStorageKey(BUSINESS_KEY)
   const raw = safeGet<BusinessData | null>(key, null)
   if (raw) {
@@ -289,24 +460,27 @@ export function loadBusiness(): BusinessData {
         updated_at: raw.updated_at || Date.now()
       }
     }
-    // 空数据（全为空数组）：首次登录初始化，用演示数据填充
-    // 但如果是明确保存的空数据（比如用户删光了），则保持空
-    if (raw.created_at && raw.updated_at) {
-      return {
-        posts: Array.isArray(raw.posts) ? raw.posts : [],
-        activities: Array.isArray(raw.activities) ? raw.activities : [],
-        tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
-        created_at: raw.created_at,
-        updated_at: raw.updated_at
-      }
+    // 空数据（全为空数组）：首次登录初始化
+    // 根据手机号返回对应的示例数据
+    if (raw.created_at && raw.updated_at && user) {
+      const demo = getDefaultBusiness(user.phone)
+      safeSet(key, demo)
+      return demo
     }
   }
-  // 首次进入（无任何存储）：返回演示数据
-  const demo = getDefaultBusiness()
-  if (getCurrentUser()) {
+  // 首次进入（无任何存储）：根据用户手机号返回对应的示例数据
+  if (user) {
+    const demo = getDefaultBusiness(user.phone)
     safeSet(key, demo)
+    return demo
   }
-  return demo
+  return {
+    posts: [],
+    activities: [],
+    tasks: [],
+    created_at: Date.now(),
+    updated_at: Date.now()
+  }
 }
 
 export function saveBusiness(data: BusinessData): void {

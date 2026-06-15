@@ -158,6 +158,7 @@ import { postsApi } from '../../utils/api'
 import { useAuth } from '../../store'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
+import { setLoginRedirect } from '../../utils/auth'
 
 const router = useRouter()
 const { userInfo, isLoggedIn, initAuth } = useAuth()
@@ -188,6 +189,7 @@ onMounted(() => {
   initAuth()
   
   if (!isLoggedIn.value) {
+    setLoginRedirect('/pages/post/create')
     showLoginModal.value = true
     return
   }

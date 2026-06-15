@@ -280,34 +280,4 @@ const handleMenuItemClick = (item: { id: string }) => {
 .main-icon.rotated {
   transform: rotate(0deg);
 }
-
-@media (min-width: 500px) {
-  .floating-publish-container {
-    right: 20px;
-  }
-}
-
-@media (min-width: 768px) {
-  .floating-publish-container {
-    right: 20px;
-    bottom: calc(60px + var(--spacing-lg));
-  }
-  
-  .menu-item {
-    padding: var(--spacing-md) var(--spacing-xl);
-  }
-}
-
-@media (min-width: 1024px) {
-  .floating-publish-container {
-    right: 20px;
-    bottom: calc(60px + var(--spacing-lg));
-  }
-}
-
-@media (min-width: 1440px) {
-  .floating-publish-container {
-    right: 20px;
-  }
-}
 </style>

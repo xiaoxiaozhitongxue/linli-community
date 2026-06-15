@@ -283,23 +283,6 @@ const handleTouchEnd = () => {
   }
 }
 
-/* 电脑设备 (1024px+) */
-@media (min-width: 1024px) {
-  .tab-bar-inner {
-    height: 64px;
-    padding: 0 120px;
-    max-width: 700px;
-  }
-  
-  .tab-item {
-    padding: 10px 24px;
-  }
-  
-  .tab-item:hover .tab-icon-wrap {
-    transform: translateY(-1px);
-  }
-}
-
 /* 小屏设备 (≤374px) */
 @media (max-width: 374px) {
   .tab-bar-inner {
@@ -326,13 +309,6 @@ const handleTouchEnd = () => {
 
   .tab-item.active .tab-label {
     font-size: 11px;
-  }
-}
-
-/* 大屏幕优化 (≥1440px) */
-@media (min-width: 1440px) {
-  .tab-bar-inner {
-    max-width: 800px;
   }
 }
 </style>

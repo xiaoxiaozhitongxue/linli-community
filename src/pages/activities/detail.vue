@@ -170,6 +170,10 @@ import { useRoute } from 'vue-router'
 import { activitiesApi } from '../../utils/api'
 import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, showToast } from '../../utils/toast'
+import { useAuth } from '../../store'
+import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
+
+const { isLoggedIn } = useAuth()
 
 const route = useRoute()
 
@@ -302,6 +306,13 @@ const toggleJoin = async () => {
     return
   }
   
+  // 添加登录验证
+  if (!isLoggedIn.value) {
+    setLoginRedirect(window.location.hash.replace('#', '') || '/pages/activities/detail')
+    showLoginGuide()
+    return
+  }
+  
   if (activity.value.is_participant) {
     try {
       await activitiesApi.leaveActivity(activity.value.id)
@@ -333,6 +344,13 @@ const toggleJoin = async () => {
 }
 
 const toggleFavorite = async () => {
+  // 添加登录验证
+  if (!isLoggedIn.value) {
+    setLoginRedirect(window.location.hash.replace('#', '') || '/pages/activities/detail')
+    showLoginGuide()
+    return
+  }
+  
   try {
     await userApi.toggleFavorite('activity', activity.value.id)
     isFavorited.value = !isFavorited.value

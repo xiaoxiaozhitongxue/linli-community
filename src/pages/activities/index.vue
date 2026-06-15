@@ -1041,12 +1041,12 @@ onMounted(async () => {
    ======================================== */
 @media (min-width: 1024px) {
   .content {
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto;
   }
   
   .filter-tabs {
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto;
     left: 0;
     right: 0;
@@ -1054,12 +1054,12 @@ onMounted(async () => {
   }
   
   .nav-content {
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto;
   }
   
   .nav-header {
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto;
     left: 0;
     right: 0;
@@ -1090,24 +1090,21 @@ onMounted(async () => {
   }
 }
 
-/* ========================================
-   大屏幕优化
-   ======================================== */
 @media (min-width: 1440px) {
   .content {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .filter-tabs {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .nav-content {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .nav-header {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .hot-activity-scroll {
