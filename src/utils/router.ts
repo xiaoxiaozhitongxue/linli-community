@@ -155,7 +155,7 @@ export function switchTab(url: string) {
     // 切换 tabBar 时清除历史记录栈，因为 tabBar 页面是根级别
     clearPageHistory()
     
-    router.push(url).catch((err: any) => {
+    router.replace(url).catch((err: any) => {
       if (err.name !== 'NavigationDuplicated' && err.name !== 'NavigationCancelled') {
         console.error('TabBar 切换失败', err)
       }

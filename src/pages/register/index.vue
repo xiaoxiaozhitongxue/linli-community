@@ -31,33 +31,25 @@
           <div class="error-text" v-if="phoneError">{{ phoneError }}</div>
         </div>
 
-        <!-- 验证码输入 -->
-        <div class="input-group" :class="{ error: codeError }">
-          <div class="input-label">验证码</div>
-          <div class="input-row" :class="{ focused: codeFocused }">
+        <!-- 密码输入 -->
+        <div class="input-group" :class="{ error: passwordError }">
+          <div class="input-label">密码</div>
+          <div class="input-row" :class="{ focused: passwordFocused }">
             <input 
               class="input-field" 
-              type="tel" 
-              v-model="code" 
-              placeholder="请输入验证码"
-              maxlength="6"
-              @focus="onCodeFocus"
-              @blur="onCodeBlur"
-              @input="onCodeInput"
+              :type="showPassword ? 'text' : 'password'" 
+              v-model="password" 
+              placeholder="请输入密码（至少6位）"
+              maxlength="20"
+              @focus="onPasswordFocus"
+              @blur="onPasswordBlur"
+              @input="onPasswordInput"
             />
-            <span class="input-icon" :class="{ valid: codeValid }">✓</span>
+            <span class="password-toggle" @click="showPassword = !showPassword">
+              {{ showPassword ? '🙈' : '👁️' }}
+            </span>
           </div>
-          <div class="code-row">
-            <div class="error-text" v-if="codeError">{{ codeError }}</div>
-            <div 
-              class="code-btn" 
-              :class="{ disabled: counting || !phoneValid, loading: counting }"
-              @click="sendCode"
-            >
-              <span v-if="!counting">获取验证码</span>
-              <span v-else class="countdown">{{ countdown }}s</span>
-            </div>
-          </div>
+          <div class="error-text" v-if="passwordError">{{ passwordError }}</div>
         </div>
 
         <!-- 昵称输入 -->
@@ -69,6 +61,7 @@
               type="text" 
               v-model="nickname" 
               placeholder="请输入您的昵称"
+              maxlength="20"
               @focus="onNicknameFocus"
               @blur="onNicknameBlur"
               @input="onNicknameInput"
@@ -158,54 +151,52 @@ const communities = [
   '幸福社区',
   '花园社区',
   '和平社区',
-  '东风社区'
+  '东风社区',
+  '向日葵小镇'
 ]
 
 // 表单数据
 const phone = ref('')
-const code = ref('')
+const password = ref('')
+const showPassword = ref(false)
 const nickname = ref('')
 const community = ref('')
 const agreed = ref(false)
 
 // UI状态
-const counting = ref(false)
-const countdown = ref(60)
 const isLoading = ref(false)
 const isShaking = ref(false)
 const agreementBounce = ref(false)
 
 // 聚焦状态
 const phoneFocused = ref(false)
-const codeFocused = ref(false)
+const passwordFocused = ref(false)
 const nicknameFocused = ref(false)
 const communityFocused = ref(false)
 
 // 错误状态
 const phoneError = ref('')
-const codeError = ref('')
+const passwordError = ref('')
 const nicknameError = ref('')
 const communityError = ref('')
 const agreementError = ref('')
 const globalError = ref('')
 
-let countdownTimer: number | null = null
 let shakeTimer: number | null = null
 let globalErrorTimer: number | null = null
 
 // 清理定时器
 onUnmounted(() => {
-  if (countdownTimer) clearInterval(countdownTimer)
   if (shakeTimer) clearTimeout(shakeTimer)
   if (globalErrorTimer) clearTimeout(globalErrorTimer)
 })
 
 // 验证状态
 const phoneValid = computed(() => phone.value.length === 11 && /^1[3-9]\d{9}$/.test(phone.value))
-const codeValid = computed(() => code.value.length === 6)
+const passwordValid = computed(() => password.value.length >= 6)
 const nicknameValid = computed(() => nickname.value.trim().length >= 2)
 const communityValid = computed(() => community.value.trim().length > 0)
-const canRegister = computed(() => phoneValid.value && codeValid.value && nicknameValid.value && communityValid.value && agreed.value && !isLoading.value)
+const canRegister = computed(() => phoneValid.value && passwordValid.value && nicknameValid.value && communityValid.value && agreed.value && !isLoading.value)
 
 // 聚焦/失焦处理
 const onPhoneFocus = () => { phoneFocused.value = true }
@@ -213,10 +204,10 @@ const onPhoneBlur = () => {
   phoneFocused.value = false
   validatePhone()
 }
-const onCodeFocus = () => { codeFocused.value = true }
-const onCodeBlur = () => { 
-  codeFocused.value = false
-  validateCode()
+const onPasswordFocus = () => { passwordFocused.value = true }
+const onPasswordBlur = () => { 
+  passwordFocused.value = false
+  validatePassword()
 }
 const onNicknameFocus = () => { nicknameFocused.value = true }
 const onNicknameBlur = () => { 
@@ -237,11 +228,8 @@ const onPhoneInput = () => {
   if (phoneError.value) phoneError.value = ''
 }
 
-const onCodeInput = () => {
-  // 只允许数字
-  code.value = code.value.replace(/\D/g, '')
-  // 清除错误
-  if (codeError.value) codeError.value = ''
+const onPasswordInput = () => {
+  if (passwordError.value) passwordError.value = ''
 }
 
 const onNicknameInput = () => {
@@ -266,16 +254,16 @@ const validatePhone = () => {
   return true
 }
 
-const validateCode = () => {
-  if (!code.value) {
-    codeError.value = '请输入验证码'
+const validatePassword = () => {
+  if (!password.value) {
+    passwordError.value = '请输入密码'
     return false
   }
-  if (code.value.length !== 6) {
-    codeError.value = '验证码为6位数字'
+  if (password.value.length < 6) {
+    passwordError.value = '密码至少6位'
     return false
   }
-  codeError.value = ''
+  passwordError.value = ''
   return true
 }
 
@@ -319,30 +307,6 @@ const showGlobalError = (message: string) => {
   }, 3000)
 }
 
-// 发送验证码
-const sendCode = () => {
-  if (counting.value || !phoneValid.value) return
-  
-  if (!validatePhone()) {
-    triggerShake()
-    return
-  }
-  
-  counting.value = true
-  countdown.value = 60
-  
-  toastSuccess('验证码已发送')
-  
-  countdownTimer = window.setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      counting.value = false
-      if (countdownTimer) clearInterval(countdownTimer)
-      countdownTimer = null
-    }
-  }, 1000)
-}
-
 // 切换协议
 const toggleAgreement = () => {
   agreed.value = !agreed.value
@@ -365,13 +329,13 @@ const goToLogin = () => {
 const handleRegister = async () => {
   // 清除之前的错误
   phoneError.value = ''
-  codeError.value = ''
+  passwordError.value = ''
   nicknameError.value = ''
   communityError.value = ''
   agreementError.value = ''
   
   // 验证所有字段
-  const valid = validatePhone() && validateCode() && validateNickname() && validateCommunity()
+  const valid = validatePhone() && validatePassword() && validateNickname() && validateCommunity()
   if (!valid) {
     triggerShake()
     return
@@ -387,9 +351,9 @@ const handleRegister = async () => {
     isLoading.value = true
     showLoading('注册中...')
     
-    const result: any = await authApi.login({ 
+    const result: any = await authApi.register({ 
       phone: phone.value, 
-      code: code.value,
+      password: password.value,
       nickname: nickname.value,
       community: community.value
     })
@@ -402,7 +366,6 @@ const handleRegister = async () => {
     setTimeout(() => {
       const redirectPath = getAndClearLoginRedirect()
       if (redirectPath) {
-        // 回到原页面
         redirectTo(redirectPath)
       } else {
         switchTab('/pages/index/index')
@@ -600,6 +563,18 @@ const showPrivacy = () => {
   animation: iconPop 0.3s var(--transition-spring);
 }
 
+.password-toggle {
+  cursor: pointer;
+  padding: 4px;
+  font-size: 16px;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.password-toggle:hover {
+  opacity: 1;
+}
+
 /* 错误文本 */
 .error-text {
   font-size: var(--font-size-xs);
@@ -614,78 +589,6 @@ const showPrivacy = () => {
 .agreement-error {
   opacity: 1;
   transform: translateY(0);
-}
-
-/* 验证码行 */
-.code-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: var(--spacing-xs);
-}
-
-.code-row .error-text {
-  flex: 1;
-  margin-top: 0;
-  margin-right: var(--spacing-md);
-}
-
-.code-btn {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-primary-gradient);
-  color: white;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-smooth);
-  min-width: 90px;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
-  position: relative;
-  overflow: hidden;
-}
-
-.code-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left var(--transition-slow);
-}
-
-.code-btn:hover:not(.disabled)::before {
-  left: 100%;
-}
-
-.code-btn:hover:not(.disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.35);
-}
-
-.code-btn:active:not(.disabled) {
-  transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.25);
-}
-
-.code-btn.disabled {
-  background: var(--color-text-muted);
-  cursor: not-allowed;
-  opacity: 0.6;
-  box-shadow: none;
-}
-
-.code-btn.loading {
-  pointer-events: none;
-}
-
-.countdown {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* 协议 */
