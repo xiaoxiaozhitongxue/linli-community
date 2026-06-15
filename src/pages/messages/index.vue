@@ -168,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { navigateBack, navigateTo, getUserStorageKey } from '../../utils/router'
 import { useAuth } from '../../store'
 import { toastInfo } from '../../utils/toast'
@@ -359,6 +359,12 @@ const goToGroup = (item: Message) => {
 onMounted(() => {
   statusBarHeight.value = 20
   loadMessages()
+})
+
+watch(isLoggedIn, (newVal, oldVal) => {
+  if (newVal && !oldVal) {
+    loadMessages()
+  }
 })
 </script>
 

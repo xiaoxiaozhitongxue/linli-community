@@ -91,9 +91,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { navigateBackSmart } from '../../utils/router'
+import { navigateBackSmart, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { tasksApi, type Task } from '../../utils/api'
+
+const STORAGE_KEY = 'ai_helper_tasks'
+const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
+const MY_ACCEPTED_TASKS_KEY = 'ai_helper_my_accepted_tasks'
 
 const route = useRoute()
 const statusBarHeight = ref(20)
@@ -153,6 +157,21 @@ function mapApiTaskToLocal(apiTask: Task): TaskDetail {
   }
 }
 
+function loadFromStorage(key: string, defaultValue: any[]) {
+  try {
+    const stored = localStorage.getItem(key)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) {
+        return parsed
+      }
+    }
+  } catch (e) {
+    console.error(`加载数据失败: ${key}`, e)
+  }
+  return defaultValue
+}
+
 async function handleAccept() {
   const t = task.value
   if (!t) return
@@ -197,15 +216,52 @@ async function fetchTask(id: string) {
       toastInfo('未找到该任务')
     }
   } catch (e: any) {
-    console.error('[ai-helper/detail] 加载任务失败:', e)
-    task.value = null
-    toastError('加载任务失败')
+    console.error('[ai-helper/detail] 加载任务失败，尝试从本地存储加载:', e)
+    // 回退到 localStorage
+    const storageKey = getUserStorageKey(STORAGE_KEY)
+    const createdKey = getUserStorageKey(MY_CREATED_TASKS_KEY)
+    const acceptedKey = getUserStorageKey(MY_ACCEPTED_TASKS_KEY)
+
+    const tasks = loadFromStorage(storageKey, [])
+    let found = tasks.find((t: any) => t.id === id)
+
+    if (!found) {
+      const myCreatedTasks = loadFromStorage(createdKey, [])
+      found = myCreatedTasks.find((t: any) => t.id === id)
+    }
+
+    if (!found) {
+      const myAcceptedTasks = loadFromStorage(acceptedKey, [])
+      found = myAcceptedTasks.find((t: any) => t.id === id)
+    }
+
+    if (found) {
+      task.value = {
+        id: found.id || id,
+        type: found.type || 'other',
+        title: found.title || '任务详情',
+        description: found.description || '暂无详细描述',
+        reward: found.reward || 0,
+        location: found.location || '',
+        distance: found.distance || 0,
+        responses: found.responses || 0,
+        createTime: found.createTime || '',
+        creatorName: found.creatorName || '',
+        creatorAvatar: found.creatorAvatar || '',
+        creatorRating: found.creatorRating || 0,
+        creatorTasks: found.creatorTasks || 0,
+        status: (found.status === 'open' || found.status === 'pending') ? 'open' : (found.status === 'ongoing' || found.status === 'in_progress') ? 'in_progress' : (found.status as any) || 'open'
+      }
+    } else {
+      task.value = null
+      toastInfo('未找到该任务')
+    }
   } finally {
     loading.value = false
   }
 }
 
-// 监听路由参数变化（当从详情页跳到另一个详情页时）
+// 监听路由参数变化
 watch(
   () => route.query.id,
   (newId) => {

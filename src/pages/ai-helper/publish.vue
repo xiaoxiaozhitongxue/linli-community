@@ -127,7 +127,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { navigateTo, navigateBackSmart } from '../../utils/router'
+import { navigateTo, navigateBackSmart, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { tasksApi } from '../../utils/api'
 
@@ -142,6 +142,29 @@ const categories = [
   { value: 'child', label: '儿童', icon: '👶' },
   { value: 'other', label: '其他', icon: '📝' }
 ]
+
+function loadFromStorage(key: string, defaultValue: any[]) {
+  try {
+    const stored = localStorage.getItem(key)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) {
+        return parsed
+      }
+    }
+  } catch (e) {
+    console.error(`加载数据失败: ${key}`, e)
+  }
+  return defaultValue
+}
+
+function saveToStorage(key: string, data: any) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch (e) {
+    console.error(`保存数据失败: ${key}`, e)
+  }
+}
 
 const form = ref({
   title: '',
@@ -192,6 +215,39 @@ const submitTask = async () => {
     const msg = e?.message || '发布失败，请稍后重试'
     toastInfo(msg)
     console.error('[ai-helper/publish] createTask 失败:', e)
+  }
+
+  // 同时保存到本地存储，确保数据不丢失
+  try {
+    const userTaskKey = getUserStorageKey('ai_helper_tasks')
+    const userCreatedKey = getUserStorageKey('ai_helper_my_created_tasks')
+
+    const localTask = {
+      id: Date.now().toString(),
+      type: form.value.category,
+      title: form.value.title.trim(),
+      description: form.value.description.trim(),
+      reward: Number(form.value.reward) || 0,
+      distance: Math.floor(Math.random() * 500) + 50,
+      responses: 0,
+      creatorName: user.value?.nickname || '邻里用户',
+      creatorAvatar: user.value?.avatar || 'https://i.pravatar.cc/100?img=8',
+      createTime: '刚刚',
+      status: 'open',
+      creatorRating: user.value?.credit_score ? Number((user.value.credit_score / 20).toFixed(1)) : 4.5,
+      creatorTasks: 10,
+      location: form.value.location.trim()
+    }
+
+    const tasks = loadFromStorage(userTaskKey, [])
+    tasks.unshift(localTask)
+    saveToStorage(userTaskKey, tasks)
+
+    const myCreatedTasks = loadFromStorage(userCreatedKey, [])
+    myCreatedTasks.unshift(localTask)
+    saveToStorage(userCreatedKey, myCreatedTasks)
+  } catch (e) {
+    console.error('[ai-helper/publish] 本地存储保存失败:', e)
   }
 }
 </script>
