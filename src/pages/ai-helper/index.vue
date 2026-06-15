@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <!-- 顶部区域 -->
-    <div class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
+    <div class="header">
       <div class="header-content">
         <div class="header-main">
           <div class="header-icon-wrap">
@@ -395,18 +395,23 @@ onMounted(async () => {
 }
 
 .header {
-  background: var(--color-primary-gradient);
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%);
+  background: var(--color-primary-gradient, linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%));
   padding: var(--spacing-lg);
   padding-bottom: var(--spacing-2xl);
+  padding-top: calc(20px + var(--spacing-lg));
   width: 100%;
+  min-height: 120px;
+  box-sizing: border-box;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 var(--spacing-lg);
 }
 
 .header-main {
@@ -491,8 +496,8 @@ onMounted(async () => {
 }
 
 .content-inner {
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
   padding: 0 var(--spacing-lg);
 }
 

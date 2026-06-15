@@ -220,7 +220,9 @@ async function fetchTask(id: string) {
   loading.value = true
   task.value = null
   try {
+    console.log('[ai-helper/detail] 开始加载任务, id =', id)
     const apiTask = await tasksApi.getTask(id)
+    console.log('[ai-helper/detail] API返回任务:', apiTask)
     if (apiTask) {
       task.value = mapApiTaskToLocal(apiTask)
     } else {
@@ -230,45 +232,55 @@ async function fetchTask(id: string) {
   } catch (e: any) {
     console.error('[ai-helper/detail] 加载任务失败，尝试从本地存储加载:', e)
     // 回退到 localStorage
-    const storageKey = getUserStorageKey(STORAGE_KEY)
-    const createdKey = getUserStorageKey(MY_CREATED_TASKS_KEY)
-    const acceptedKey = getUserStorageKey(MY_ACCEPTED_TASKS_KEY)
+    try {
+      const storageKey = getUserStorageKey(STORAGE_KEY)
+      const createdKey = getUserStorageKey(MY_CREATED_TASKS_KEY)
+      const acceptedKey = getUserStorageKey(MY_ACCEPTED_TASKS_KEY)
 
-    const tasks = loadFromStorage(storageKey, [])
-    let found = tasks.find((t: any) => t.id === id)
+      console.log('[ai-helper/detail] 从localStorage查找任务, storageKey =', storageKey)
 
-    if (!found) {
-      const myCreatedTasks = loadFromStorage(createdKey, [])
-      found = myCreatedTasks.find((t: any) => t.id === id)
-    }
+      const tasks = loadFromStorage(storageKey, [])
+      let found = tasks.find((t: any) => t.id === id)
 
-    if (!found) {
-      const myAcceptedTasks = loadFromStorage(acceptedKey, [])
-      found = myAcceptedTasks.find((t: any) => t.id === id)
-    }
-
-    if (found) {
-      task.value = {
-        id: found.id || id,
-        type: found.type || 'other',
-        title: found.title || '任务详情',
-        description: found.description || '暂无详细描述',
-        reward: found.reward || 0,
-        location: found.location || '',
-        distance: found.distance || 0,
-        responses: found.responses || 0,
-        createTime: found.createTime || '',
-        creatorName: found.creatorName || '',
-        creatorAvatar: found.creatorAvatar || '',
-        creatorRating: found.creatorRating || 0,
-        creatorTasks: found.creatorTasks || 0,
-        status: (found.status === 'open' || found.status === 'pending') ? 'open' : (found.status === 'ongoing' || found.status === 'in_progress') ? 'in_progress' : (found.status as any) || 'open'
+      if (!found) {
+        const myCreatedTasks = loadFromStorage(createdKey, [])
+        found = myCreatedTasks.find((t: any) => t.id === id)
       }
-    } else {
+
+      if (!found) {
+        const myAcceptedTasks = loadFromStorage(acceptedKey, [])
+        found = myAcceptedTasks.find((t: any) => t.id === id)
+      }
+
+      if (found) {
+        console.log('[ai-helper/detail] 从localStorage找到任务:', found)
+        task.value = {
+          id: found.id || id,
+          type: found.type || 'other',
+          title: found.title || '任务详情',
+          description: found.description || '暂无详细描述',
+          reward: found.reward || 0,
+          location: found.location || '',
+          distance: found.distance || 0,
+          responses: found.responses || 0,
+          createTime: found.createTime || '',
+          creatorName: found.creatorName || '',
+          creatorAvatar: found.creatorAvatar || '',
+          creatorRating: found.creatorRating || 0,
+          creatorTasks: found.creatorTasks || 0,
+          status: (found.status === 'open' || found.status === 'pending') ? 'open' : (found.status === 'ongoing' || found.status === 'in_progress') ? 'in_progress' : (found.status as any) || 'open'
+        }
+      } else {
+        task.value = null
+        toastInfo('未找到该任务')
+      }
+    } catch (storageError) {
+      console.error('[ai-helper/detail] localStorage读取失败:', storageError)
       task.value = null
-      toastInfo('未找到该任务')
+      toastInfo('加载失败，请重试')
     }
   } finally {
+    console.log('[ai-helper/detail] 加载完成, loading = false')
     loading.value = false
   }
 }
@@ -631,11 +643,11 @@ watch(
 
 @media (min-width: 768px) {
   .content {
-    max-width: 640px;
+    max-width: 900px;
     margin: 0 auto;
   }
   .bottom-action {
-    max-width: 640px;
+    max-width: 900px;
     margin: 0 auto;
     left: 50%;
     transform: translateX(-50%);
@@ -643,11 +655,14 @@ watch(
 }
 
 @media (min-width: 1024px) {
+  .content {
+    max-width: 1100px;
+  }
   .bottom-action {
     left: var(--nav-sidebar-width, 220px);
     right: auto;
     transform: none;
-    max-width: 640px;
+    max-width: 1100px;
     margin: 0 auto;
   }
 }

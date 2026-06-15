@@ -940,11 +940,24 @@ export const tasksApi = {
 
   getTask: (id: string) => {
     return new Promise<Task | null>((resolve) => {
-      setTimeout(() => {
-        const biz = loadBusiness()
-        const task = (biz.tasks || []).find(t => t.id === id) || null
-        resolve(task)
-      }, 100)
+      // 添加5秒超时保护
+      const timeoutId = setTimeout(() => {
+        console.warn('[api] getTask 超时, id =', id)
+        resolve(null)
+      }, 5000)
+
+      try {
+        setTimeout(() => {
+          clearTimeout(timeoutId)
+          const biz = loadBusiness()
+          const task = (biz.tasks || []).find(t => t.id === id) || null
+          resolve(task)
+        }, 100)
+      } catch (e) {
+        clearTimeout(timeoutId)
+        console.error('[api] getTask 异常:', e)
+        resolve(null)
+      }
     })
   },
 

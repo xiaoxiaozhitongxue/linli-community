@@ -7,6 +7,12 @@
    变量定义 - 设计系统核心
    ======================================== */
 :root {
+  /* 侧边栏宽度 - 默认0，桌面端在媒体查询中覆盖 */
+  --nav-sidebar-width: 0;
+  
+  /* 状态栏高度 - 用于固定定位元素避免与系统状态栏重叠 */
+  --status-bar-height: 20px;
+  
   /* 主色调系统 - 温暖热情的邻里社区风格 */
   --color-primary: #FF6B35;
   --color-primary-light: #FF8A5C;
@@ -188,6 +194,12 @@ html {
   scroll-behavior: smooth;
 }
 
+html, body {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: var(--font-family);
   font-size: 14px;
@@ -197,13 +209,14 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
+  width: 100%;
 }
 
 #app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  margin: 0 auto;
+  width: 100%;
   max-width: 100%;
 }
 
@@ -233,14 +246,13 @@ body {
   }
 }
 
-/* 大屏幕：限制最大宽度居中 */
+/* 大屏幕：占满整个视口 */
 @media (min-width: 1440px) {
   :root {
     --nav-sidebar-width: 250px;
   }
   #app {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
   }
 }
 

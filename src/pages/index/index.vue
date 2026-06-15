@@ -1,10 +1,10 @@
 <template>
   <div class="page">
-    <div class="status-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
+    <div class="status-bar">
       <div class="status-content">
         <div class="location" @click="chooseLocation">
-          <span class="location-icon">{{ locating ? '⏳' : '📍' }}</span>
-          <span class="location-text">{{ locating ? '定位中...' : communityName }}</span>
+          <span class="location-icon">{{ locating ? '📡' : '📍' }}</span>
+          <span class="location-text" :class="{ locating }">{{ locating ? '定位中' : communityName }}</span>
           <span class="location-arrow">▼</span>
         </div>
         <div class="search-bar" @click="goToSearch">
@@ -14,14 +14,14 @@
       </div>
     </div>
 
-    <div v-if="showRefreshIndicator" class="refresh-indicator" :style="{ top: (statusBarHeight + 60) + 'px' }">
+    <div v-if="showRefreshIndicator" class="refresh-indicator">
       <div class="refresh-content">
         <div class="loading-spinner" :class="{ spinning: refreshing }"></div>
         <span>{{ refreshing ? '正在刷新...' : '下拉刷新' }}</span>
       </div>
     </div>
 
-    <div class="content" :style="{ paddingTop: (statusBarHeight + 60) + 'px' }" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
+    <div class="content" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
       <div class="page-wrapper">
         <div class="banner-section">
           <div class="banner-swiper" @touchstart="onBannerTouchStart" @touchmove="onBannerTouchMove" @touchend="onBannerTouchEnd">
@@ -251,7 +251,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { postsApi, activitiesApi, tasksApi, type Post, type Comment, type Activity } from '../../utils/api'
 import { useAuth } from '../../store'
-import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
+import { toastSuccess, toastError } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
 import { loadHealthRecords } from '../../utils/storage'
@@ -293,7 +293,7 @@ async function chooseLocation(opts: { auto?: boolean } = {}) {
       if (!communityName.value || communityName.value === '点击定位') {
         communityName.value = '点击定位'
       }
-      toastInfo('定位超时，稍后点击地址栏重试')
+      // 静默处理，不显示 toast，避免闪烁
     }
   }, 20000)
 
@@ -303,16 +303,10 @@ async function chooseLocation(opts: { auto?: boolean } = {}) {
     // 展示策略：优先展示真实城市·区域；注册社区仅在拿不到地理编码时作为兜底
     const display = pickDisplayCommunity(result, user.value?.community)
     communityName.value = display
-    const place = (result.city && result.district)
-      ? `${result.city} ${result.district}`
-      : (result.address || display)
-    toastSuccess(`已定位到 ${place}`)
     console.log('[index] chooseLocation 完成, result =', result, 'display =', display)
   } catch (err: any) {
-    // 失败不覆盖已有的社区名 — 用户可能之前已经定位成功过
-    const msg = err?.message || '定位失败，请稍后重试'
+    // 失败静默处理，不覆盖已有的社区名 — 用户可能之前已经定位成功过
     console.warn('[index] 定位失败:', err)
-    if (!opts.auto) toastInfo(msg)
   } finally {
     locating.value = false
     if (hardResetTimer) {
@@ -832,9 +826,13 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  z-index: var(--z-fixed);
-  background: var(--color-primary-gradient);
+  z-index: 100;
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%);
+  background: var(--color-primary-gradient, linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%));
   padding-bottom: 12px;
+  padding-top: 20px;
+  min-height: 88px;
+  box-sizing: border-box;
 }
 
 .status-content {
@@ -851,23 +849,43 @@ onUnmounted(() => {
   align-items: center;
   cursor: pointer;
   min-height: 44px;
+  padding: 6px 0;
+  transition: opacity var(--transition-fast);
+}
+
+.location:active {
+  opacity: 0.8;
 }
 
 .location-icon {
-  font-size: 14px;
+  font-size: 16px;
+  margin-right: 4px;
 }
 
 .location-text {
   color: var(--color-text-white);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: var(--font-weight-semibold);
-  margin-left: 4px;
+}
+
+.location-text.locating {
+  animation: locatingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes locatingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .location-arrow {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.8);
   font-size: 10px;
-  margin-left: 4px;
+  margin-left: 6px;
+  transition: transform var(--transition-fast);
+}
+
+.location:active .location-arrow {
+  transform: scale(0.9);
 }
 
 .search-bar {
@@ -898,9 +916,10 @@ onUnmounted(() => {
 
 .refresh-indicator {
   position: fixed;
+  top: 88px;
   left: 0;
   right: 0;
-  z-index: var(--z-fixed);
+  z-index: 101;
   display: flex;
   justify-content: center;
   padding: 12px 0;
@@ -950,10 +969,12 @@ onUnmounted(() => {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  width: 100%;
+  padding-top: 88px;
 }
 
 .page-wrapper {
-  max-width: 100%;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -1117,8 +1138,6 @@ onUnmounted(() => {
 
 .section {
   padding: var(--spacing-xl) var(--spacing-lg);
-  padding-left: 0;
-  padding-right: 0;
 }
 
 .section:first-of-type {
@@ -1130,8 +1149,6 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-lg);
-  padding: 0 var(--spacing-lg);
-  box-sizing: content-box;
 }
 
 .section-title {
@@ -1872,24 +1889,22 @@ onUnmounted(() => {
 }
 
 .animate-fadeIn {
-  animation: slideUp var(--transition-smooth) forwards;
+  animation: fadeIn 0.2s ease-out forwards;
 }
 
 @keyframes fadeIn {
   from {
-    opacity: 0;
-    transform: translateY(12px);
+    opacity: 0.3;
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @keyframes slideUp {
   from {
-    opacity: 0;
-    transform: translateY(20px);
+    opacity: 0.3;
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -2105,100 +2120,200 @@ onUnmounted(() => {
 
 @media (min-width: 1024px) {
   .page-wrapper {
-    max-width: 900px;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 var(--spacing-2xl);
   }
   
   .status-content {
-    max-width: 900px;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 var(--spacing-2xl);
   }
   
   .status-bar {
     left: var(--nav-sidebar-width, 220px);
+    right: 0;
+    width: auto;
   }
   
   .banner-section {
-    padding: var(--spacing-xl);
+    padding: var(--spacing-2xl) 0;
   }
   
   .banner-swiper {
-    height: 180px;
-    max-width: 900px;
-    margin: 0 auto;
+    height: 280px;
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-2xl);
+  }
+  
+  .banner-item {
+    height: 280px;
+  }
+  
+  .banner-title {
+    font-size: 24px;
+  }
+  
+  .banner-desc {
+    font-size: 15px;
   }
   
   .quick-actions {
     grid-template-columns: repeat(4, 1fr);
-    max-width: 900px;
-    margin: 0 auto var(--spacing-xl);
+    width: 100%;
+    max-width: 100%;
+    gap: var(--spacing-xl);
+    padding: 0;
+  }
+  
+  .quick-card {
+    min-height: 120px;
+    padding: var(--spacing-xl);
+  }
+  
+  .quick-icon {
+    font-size: 28px;
+  }
+  
+  .quick-name {
+    font-size: 16px;
+  }
+  
+  .section {
+    padding: var(--spacing-2xl) 0;
+  }
+  
+  .section-header {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: var(--spacing-xl);
+  }
+  
+  .section-title {
+    font-size: 20px;
+  }
+  
+  .section-more {
+    font-size: 15px;
   }
   
   .activity-scroll {
     grid-template-columns: repeat(4, 1fr);
-    max-width: 900px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    gap: var(--spacing-xl);
+    padding: 0;
+  }
+  
+  .activity-card {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+  
+  .activity-cover {
+    height: 120px;
+  }
+  
+  .activity-emoji {
+    font-size: 48px;
   }
   
   .recent-activity-scroll {
-    grid-template-columns: repeat(3, 1fr);
-    max-width: 900px;
-    margin: 0 auto;
+    grid-template-columns: repeat(4, 1fr);
+    width: 100%;
+    max-width: 100%;
+    gap: var(--spacing-xl);
+    padding: 0;
   }
   
-  .section-header {
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
+  .recent-activity-card {
+    width: 100%;
   }
   
   .feed-list {
-    max-width: 900px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
     padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-xl);
   }
   
   .feed-card {
     padding: var(--spacing-2xl);
+    border-radius: var(--radius-2xl);
+  }
+  
+  .feed-avatar {
+    width: 52px;
+    height: 52px;
+  }
+  
+  .feed-username {
+    font-size: 16px;
+  }
+  
+  .feed-text {
+    font-size: 15px;
+    line-height: 1.7;
   }
 
   .refresh-indicator {
     left: var(--nav-sidebar-width, 220px);
+    right: 0;
   }
 }
 
 @media (min-width: 1440px) {
   .page-wrapper {
-    max-width: 1000px;
+    padding: 0 var(--spacing-3xl);
   }
   
   .status-content {
-    max-width: 1000px;
+    padding: 0 var(--spacing-3xl);
+  }
+  
+  .banner-section {
+    padding: var(--spacing-2xl) 0;
   }
   
   .banner-swiper {
-    max-width: 1000px;
-    height: 200px;
+    height: 340px;
+    border-radius: var(--radius-2xl);
+  }
+  
+  .banner-item {
+    height: 340px;
+  }
+  
+  .banner-title {
+    font-size: 28px;
   }
   
   .quick-actions {
-    max-width: 1000px;
-    margin: 0 auto var(--spacing-xl);
-  }
-  
-  .section-header {
-    max-width: 1000px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--spacing-2xl);
   }
   
   .activity-scroll {
-    max-width: 1000px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--spacing-2xl);
   }
   
   .recent-activity-scroll {
-    max-width: 1000px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--spacing-2xl);
   }
   
   .feed-list {
-    max-width: 1000px;
-    padding: 0;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-2xl);
+  }
+  
+  .feed-card {
+    padding: var(--spacing-2xl);
   }
 }
 </style>
