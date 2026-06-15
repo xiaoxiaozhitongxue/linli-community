@@ -11,7 +11,7 @@ NODE_VERSION = "20"
 [[d1_databases]]
 binding = "DB"
 database_name = "linli-community-db"
-database_id = "linli-community-db"
+database_id = "420190fe-57fa-475d-9948-af57eeaedb26"
 
 [vars]
 APP_NAME = "邻里社区"

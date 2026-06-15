@@ -7,6 +7,7 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   phone TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
   nickname TEXT NOT NULL,
   avatar TEXT,
   gender TEXT CHECK(gender IN ('male', 'female', 'other')),
