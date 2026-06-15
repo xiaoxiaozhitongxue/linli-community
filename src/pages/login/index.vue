@@ -324,11 +324,15 @@ const handleLogin = async () => {
     setTimeout(() => {
       const redirectPath = getAndClearLoginRedirect()
       if (redirectPath) {
-        redirectTo(redirectPath)
+        // 使用replace确保正确跳转
+        window.location.hash = '#' + redirectPath
+        window.location.reload()
       } else {
-        switchTab('/pages/index/index')
+        // 使用replace确保正确跳转
+        window.location.hash = '#/pages/index/index'
+        window.location.reload()
       }
-    }, 800)
+    }, 500)
   } catch (e: any) {
     hideLoading()
     isLoading.value = false
