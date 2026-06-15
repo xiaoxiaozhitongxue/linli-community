@@ -2,6 +2,21 @@ import { createErrorResponse } from './response.js'
 import { getTokenFromRequest, verifyToken } from './session.js'
 import { getDb } from './db.js'
 
+// 简单的密码哈希函数（生产环境建议使用更安全的方案）
+export async function hashPassword(password) {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password + 'linli-salt-2024')
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// 验证密码
+export async function verifyPassword(password, hashedPassword) {
+  const hash = await hashPassword(password)
+  return hash === hashedPassword
+}
+
 export async function requireAuth(context) {
   try {
     const { request } = context

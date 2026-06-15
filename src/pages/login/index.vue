@@ -31,33 +31,25 @@
           <div class="error-text" v-if="phoneError">{{ phoneError }}</div>
         </div>
 
-        <!-- 验证码输入 -->
-        <div class="input-group" :class="{ error: codeError }">
-          <div class="input-label">验证码</div>
-          <div class="input-row" :class="{ focused: codeFocused }">
+        <!-- 密码输入 -->
+        <div class="input-group" :class="{ error: passwordError }">
+          <div class="input-label">密码</div>
+          <div class="input-row" :class="{ focused: passwordFocused }">
             <input 
               class="input-field" 
-              type="text" 
-              v-model="code" 
-              placeholder="请输入验证码（测试账号填密码）"
+              :type="showPassword ? 'text' : 'password'" 
+              v-model="password" 
+              placeholder="请输入密码（至少6位）"
               maxlength="20"
-              @focus="onCodeFocus"
-              @blur="onCodeBlur"
-              @input="onCodeInput"
+              @focus="onPasswordFocus"
+              @blur="onPasswordBlur"
+              @input="onPasswordInput"
             />
-            <span class="input-icon" :class="{ valid: codeValid }">✓</span>
+            <span class="password-toggle" @click="showPassword = !showPassword">
+              {{ showPassword ? '🙈' : '👁️' }}
+            </span>
           </div>
-          <div class="code-row">
-            <div class="error-text" v-if="codeError">{{ codeError }}</div>
-            <div 
-              class="code-btn" 
-              :class="{ disabled: counting || !phoneValid, loading: counting }"
-              @click="sendCode"
-            >
-              <span v-if="!counting">获取验证码</span>
-              <span v-else class="countdown">{{ countdown }}s</span>
-            </div>
-          </div>
+          <div class="error-text" v-if="passwordError">{{ passwordError }}</div>
         </div>
 
         <!-- 登录按钮 -->
@@ -109,27 +101,17 @@
                 />
                 <div class="error-text" v-if="registerPhoneError">{{ registerPhoneError }}</div>
               </div>
-              <div class="input-group" :class="{ error: registerCodeError }">
-                <div class="input-label">验证码</div>
-                <div class="input-row">
-                  <input 
-                    class="input-field" 
-                    type="text" 
-                    v-model="registerCode" 
-                    placeholder="请输入验证码"
-                    maxlength="6"
-                    @input="registerCodeError = ''"
-                  />
-                  <span 
-                    class="code-btn small" 
-                    :class="{ disabled: registerCounting }"
-                    @click="sendRegisterCode"
-                  >
-                    <span v-if="!registerCounting">获取</span>
-                    <span v-else>{{ registerCountdown }}s</span>
-                  </span>
-                </div>
-                <div class="error-text" v-if="registerCodeError">{{ registerCodeError }}</div>
+              <div class="input-group" :class="{ error: registerPasswordError }">
+                <div class="input-label">密码</div>
+                <input 
+                  class="input-field" 
+                  type="password" 
+                  v-model="registerPassword" 
+                  placeholder="请输入密码（至少6位）"
+                  maxlength="20"
+                  @input="registerPasswordError = ''"
+                />
+                <div class="error-text" v-if="registerPasswordError">{{ registerPasswordError }}</div>
               </div>
               <div class="input-group" :class="{ error: registerNicknameError }">
                 <div class="input-label">昵称</div>
@@ -142,6 +124,18 @@
                   @input="registerNicknameError = ''"
                 />
                 <div class="error-text" v-if="registerNicknameError">{{ registerNicknameError }}</div>
+              </div>
+              <div class="input-group" :class="{ error: registerCommunityError }">
+                <div class="input-label">所属社区</div>
+                <input 
+                  class="input-field" 
+                  type="text" 
+                  v-model="registerCommunity" 
+                  placeholder="请输入所属社区"
+                  maxlength="50"
+                  @input="registerCommunityError = ''"
+                />
+                <div class="error-text" v-if="registerCommunityError">{{ registerCommunityError }}</div>
               </div>
             </div>
             <div class="modal-footer">
@@ -175,20 +169,20 @@ const { setUser } = useAuth()
 
 // 表单数据
 const phone = ref('')
-const code = ref('')
+const password = ref('')
+const showPassword = ref(false)
 
 // 注册表单数据
 const showRegisterModal = ref(false)
 const registerPhone = ref('')
-const registerCode = ref('')
+const registerPassword = ref('')
 const registerNickname = ref('')
+const registerCommunity = ref('')
 const isRegisterLoading = ref(false)
 const registerPhoneError = ref('')
-const registerCodeError = ref('')
+const registerPasswordError = ref('')
 const registerNicknameError = ref('')
-const registerCounting = ref(false)
-const registerCountdown = ref(60)
-let registerCountdownTimer: number | null = null
+const registerCommunityError = ref('')
 
 // UI状态
 const counting = ref(false)
@@ -198,11 +192,11 @@ const isShaking = ref(false)
 
 // 聚焦状态
 const phoneFocused = ref(false)
-const codeFocused = ref(false)
+const passwordFocused = ref(false)
 
 // 错误状态
 const phoneError = ref('')
-const codeError = ref('')
+const passwordError = ref('')
 const globalError = ref('')
 
 let countdownTimer: number | null = null
@@ -216,19 +210,17 @@ onUnmounted(() => {
   if (globalErrorTimer) clearTimeout(globalErrorTimer)
 })
 
-// 验证状态 - 测试账号或普通手机号
-const testAccounts = ['17276701841', '17276701842']
+// 验证状态
 const phoneValid = computed(() => {
-  if (testAccounts.includes(phone.value)) return true
   return phone.value.length === 11 && /^1\d{10}$/.test(phone.value)
 })
 
-// 验证码验证 - 测试账号时为密码
-const codeValid = computed(() => {
-  return code.value.length >= 4
+// 密码验证
+const passwordValid = computed(() => {
+  return password.value.length >= 6
 })
 
-const canLogin = computed(() => phoneValid.value && codeValid.value && !isLoading.value)
+const canLogin = computed(() => phoneValid.value && passwordValid.value && !isLoading.value)
 
 // 聚焦/失焦处理
 const onPhoneFocus = () => { phoneFocused.value = true }
@@ -236,10 +228,10 @@ const onPhoneBlur = () => {
   phoneFocused.value = false
   validatePhone()
 }
-const onCodeFocus = () => { codeFocused.value = true }
-const onCodeBlur = () => { 
-  codeFocused.value = false
-  validateCode()
+const onPasswordFocus = () => { passwordFocused.value = true }
+const onPasswordBlur = () => { 
+  passwordFocused.value = false
+  validatePassword()
 }
 
 // 输入处理
@@ -248,9 +240,9 @@ const onPhoneInput = () => {
   if (phoneError.value) phoneError.value = ''
 }
 
-const onCodeInput = () => {
+const onPasswordInput = () => {
   // 清除错误
-  if (codeError.value) codeError.value = ''
+  if (passwordError.value) passwordError.value = ''
 }
 
 // 验证
@@ -259,12 +251,6 @@ const validatePhone = () => {
     phoneError.value = '请输入手机号'
     return false
   }
-  // 测试账号手机号直接通过
-  if (testAccounts.includes(phone.value)) {
-    phoneError.value = ''
-    return true
-  }
-  // 普通手机号验证
   if (phone.value.length !== 11) {
     phoneError.value = '手机号格式不正确'
     return false
@@ -277,16 +263,16 @@ const validatePhone = () => {
   return true
 }
 
-const validateCode = () => {
-  if (!code.value) {
-    codeError.value = '请输入验证码'
+const validatePassword = () => {
+  if (!password.value) {
+    passwordError.value = '请输入密码'
     return false
   }
-  if (code.value.length < 4) {
-    codeError.value = '验证码为4位以上'
+  if (password.value.length < 6) {
+    passwordError.value = '密码至少6位'
     return false
   }
-  codeError.value = ''
+  passwordError.value = ''
   return true
 }
 
@@ -312,28 +298,28 @@ const showGlobalError = (message: string) => {
 const handleLogin = async () => {
   // 清除之前的错误
   phoneError.value = ''
-  codeError.value = ''
-  
+  passwordError.value = ''
+
   // 验证所有字段
-  const valid = validatePhone() && validateCode()
+  const valid = validatePhone() && validatePassword()
   if (!valid) {
     triggerShake()
     return
   }
-  
+
   try {
     isLoading.value = true
     showLoading('登录中...')
-    
-    const result: any = await authApi.login({ 
-      phone: phone.value, 
-      code: code.value
+
+    const result: any = await authApi.login({
+      phone: phone.value,
+      password: password.value
     })
     setUser(result.user, result.token, result.userData)
-    
+
     hideLoading()
     toastSuccess('登录成功')
-    
+
     // 登录成功后，检查是否有重定向路径
     setTimeout(() => {
       const redirectPath = getAndClearLoginRedirect()
@@ -352,41 +338,14 @@ const handleLogin = async () => {
   }
 }
 
-// 发送注册验证码
-const sendRegisterCode = () => {
-  if (registerCounting.value) return
-  
-  // 验证手机号
-  if (!registerPhone.value) {
-    registerPhoneError.value = '请输入手机号'
-    return
-  }
-  if (registerPhone.value.length !== 11 || !/^1\d{10}$/.test(registerPhone.value)) {
-    registerPhoneError.value = '手机号格式不正确'
-    return
-  }
-  
-  registerCounting.value = true
-  registerCountdown.value = 60
-  toastSuccess('验证码已发送')
-  
-  registerCountdownTimer = window.setInterval(() => {
-    registerCountdown.value--
-    if (registerCountdown.value <= 0) {
-      registerCounting.value = false
-      if (registerCountdownTimer) clearInterval(registerCountdownTimer)
-      registerCountdownTimer = null
-    }
-  }, 1000)
-}
-
 // 处理注册
 const handleRegister = async () => {
   // 验证输入
   registerPhoneError.value = ''
-  registerCodeError.value = ''
+  registerPasswordError.value = ''
   registerNicknameError.value = ''
-  
+  registerCommunityError.value = ''
+
   if (!registerPhone.value) {
     registerPhoneError.value = '请输入手机号'
     return
@@ -395,12 +354,12 @@ const handleRegister = async () => {
     registerPhoneError.value = '手机号格式不正确'
     return
   }
-  if (!registerCode.value) {
-    registerCodeError.value = '请输入验证码'
+  if (!registerPassword.value) {
+    registerPasswordError.value = '请输入密码'
     return
   }
-  if (registerCode.value.length !== 6) {
-    registerCodeError.value = '验证码为6位数字'
+  if (registerPassword.value.length < 6) {
+    registerPasswordError.value = '密码至少6位'
     return
   }
   if (!registerNickname.value) {
@@ -411,23 +370,28 @@ const handleRegister = async () => {
     registerNicknameError.value = '昵称至少2位'
     return
   }
-  
+  if (!registerCommunity.value) {
+    registerCommunityError.value = '请输入所属社区'
+    return
+  }
+
   try {
     isRegisterLoading.value = true
     showLoading('注册中...')
-    
+
     const result: any = await authApi.register({
       phone: registerPhone.value,
-      code: registerCode.value,
-      nickname: registerNickname.value
+      password: registerPassword.value,
+      nickname: registerNickname.value,
+      community: registerCommunity.value
     })
     setUser(result.user, result.token, result.userData)
-    
+
     hideLoading()
     isRegisterLoading.value = false
     showRegisterModal.value = false
     toastSuccess('注册成功')
-    
+
     // 注册成功后跳转到首页
     setTimeout(() => {
       switchTab('/pages/index/index')
@@ -613,6 +577,18 @@ const handleRegister = async () => {
   transform: scale(1);
   background: var(--color-success);
   animation: iconPop 0.3s var(--transition-spring);
+}
+
+.password-toggle {
+  cursor: pointer;
+  padding: 4px;
+  font-size: 16px;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.password-toggle:hover {
+  opacity: 1;
 }
 
 /* 错误文本 */

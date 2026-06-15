@@ -191,102 +191,8 @@ function saveUserComments(data: { [postId: string]: Comment[] }): void {
 //  authApi —— 登录/注册
 // ========================================================================
 export const authApi = {
-  login: (data: { phone: string; code: string; nickname?: string; community?: string }) => {
-    return new Promise<{ token: string; user: User }>((resolve, reject) => {
-      setTimeout(() => {
-        // 测试账号
-        const testAccounts: Record<string, { password: string; nickname: string; community: string; phone: string }> = {
-          '17276701841': { password: '123456', nickname: '管理员1', community: '阳光社区', phone: '17276701841' },
-          '17276701842': { password: '123456', nickname: '管理员2', community: '阳光社区', phone: '17276701842' }
-        }
-        
-        const testAccount = testAccounts[data.phone]
-        if (testAccount) {
-          // 测试账号登录
-          if (data.code !== testAccount.password) {
-            reject(new Error('密码错误'))
-            return
-          }
-          // 使用测试账号对应的手机号存储
-          data.phone = testAccount.phone
-          data.nickname = testAccount.nickname
-          data.community = testAccount.community
-        } else {
-          // 普通手机号登录验证
-          if (!data.phone || data.phone.length !== 11 || !/^1\d{10}$/.test(data.phone)) {
-            reject(new Error('请输入正确的手机号'))
-            return
-          }
-          if (!data.code || data.code.length !== 6) {
-            reject(new Error('请输入6位验证码'))
-            return
-          }
-          
-          // 检查手机号是否已注册
-          if (!accountExists(data.phone)) {
-            reject(new Error('该手机号未注册'))
-            return
-          }
-          
-          // 验证验证码（模拟系统不验证具体值，只要格式正确即可）
-          // 实际生产环境应该调用短信验证码接口验证
-          
-          // 获取账号昵称
-          const account = getAccount(data.phone)
-          if (account) {
-            data.nickname = account.nickname
-          }
-        }
-
-        // 读取该手机号已有的档案（如果存在）
-        let existing: User | null = null
-        try {
-          const key = getUserStorageKey('linli_user_profile', data.phone)
-          const raw = localStorage.getItem(key)
-          if (raw) existing = JSON.parse(raw) as User
-        } catch (e) {
-          console.error('[auth] 读取旧档案失败:', e)
-        }
-
-        const now = Date.now()
-        const user: User = existing
-          ? {
-              ...existing,
-              nickname: data.nickname || existing.nickname || '邻里用户',
-              community: data.community || existing.community || '阳光社区',
-              updated_at: now,
-              last_active_at: now
-            }
-          : {
-              id: 'user_' + now,
-              phone: data.phone,
-              nickname: data.nickname || '邻里用户',
-              avatar: '',
-              gender: undefined,
-              birthday: '',
-              community: data.community || '阳光社区',
-              address: '',
-              bio: '',
-              role: 'resident',
-              credit_score: 100,
-              is_verified: true,
-              created_at: now,
-              updated_at: now,
-              last_active_at: now
-            }
-
-        // 持久化档案（下次登录同手机号时保留）
-        try {
-          localStorage.setItem(getUserStorageKey('linli_user_profile', data.phone), JSON.stringify(user))
-        } catch (e) {
-          console.error('[auth] 持久化用户档案失败:', e)
-        }
-
-        // 设置当前登录态 + 初始化该账号的业务数据
-        onLoginSuccess(user, 'token_' + now)
-        resolve({ token: 'token_' + now, user })
-      }, 400)
-    })
+  login: (data: { phone: string; password: string }) => {
+    return post<{ token: string; user: User }>('/api/auth/login', data, { showError: true })
   },
 
   logout: () => {
@@ -294,61 +200,8 @@ export const authApi = {
     return Promise.resolve({ success: true })
   },
 
-  register: (data: { phone: string; code: string; nickname: string }) => {
-    return new Promise<{ token: string; user: User }>((resolve, reject) => {
-      setTimeout(() => {
-        // 验证输入
-        if (!data.phone || data.phone.length !== 11 || !/^1\d{10}$/.test(data.phone)) {
-          reject(new Error('请输入正确的手机号'))
-          return
-        }
-        if (!data.code || data.code.length !== 6) {
-          reject(new Error('请输入6位验证码'))
-          return
-        }
-        if (!data.nickname || data.nickname.length < 2) {
-          reject(new Error('昵称至少2位'))
-          return
-        }
-        
-        // 检查手机号是否已注册
-        if (accountExists(data.phone)) {
-          reject(new Error('该手机号已注册'))
-          return
-        }
-        
-        // 注册账号（使用手机号作为账号）
-        const success = registerAccount(data.phone, data.code, data.nickname)
-        if (!success) {
-          reject(new Error('注册失败'))
-          return
-        }
-        
-        // 注册成功后自动登录
-        const now = Date.now()
-        const user: User = {
-          id: 'user_' + now,
-          phone: data.phone,
-          nickname: data.nickname,
-          avatar: '',
-          gender: undefined,
-          birthday: '',
-          community: '阳光社区',
-          address: '',
-          bio: '',
-          role: 'resident',
-          credit_score: 100,
-          is_verified: true,
-          created_at: now,
-          updated_at: now,
-          last_active_at: now
-        }
-        
-        localStorage.setItem(getUserStorageKey('linli_user_profile', data.phone), JSON.stringify(user))
-        onLoginSuccess(user, 'token_' + now)
-        resolve({ token: 'token_' + now, user })
-      }, 400)
-    })
+  register: (data: { phone: string; password: string; nickname: string; community: string }) => {
+    return post<{ token: string; user: User }>('/api/auth/register', data, { showError: true })
   }
 }
 
