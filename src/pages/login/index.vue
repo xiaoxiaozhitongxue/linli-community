@@ -1,73 +1,259 @@
 <template>
   <div class="page">
-    <div class="login-container">
-      <!-- Logo区域 -->
-      <div class="logo-section">
-        <div class="logo">
-          <span class="logo-emoji">🏘️</span>
-        </div>
-        <span class="app-name">邻里社区</span>
-        <span class="app-slogan">连接邻里，共建美好社区</span>
+    <div class="auth-container">
+      <!-- 背景装饰 -->
+      <div class="bg-decoration">
+        <div class="bg-circle bg-circle-1"></div>
+        <div class="bg-circle bg-circle-2"></div>
+        <div class="bg-circle bg-circle-3"></div>
       </div>
 
-      <!-- 登录表单 -->
-      <div class="form-section" :class="{ shake: isShaking }">
-        <!-- 手机号输入 -->
-        <div class="input-group" :class="{ error: phoneError }">
-          <div class="input-label">手机号</div>
-          <div class="input-row" :class="{ focused: phoneFocused }">
-            <input 
-              class="input-field" 
-              type="tel" 
-              v-model="phone" 
-              placeholder="请输入手机号"
-              maxlength="11"
-              @focus="onPhoneFocus"
-              @blur="onPhoneBlur"
-              @input="onPhoneInput"
-            />
-            <span class="input-icon" :class="{ valid: phoneValid }">✓</span>
+      <!-- 主内容区 -->
+      <div class="auth-card">
+        <!-- Logo区域 -->
+        <div class="logo-section">
+          <div class="logo-wrapper">
+            <div class="logo">
+              <span class="logo-emoji">🏘️</span>
+            </div>
           </div>
-          <div class="error-text" v-if="phoneError">{{ phoneError }}</div>
+          <h1 class="app-title">邻里社区</h1>
+          <p class="app-subtitle">连接邻里，共建美好社区</p>
         </div>
 
-        <!-- 密码输入 -->
-        <div class="input-group" :class="{ error: passwordError }">
-          <div class="input-label">密码</div>
-          <div class="input-row" :class="{ focused: passwordFocused }">
-            <input 
-              class="input-field" 
-              :type="showPassword ? 'text' : 'password'" 
-              v-model="password" 
-              placeholder="请输入密码（至少6位）"
-              maxlength="20"
-              @focus="onPasswordFocus"
-              @blur="onPasswordBlur"
-              @input="onPasswordInput"
-            />
-            <span class="password-toggle" @click="showPassword = !showPassword">
-              {{ showPassword ? '🙈' : '👁️' }}
-            </span>
+        <!-- 标签切换 -->
+        <div class="tab-switch">
+          <div 
+            class="tab-item" 
+            :class="{ active: currentTab === 'login' }"
+            @click="switchTab('login')"
+          >
+            <span class="tab-icon">🔐</span>
+            <span class="tab-text">登录</span>
           </div>
-          <div class="error-text" v-if="passwordError">{{ passwordError }}</div>
+          <div 
+            class="tab-item" 
+            :class="{ active: currentTab === 'register' }"
+            @click="switchTab('register')"
+          >
+            <span class="tab-icon">📝</span>
+            <span class="tab-text">注册</span>
+          </div>
         </div>
 
-        <!-- 登录按钮 -->
-        <div 
-          class="login-btn" 
-          :class="{ loading: isLoading, disabled: !canLogin }"
-          @click="handleLogin"
-        >
-          <span v-if="!isLoading">登录</span>
-          <span v-else class="loading-text">
-            <span class="spinner"></span>
-            登录中...
+        <!-- 表单内容 -->
+        <div class="form-content">
+          <!-- 登录表单 -->
+          <Transition name="slide-fade">
+            <div v-if="currentTab === 'login'" key="login" class="form-panel">
+              <!-- 手机号输入 -->
+              <div class="input-group" :class="{ error: loginForm.phoneError }">
+                <label class="input-label">
+                  <span class="label-icon">📱</span>
+                  手机号
+                </label>
+                <div class="input-wrapper" :class="{ focused: loginForm.phoneFocused }">
+                  <input 
+                    v-model="loginForm.phone"
+                    type="tel"
+                    maxlength="11"
+                    placeholder="请输入手机号"
+                    @focus="loginForm.phoneFocused = true"
+                    @blur="validateLoginPhone"
+                    @input="loginForm.phoneError = ''"
+                    class="input-field"
+                  />
+                  <span v-if="isLoginPhoneValid" class="input-valid">✓</span>
+                </div>
+                <span v-if="loginForm.phoneError" class="error-hint">{{ loginForm.phoneError }}</span>
+              </div>
+
+              <!-- 密码输入 -->
+              <div class="input-group" :class="{ error: loginForm.passwordError }">
+                <label class="input-label">
+                  <span class="label-icon">🔑</span>
+                  密码
+                </label>
+                <div class="input-wrapper" :class="{ focused: loginForm.passwordFocused }">
+                  <input 
+                    v-model="loginForm.password"
+                    :type="loginForm.showPassword ? 'text' : 'password'"
+                    maxlength="20"
+                    placeholder="请输入密码"
+                    @focus="loginForm.passwordFocused = true"
+                    @blur="validateLoginPassword"
+                    @input="loginForm.passwordError = ''"
+                    class="input-field"
+                  />
+                  <span 
+                    class="toggle-password" 
+                    @click="loginForm.showPassword = !loginForm.showPassword"
+                  >
+                    {{ loginForm.showPassword ? '🙈' : '👁️' }}
+                  </span>
+                </div>
+                <span v-if="loginForm.passwordError" class="error-hint">{{ loginForm.passwordError }}</span>
+              </div>
+
+              <!-- 登录按钮 -->
+              <button 
+                class="submit-btn"
+                :class="{ loading: loginForm.isLoading, disabled: !canLogin }"
+                @click="handleLogin"
+              >
+                <span v-if="!loginForm.isLoading">登录</span>
+                <span v-else class="loading-indicator">
+                  <span class="spinner"></span>
+                  登录中...
+                </span>
+              </button>
+
+              <!-- 忘记密码 -->
+              <div class="forgot-password">
+                <span @click="showForgotPassword = true">忘记密码？</span>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- 注册表单 -->
+          <Transition name="slide-fade">
+            <div v-if="currentTab === 'register'" key="register" class="form-panel">
+              <!-- 手机号输入 -->
+              <div class="input-group" :class="{ error: registerForm.phoneError }">
+                <label class="input-label">
+                  <span class="label-icon">📱</span>
+                  手机号
+                </label>
+                <div class="input-wrapper" :class="{ focused: registerForm.phoneFocused }">
+                  <input 
+                    v-model="registerForm.phone"
+                    type="tel"
+                    maxlength="11"
+                    placeholder="请输入手机号"
+                    @focus="registerForm.phoneFocused = true"
+                    @blur="validateRegisterPhone"
+                    @input="registerForm.phoneError = ''"
+                    class="input-field"
+                  />
+                  <span v-if="isRegisterPhoneValid" class="input-valid">✓</span>
+                </div>
+                <span v-if="registerForm.phoneError" class="error-hint">{{ registerForm.phoneError }}</span>
+              </div>
+
+              <!-- 密码输入 -->
+              <div class="input-group" :class="{ error: registerForm.passwordError }">
+                <label class="input-label">
+                  <span class="label-icon">🔑</span>
+                  密码
+                </label>
+                <div class="input-wrapper" :class="{ focused: registerForm.passwordFocused }">
+                  <input 
+                    v-model="registerForm.password"
+                    :type="registerForm.showPassword ? 'text' : 'password'"
+                    maxlength="20"
+                    placeholder="请输入密码（至少6位）"
+                    @focus="registerForm.passwordFocused = true"
+                    @blur="validateRegisterPassword"
+                    @input="registerForm.passwordError = ''"
+                    class="input-field"
+                  />
+                  <span 
+                    class="toggle-password" 
+                    @click="registerForm.showPassword = !registerForm.showPassword"
+                  >
+                    {{ registerForm.showPassword ? '🙈' : '👁️' }}
+                  </span>
+                </div>
+                <span v-if="registerForm.passwordError" class="error-hint">{{ registerForm.passwordError }}</span>
+              </div>
+
+              <!-- 昵称输入 -->
+              <div class="input-group" :class="{ error: registerForm.nicknameError }">
+                <label class="input-label">
+                  <span class="label-icon">👤</span>
+                  昵称
+                </label>
+                <div class="input-wrapper" :class="{ focused: registerForm.nicknameFocused }">
+                  <input 
+                    v-model="registerForm.nickname"
+                    type="text"
+                    maxlength="20"
+                    placeholder="请输入昵称"
+                    @focus="registerForm.nicknameFocused = true"
+                    @blur="validateRegisterNickname"
+                    @input="registerForm.nicknameError = ''"
+                    class="input-field"
+                  />
+                  <span v-if="isRegisterNicknameValid" class="input-valid">✓</span>
+                </div>
+                <span v-if="registerForm.nicknameError" class="error-hint">{{ registerForm.nicknameError }}</span>
+              </div>
+
+              <!-- 社区选择 -->
+              <div class="input-group" :class="{ error: registerForm.communityError }">
+                <label class="input-label">
+                  <span class="label-icon">🏠</span>
+                  所在社区
+                </label>
+                <div class="input-wrapper select-wrapper" :class="{ focused: registerForm.communityFocused }">
+                  <select 
+                    v-model="registerForm.community"
+                    @focus="registerForm.communityFocused = true"
+                    @blur="validateRegisterCommunity"
+                    @input="registerForm.communityError = ''"
+                    class="input-field select-field"
+                  >
+                    <option value="" disabled>请选择社区</option>
+                    <option v-for="community in communities" :key="community" :value="community">
+                      {{ community }}
+                    </option>
+                  </select>
+                </div>
+                <span v-if="registerForm.communityError" class="error-hint">{{ registerForm.communityError }}</span>
+              </div>
+
+              <!-- 用户协议 -->
+              <div class="agreement-group">
+                <label class="agreement-label">
+                  <input 
+                    type="checkbox" 
+                    v-model="registerForm.agreed"
+                    @change="registerForm.agreementError = ''"
+                  />
+                  <span class="checkmark"></span>
+                  <span class="agreement-text">
+                    我已阅读并同意
+                    <span class="link-text">《用户协议》</span>
+                    和
+                    <span class="link-text">《隐私政策》</span>
+                  </span>
+                </label>
+                <span v-if="registerForm.agreementError" class="error-hint agreement-error">{{ registerForm.agreementError }}</span>
+              </div>
+
+              <!-- 注册按钮 -->
+              <button 
+                class="submit-btn"
+                :class="{ loading: registerForm.isLoading, disabled: !canRegister }"
+                @click="handleRegister"
+              >
+                <span v-if="!registerForm.isLoading">注册</span>
+                <span v-else class="loading-indicator">
+                  <span class="spinner"></span>
+                  注册中...
+                </span>
+              </button>
+            </div>
+          </Transition>
+        </div>
+
+        <!-- 底部提示 -->
+        <div class="bottom-hint">
+          <span v-if="currentTab === 'login'">还没有账号？</span>
+          <span v-else>已有账号？</span>
+          <span class="link-text" @click="switchTab(currentTab === 'login' ? 'register' : 'login')">
+            {{ currentTab === 'login' ? '立即注册' : '立即登录' }}
           </span>
-        </div>
-
-        <!-- 注册链接 -->
-        <div class="register-link">
-          还没有账号？<span class="link-text" @click="showRegisterModal = true">立即注册</span>
         </div>
       </div>
 
@@ -76,80 +262,6 @@
         <div v-if="globalError" class="global-error">
           <span class="error-icon">⚠️</span>
           {{ globalError }}
-          <span v-if="globalError === '该手机号未注册'" class="register-link-in-error" @click="showRegisterModal = true">去注册</span>
-        </div>
-      </Transition>
-
-      <!-- 注册弹窗 -->
-      <Transition name="modal">
-        <div v-if="showRegisterModal" class="modal-overlay" @click.self="showRegisterModal = false">
-          <div class="modal-content">
-            <div class="modal-header">
-              <span class="modal-title">注册账号</span>
-              <span class="modal-close" @click="showRegisterModal = false">×</span>
-            </div>
-            <div class="modal-body">
-              <div class="input-group" :class="{ error: registerPhoneError }">
-                <div class="input-label">手机号</div>
-                <input 
-                  class="input-field" 
-                  type="tel" 
-                  v-model="registerPhone" 
-                  placeholder="请输入手机号"
-                  maxlength="11"
-                  @input="registerPhoneError = ''"
-                />
-                <div class="error-text" v-if="registerPhoneError">{{ registerPhoneError }}</div>
-              </div>
-              <div class="input-group" :class="{ error: registerPasswordError }">
-                <div class="input-label">密码</div>
-                <input 
-                  class="input-field" 
-                  type="password" 
-                  v-model="registerPassword" 
-                  placeholder="请输入密码（至少6位）"
-                  maxlength="20"
-                  @input="registerPasswordError = ''"
-                />
-                <div class="error-text" v-if="registerPasswordError">{{ registerPasswordError }}</div>
-              </div>
-              <div class="input-group" :class="{ error: registerNicknameError }">
-                <div class="input-label">昵称</div>
-                <input 
-                  class="input-field" 
-                  type="text" 
-                  v-model="registerNickname" 
-                  placeholder="请输入昵称"
-                  maxlength="20"
-                  @input="registerNicknameError = ''"
-                />
-                <div class="error-text" v-if="registerNicknameError">{{ registerNicknameError }}</div>
-              </div>
-              <div class="input-group" :class="{ error: registerCommunityError }">
-                <div class="input-label">所属社区</div>
-                <input 
-                  class="input-field" 
-                  type="text" 
-                  v-model="registerCommunity" 
-                  placeholder="请输入所属社区"
-                  maxlength="50"
-                  @input="registerCommunityError = ''"
-                />
-                <div class="error-text" v-if="registerCommunityError">{{ registerCommunityError }}</div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <div class="modal-btn cancel" @click="showRegisterModal = false">取消</div>
-              <div 
-                class="modal-btn confirm" 
-                :class="{ loading: isRegisterLoading }"
-                @click="handleRegister"
-              >
-                <span v-if="!isRegisterLoading">注册</span>
-                <span v-else>注册中...</span>
-              </div>
-            </div>
-          </div>
         </div>
       </Transition>
     </div>
@@ -157,9 +269,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
-import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
-import { navigateTo, switchTab, redirectTo } from '../../utils/router'
+import { ref, computed, reactive } from 'vue'
+import { toastSuccess, toastError } from '../../utils/toast'
 import { showLoading, hideLoading } from '../../utils/ui'
 import { useAuth } from '../../store'
 import { authApi } from '../../utils/api'
@@ -167,122 +278,92 @@ import { getAndClearLoginRedirect } from '../../utils/auth'
 
 const { setUser } = useAuth()
 
-// 表单数据
-const phone = ref('')
-const password = ref('')
-const showPassword = ref(false)
+// 社区列表
+const communities = [
+  '阳光社区',
+  '幸福社区',
+  '花园社区',
+  '和平社区',
+  '东风社区',
+  '向日葵小镇'
+]
 
-// 注册表单数据
-const showRegisterModal = ref(false)
-const registerPhone = ref('')
-const registerPassword = ref('')
-const registerNickname = ref('')
-const registerCommunity = ref('')
-const isRegisterLoading = ref(false)
-const registerPhoneError = ref('')
-const registerPasswordError = ref('')
-const registerNicknameError = ref('')
-const registerCommunityError = ref('')
+// 当前标签
+const currentTab = ref<'login' | 'register'>('login')
 
-// UI状态
-const counting = ref(false)
-const countdown = ref(60)
-const isLoading = ref(false)
-const isShaking = ref(false)
-
-// 聚焦状态
-const phoneFocused = ref(false)
-const passwordFocused = ref(false)
-
-// 错误状态
-const phoneError = ref('')
-const passwordError = ref('')
+// 全局错误
 const globalError = ref('')
-
-let countdownTimer: number | null = null
-let shakeTimer: number | null = null
 let globalErrorTimer: number | null = null
 
-// 清理定时器
-onUnmounted(() => {
-  if (countdownTimer) clearInterval(countdownTimer)
-  if (shakeTimer) clearTimeout(shakeTimer)
-  if (globalErrorTimer) clearTimeout(globalErrorTimer)
+// 登录表单
+const loginForm = reactive({
+  phone: '',
+  password: '',
+  showPassword: false,
+  phoneFocused: false,
+  passwordFocused: false,
+  phoneError: '',
+  passwordError: '',
+  isLoading: false
 })
+
+// 注册表单
+const registerForm = reactive({
+  phone: '',
+  password: '',
+  nickname: '',
+  community: '',
+  showPassword: false,
+  phoneFocused: false,
+  passwordFocused: false,
+  nicknameFocused: false,
+  communityFocused: false,
+  phoneError: '',
+  passwordError: '',
+  nicknameError: '',
+  communityError: '',
+  agreementError: '',
+  agreed: false,
+  isLoading: false
+})
+
+// 忘记密码弹窗
+const showForgotPassword = ref(false)
 
 // 验证状态
-const phoneValid = computed(() => {
-  return phone.value.length === 11 && /^1\d{10}$/.test(phone.value)
-})
+const isLoginPhoneValid = computed(() => loginForm.phone.length === 11 && /^1[3-9]\d{9}$/.test(loginForm.phone))
+const isLoginPasswordValid = computed(() => loginForm.password.length >= 6)
+const canLogin = computed(() => isLoginPhoneValid.value && isLoginPasswordValid.value && !loginForm.isLoading)
 
-// 密码验证
-const passwordValid = computed(() => {
-  return password.value.length >= 6
-})
+const isRegisterPhoneValid = computed(() => registerForm.phone.length === 11 && /^1[3-9]\d{9}$/.test(registerForm.phone))
+const isRegisterPasswordValid = computed(() => registerForm.password.length >= 6)
+const isRegisterNicknameValid = computed(() => registerForm.nickname.trim().length >= 2)
+const isRegisterCommunityValid = computed(() => registerForm.community.trim().length > 0)
+const canRegister = computed(() => 
+  isRegisterPhoneValid.value && 
+  isRegisterPasswordValid.value && 
+  isRegisterNicknameValid.value && 
+  isRegisterCommunityValid.value && 
+  registerForm.agreed && 
+  !registerForm.isLoading
+)
 
-const canLogin = computed(() => phoneValid.value && passwordValid.value && !isLoading.value)
-
-// 聚焦/失焦处理
-const onPhoneFocus = () => { phoneFocused.value = true }
-const onPhoneBlur = () => { 
-  phoneFocused.value = false
-  validatePhone()
-}
-const onPasswordFocus = () => { passwordFocused.value = true }
-const onPasswordBlur = () => { 
-  passwordFocused.value = false
-  validatePassword()
-}
-
-// 输入处理
-const onPhoneInput = () => {
+// 切换标签
+const switchTab = (tab: 'login' | 'register') => {
+  if (currentTab.value === tab) return
+  currentTab.value = tab
   // 清除错误
-  if (phoneError.value) phoneError.value = ''
-}
-
-const onPasswordInput = () => {
-  // 清除错误
-  if (passwordError.value) passwordError.value = ''
-}
-
-// 验证
-const validatePhone = () => {
-  if (!phone.value) {
-    phoneError.value = '请输入手机号'
-    return false
+  if (tab === 'login') {
+    loginForm.phoneError = ''
+    loginForm.passwordError = ''
+  } else {
+    registerForm.phoneError = ''
+    registerForm.passwordError = ''
+    registerForm.nicknameError = ''
+    registerForm.communityError = ''
+    registerForm.agreementError = ''
   }
-  if (phone.value.length !== 11) {
-    phoneError.value = '手机号格式不正确'
-    return false
-  }
-  if (!/^1\d{10}$/.test(phone.value)) {
-    phoneError.value = '手机号格式不正确'
-    return false
-  }
-  phoneError.value = ''
-  return true
-}
-
-const validatePassword = () => {
-  if (!password.value) {
-    passwordError.value = '请输入密码'
-    return false
-  }
-  if (password.value.length < 6) {
-    passwordError.value = '密码至少6位'
-    return false
-  }
-  passwordError.value = ''
-  return true
-}
-
-// 触发shake动画
-const triggerShake = () => {
-  isShaking.value = true
-  if (shakeTimer) clearTimeout(shakeTimer)
-  shakeTimer = window.setTimeout(() => {
-    isShaking.value = false
-  }, 500)
+  globalError.value = ''
 }
 
 // 显示全局错误
@@ -294,115 +375,166 @@ const showGlobalError = (message: string) => {
   }, 5000)
 }
 
+// 登录验证
+const validateLoginPhone = () => {
+  loginForm.phoneFocused = false
+  if (!loginForm.phone) {
+    loginForm.phoneError = '请输入手机号'
+    return false
+  }
+  if (loginForm.phone.length !== 11 || !/^1[3-9]\d{9}$/.test(loginForm.phone)) {
+    loginForm.phoneError = '手机号格式不正确'
+    return false
+  }
+  loginForm.phoneError = ''
+  return true
+}
+
+const validateLoginPassword = () => {
+  loginForm.passwordFocused = false
+  if (!loginForm.password) {
+    loginForm.passwordError = '请输入密码'
+    return false
+  }
+  if (loginForm.password.length < 6) {
+    loginForm.passwordError = '密码至少6位'
+    return false
+  }
+  loginForm.passwordError = ''
+  return true
+}
+
+// 注册验证
+const validateRegisterPhone = () => {
+  registerForm.phoneFocused = false
+  if (!registerForm.phone) {
+    registerForm.phoneError = '请输入手机号'
+    return false
+  }
+  if (registerForm.phone.length !== 11 || !/^1[3-9]\d{9}$/.test(registerForm.phone)) {
+    registerForm.phoneError = '手机号格式不正确'
+    return false
+  }
+  registerForm.phoneError = ''
+  return true
+}
+
+const validateRegisterPassword = () => {
+  registerForm.passwordFocused = false
+  if (!registerForm.password) {
+    registerForm.passwordError = '请输入密码'
+    return false
+  }
+  if (registerForm.password.length < 6) {
+    registerForm.passwordError = '密码至少6位'
+    return false
+  }
+  registerForm.passwordError = ''
+  return true
+}
+
+const validateRegisterNickname = () => {
+  registerForm.nicknameFocused = false
+  if (!registerForm.nickname.trim()) {
+    registerForm.nicknameError = '请输入昵称'
+    return false
+  }
+  if (registerForm.nickname.trim().length < 2) {
+    registerForm.nicknameError = '昵称至少2个字符'
+    return false
+  }
+  registerForm.nicknameError = ''
+  return true
+}
+
+const validateRegisterCommunity = () => {
+  registerForm.communityFocused = false
+  if (!registerForm.community.trim()) {
+    registerForm.communityError = '请选择所在社区'
+    return false
+  }
+  registerForm.communityError = ''
+  return true
+}
+
 // 处理登录
 const handleLogin = async () => {
-  // 清除之前的错误
-  phoneError.value = ''
-  passwordError.value = ''
+  loginForm.phoneError = ''
+  loginForm.passwordError = ''
 
-  // 验证所有字段
-  const valid = validatePhone() && validatePassword()
-  if (!valid) {
-    triggerShake()
-    return
-  }
+  const valid = validateLoginPhone() && validateLoginPassword()
+  if (!valid) return
 
   try {
-    isLoading.value = true
+    loginForm.isLoading = true
     showLoading('登录中...')
 
     const result: any = await authApi.login({
-      phone: phone.value,
-      password: password.value
+      phone: loginForm.phone,
+      password: loginForm.password
     })
     setUser(result.user, result.token, result.userData)
 
     hideLoading()
+    loginForm.isLoading = false
     toastSuccess('登录成功')
 
-    // 登录成功后，检查是否有重定向路径
     setTimeout(() => {
       const redirectPath = getAndClearLoginRedirect()
       if (redirectPath) {
-        // 使用replace确保正确跳转
         window.location.hash = '#' + redirectPath
-        window.location.reload()
       } else {
-        // 使用replace确保正确跳转
         window.location.hash = '#/pages/index/index'
-        window.location.reload()
       }
+      window.location.reload()
     }, 500)
   } catch (e: any) {
     hideLoading()
-    isLoading.value = false
+    loginForm.isLoading = false
     const message = e?.message || '登录失败'
     showGlobalError(message)
-    triggerShake()
   }
 }
 
 // 处理注册
 const handleRegister = async () => {
-  // 验证输入
-  registerPhoneError.value = ''
-  registerPasswordError.value = ''
-  registerNicknameError.value = ''
-  registerCommunityError.value = ''
+  registerForm.phoneError = ''
+  registerForm.passwordError = ''
+  registerForm.nicknameError = ''
+  registerForm.communityError = ''
+  registerForm.agreementError = ''
 
-  if (!registerPhone.value) {
-    registerPhoneError.value = '请输入手机号'
-    return
-  }
-  if (registerPhone.value.length !== 11 || !/^1\d{10}$/.test(registerPhone.value)) {
-    registerPhoneError.value = '手机号格式不正确'
-    return
-  }
-  if (!registerPassword.value) {
-    registerPasswordError.value = '请输入密码'
-    return
-  }
-  if (registerPassword.value.length < 6) {
-    registerPasswordError.value = '密码至少6位'
-    return
-  }
-  if (!registerNickname.value) {
-    registerNicknameError.value = '请输入昵称'
-    return
-  }
-  if (registerNickname.value.length < 2) {
-    registerNicknameError.value = '昵称至少2位'
-    return
-  }
-  if (!registerCommunity.value) {
-    registerCommunityError.value = '请输入所属社区'
+  const valid = validateRegisterPhone() && validateRegisterPassword() && validateRegisterNickname() && validateRegisterCommunity()
+  if (!valid) return
+
+  if (!registerForm.agreed) {
+    registerForm.agreementError = '请先同意用户协议'
     return
   }
 
   try {
-    isRegisterLoading.value = true
+    registerForm.isLoading = true
     showLoading('注册中...')
 
     const result: any = await authApi.register({
-      phone: registerPhone.value,
-      password: registerPassword.value,
-      nickname: registerNickname.value,
-      community: registerCommunity.value
+      phone: registerForm.phone,
+      password: registerForm.password,
+      nickname: registerForm.nickname,
+      community: registerForm.community
     })
     setUser(result.user, result.token, result.userData)
 
     hideLoading()
-    isRegisterLoading.value = false
-    showRegisterModal.value = false
+    registerForm.isLoading = false
     toastSuccess('注册成功')
 
-    // 注册成功后跳转到首页
     setTimeout(() => {
-      switchTab('/pages/index/index')
-    }, 800)
+      window.location.hash = '#/pages/index/index'
+      window.location.reload()
+    }, 500)
   } catch (e: any) {
     hideLoading()
-    isRegisterLoading.value = false
+    registerForm.isLoading = false
     const message = e?.message || '注册失败'
     toastError(message)
   }
@@ -413,31 +545,96 @@ const handleRegister = async () => {
 .page {
   min-height: 100vh;
   background: var(--color-primary-gradient-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
 }
 
-.login-container {
-  padding: var(--spacing-lg);
-  padding-top: 60px;
-  max-width: 400px;
-  margin: 0 auto;
+.auth-container {
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+}
+
+/* 背景装饰 */
+.bg-decoration {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.15;
+  filter: blur(60px);
+}
+
+.bg-circle-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--color-primary);
+  top: -100px;
+  right: -100px;
+}
+
+.bg-circle-2 {
+  width: 300px;
+  height: 300px;
+  background: var(--color-secondary);
+  bottom: -50px;
+  left: -50px;
+}
+
+.bg-circle-3 {
+  width: 200px;
+  height: 200px;
+  background: var(--color-accent);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 主卡片 */
+.auth-card {
+  background: var(--color-bg-secondary);
+  border-radius: 24px;
+  padding: var(--spacing-2xl);
+  box-shadow: var(--shadow-xl);
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Logo区域 */
 .logo-section {
   text-align: center;
   margin-bottom: var(--spacing-2xl);
-  animation: fadeInDown var(--transition-slow) ease-out;
+}
+
+.logo-wrapper {
+  display: inline-block;
+  padding: 4px;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(255, 183, 77, 0.1));
+  border-radius: 24px;
+  margin-bottom: var(--spacing-md);
 }
 
 .logo {
-  width: 88px;
-  height: 88px;
+  width: 80px;
+  height: 80px;
   background: var(--color-primary-gradient);
-  border-radius: var(--radius-xl);
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto var(--spacing-md);
   box-shadow: var(--shadow-glow);
   position: relative;
   overflow: hidden;
@@ -455,193 +652,249 @@ const handleRegister = async () => {
 }
 
 .logo-emoji {
-  font-size: 44px;
+  font-size: 40px;
   position: relative;
   z-index: 1;
 }
 
-.app-name {
-  font-size: var(--font-size-2xl);
+.app-title {
+  font-size: 28px;
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
-  display: block;
-  margin-bottom: var(--spacing-xs);
+  margin: 0 0 var(--spacing-xs);
   letter-spacing: -0.02em;
 }
 
-.app-slogan {
+.app-subtitle {
   font-size: var(--font-size-sm);
   color: var(--color-text-tertiary);
+  margin: 0;
 }
 
-/* 表单区域 */
-.form-section {
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--spacing-xl);
-  box-shadow: var(--shadow-lg);
-  animation: fadeInUp var(--transition-slow) ease-out 0.1s both;
-  position: relative;
-  border: 1px solid rgba(0, 0, 0, 0.02);
+/* 标签切换 */
+.tab-switch {
+  display: flex;
+  background: var(--color-bg-tertiary);
+  border-radius: 16px;
+  padding: 4px;
+  margin-bottom: var(--spacing-xl);
 }
 
-.form-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-  opacity: 0;
-  transition: opacity var(--transition-normal);
+.tab-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
-.form-section:hover::before {
-  opacity: 1;
+.tab-item.active {
+  background: var(--color-primary-gradient);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  transform: translateY(-1px);
 }
 
-/* Shake动画 */
-.form-section.shake {
-  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+.tab-icon {
+  font-size: 18px;
+}
+
+.tab-text {
+  font-size: var(--font-size-sm);
+}
+
+/* 表单内容 */
+.form-content {
+  min-height: 280px;
+}
+
+.form-panel {
+  animation: fadeInUp 0.3s ease-out;
 }
 
 /* 输入组 */
 .input-group {
   margin-bottom: var(--spacing-lg);
-  transition: transform var(--transition-fast);
-}
-
-.input-group.error {
-  animation: inputShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
 .input-label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-sm);
-  font-weight: var(--font-weight-medium);
-}
-
-.input-row {
   display: flex;
   align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-sm);
+}
+
+.label-icon {
+  font-size: 14px;
+}
+
+.input-wrapper {
+  position: relative;
   background: var(--color-bg-tertiary);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
+  border-radius: 12px;
+  padding: 0 var(--spacing-md);
   border: 2px solid transparent;
   transition: all var(--transition-smooth);
 }
 
-.input-row.focused {
+.input-wrapper.focused {
   border-color: var(--color-primary);
   background: var(--color-bg-secondary);
-  box-shadow: 0 0 0 4px var(--color-primary-soft), var(--shadow-sm);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+.select-wrapper {
+  padding: 0;
 }
 
 .input-field {
-  flex: 1;
+  width: 100%;
+  height: 48px;
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   border: none;
   background: transparent;
   outline: none;
+  padding: 0;
 }
 
 .select-field {
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8.5L2 4.5h8z'/%3E%3C/svg%3E");
+  padding: 0 var(--spacing-md);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%23999' d='M7 10L3 6h8z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 30px;
+  background-position: right 12px center;
 }
 
 .input-field::placeholder {
   color: var(--color-text-placeholder);
 }
 
-.input-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: white;
-  background: var(--color-text-muted);
-  opacity: 0;
-  transform: scale(0);
-  transition: all var(--transition-smooth);
-}
-
-.input-icon.valid {
-  opacity: 1;
-  transform: scale(1);
-  background: var(--color-success);
-  animation: iconPop 0.3s var(--transition-spring);
-}
-
-.password-toggle {
+.toggle-password {
+  position: absolute;
+  right: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
   cursor: pointer;
-  padding: 4px;
-  font-size: 16px;
+  font-size: 18px;
   opacity: 0.6;
   transition: opacity var(--transition-fast);
 }
 
-.password-toggle:hover {
+.toggle-password:hover {
   opacity: 1;
 }
 
-/* 错误文本 */
-.error-text {
-  font-size: var(--font-size-xs);
+.input-valid {
+  position: absolute;
+  right: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-success);
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.error-hint {
+  display: block;
+  font-size: 12px;
   color: var(--color-error);
-  margin-top: var(--spacing-xs);
-  opacity: 0;
-  transform: translateY(-5px);
-  transition: all var(--transition-normal);
+  margin-top: 6px;
+  animation: fadeIn 0.2s ease-out;
 }
 
-.input-group.error .error-text,
 .agreement-error {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* 验证码行 */
-.code-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: var(--spacing-xs);
-}
-
-.code-row .error-text {
-  flex: 1;
   margin-top: 0;
-  margin-right: var(--spacing-md);
 }
 
-.code-btn {
-  padding: var(--spacing-sm) var(--spacing-md);
+/* 用户协议 */
+.agreement-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.agreement-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.agreement-label input {
+  display: none;
+}
+
+.checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border-medium);
+  border-radius: 4px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  position: relative;
+  transition: all var(--transition-smooth);
+}
+
+.agreement-label input:checked + .checkmark {
   background: var(--color-primary-gradient);
+  border-color: var(--color-primary);
+}
+
+.agreement-label input:checked + .checkmark::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   color: white;
-  border-radius: var(--radius-md);
-  font-size: 13px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.agreement-text {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+}
+
+.link-text {
+  color: var(--color-primary);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all var(--transition-smooth);
-  min-width: 90px;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
-  position: relative;
-  overflow: hidden;
+  transition: color var(--transition-fast);
 }
 
-.code-btn::before {
+.link-text:hover {
+  color: var(--color-primary-dark);
+}
+
+/* 提交按钮 */
+.submit-btn {
+  width: 100%;
+  height: 48px;
+  background: var(--color-primary-gradient);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.submit-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -652,151 +905,31 @@ const handleRegister = async () => {
   transition: left var(--transition-slow);
 }
 
-.code-btn:hover:not(.disabled)::before {
+.submit-btn:hover:not(.disabled):not(.loading)::before {
   left: 100%;
 }
 
-.code-btn:hover:not(.disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.35);
-}
-
-.code-btn:active:not(.disabled) {
-  transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.25);
-}
-
-.code-btn.disabled {
-  background: var(--color-text-muted);
-  cursor: not-allowed;
-  opacity: 0.6;
-  box-shadow: none;
-}
-
-.code-btn.loading {
-  pointer-events: none;
-}
-
-.countdown {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 协议 */
-.agreement {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: var(--spacing-sm);
-  cursor: pointer;
-}
-
-.agreement.error {
-  margin-bottom: 0;
-}
-
-.agreement-check {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--color-border-medium);
-  border-radius: var(--radius-sm);
-  margin-right: var(--spacing-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: white;
-  flex-shrink: 0;
-  margin-top: 1px;
-  cursor: pointer;
-  transition: all var(--transition-smooth);
-}
-
-.agreement-check.checked {
-  background: var(--color-primary-gradient);
-  border-color: var(--color-primary);
-  transform: scale(1);
-}
-
-.agreement-check.bounce {
-  animation: checkBounce 0.3s var(--transition-spring);
-}
-
-.agreement-text {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  line-height: 1.6;
-}
-
-.agreement-link {
-  color: var(--color-primary);
-  cursor: pointer;
-  transition: color var(--transition-fast);
-  font-weight: var(--font-weight-medium);
-}
-
-.agreement-link:hover {
-  color: var(--color-primary-dark);
-}
-
-.agreement-error {
-  margin-top: var(--spacing-xs);
-}
-
-/* 登录按钮 */
-.login-btn {
-  background: var(--color-primary-gradient);
-  color: white;
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  text-align: center;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  margin-top: var(--spacing-lg);
-  cursor: pointer;
-  transition: all var(--transition-smooth);
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
-}
-
-.login-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-  transition: left var(--transition-slow);
-}
-
-.login-btn:hover:not(.disabled):not(.loading)::before {
-  left: 100%;
-}
-
-.login-btn:hover:not(.disabled):not(.loading) {
+.submit-btn:hover:not(.disabled):not(.loading) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
 }
 
-.login-btn:active:not(.disabled):not(.loading) {
+.submit-btn:active:not(.disabled):not(.loading) {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.25);
 }
 
-.login-btn.disabled {
+.submit-btn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: var(--color-text-muted);
   box-shadow: none;
 }
 
-.login-btn.loading {
+.submit-btn.loading {
   pointer-events: none;
 }
 
-.loading-text {
+.loading-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -812,55 +945,108 @@ const handleRegister = async () => {
   animation: spin 0.8s linear infinite;
 }
 
-/* 注册链接 */
-.register-link {
+/* 忘记密码 */
+.forgot-password {
+  text-align: right;
+  margin-top: var(--spacing-sm);
+}
+
+.forgot-password span {
+  font-size: 12px;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.forgot-password span:hover {
+  color: var(--color-primary-dark);
+}
+
+/* 底部提示 */
+.bottom-hint {
   text-align: center;
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
   border-top: 1px solid var(--color-border-light);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
-.link-text {
-  color: var(--color-primary);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
+.bottom-hint .link-text {
   margin-left: 4px;
-  transition: color var(--transition-smooth);
-}
-
-.link-text:hover {
-  color: var(--color-primary-dark);
 }
 
 /* 全局错误提示 */
 .global-error {
   position: fixed;
-  top: 20px;
+  top: 24px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-error);
   color: white;
-  padding: 12px 24px;
-  border-radius: var(--radius-md);
+  padding: 14px 28px;
+  border-radius: 12px;
   font-size: var(--font-size-sm);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   box-shadow: var(--shadow-xl);
   z-index: 10000;
   max-width: 90%;
 }
 
 .error-icon {
-  font-size: 16px;
+  font-size: 18px;
 }
 
-/* Toast过渡动画 */
+/* 动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* 过渡动画 */
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
 .toast-enter-active,
 .toast-leave-active {
-  transition: all var(--transition-smooth);
+  transition: all 0.3s ease;
 }
 
 .toast-enter-from {
@@ -873,84 +1059,33 @@ const handleRegister = async () => {
   transform: translateX(-50%) translateY(-10px);
 }
 
-/* 动画 */
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
-  20%, 40%, 60%, 80% { transform: translateX(6px); }
-}
-
-@keyframes inputShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
-}
-
-@keyframes checkBounce {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes shimmer {
-  0% { left: -100%; }
-  100% { left: 100%; }
-}
-
-@keyframes iconPop {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.25); }
-  100% { transform: scale(1); }
-}
-
-/* 响应式布局 */
+/* 响应式 */
 @media (max-width: 480px) {
-  .login-container {
-    padding-top: 40px;
+  .page {
+    padding: var(--spacing-md);
   }
-  
+
+  .auth-card {
+    padding: var(--spacing-xl);
+    border-radius: 20px;
+  }
+
   .logo {
-    width: 72px;
-    height: 72px;
-    border-radius: var(--radius-lg);
+    width: 68px;
+    height: 68px;
+    border-radius: 16px;
   }
-  
+
   .logo-emoji {
-    font-size: 36px;
+    font-size: 34px;
   }
-  
-  .app-name {
+
+  .app-title {
     font-size: 24px;
   }
-  
-  .form-section {
-    padding: var(--spacing-lg);
+
+  .submit-btn {
+    height: 44px;
   }
 }
 </style>
