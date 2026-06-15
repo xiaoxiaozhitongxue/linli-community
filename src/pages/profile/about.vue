@@ -58,15 +58,15 @@
         <div class="contact-list">
           <div class="contact-item">
             <span class="contact-icon">📧</span>
-            <span class="contact-text">service@neighbor.com</span>
+            <span class="contact-text">renrenrenzm@163.com</span>
           </div>
           <div class="contact-item">
             <span class="contact-icon">📞</span>
-            <span class="contact-text">400-888-8888</span>
+            <span class="contact-text">xxxxxxxxxx</span>
           </div>
           <div class="contact-item">
             <span class="contact-icon">🌐</span>
-            <span class="contact-text">www.neighbor.com</span>
+            <span class="contact-text">https://yunzhui.pages.dev/</span>
           </div>
         </div>
       </div>

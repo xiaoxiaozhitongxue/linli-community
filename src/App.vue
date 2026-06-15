@@ -127,9 +127,9 @@ onUnmounted(() => {
 
     <Toast />
 
-    <!-- 移动端悬浮发布按钮 -->
+    <!-- 悬浮发布按钮（移动端和桌面端都显示） -->
     <FloatingPublishButton 
-      v-if="showFloatingPublishButton && !isDesktop"
+      v-if="showFloatingPublishButton"
       @publish-post="handlePublishPost"
       @publish-activity="handlePublishActivity"
       @publish-help="handlePublishHelp"
@@ -143,22 +143,30 @@ onUnmounted(() => {
 .app-container {
   min-height: 100vh;
   display: flex;
+  width: 100%;
+  max-width: 100%;
 }
 
 .main-content {
   flex: 1;
   overflow-x: hidden;
   min-height: 100vh;
+  width: 100%;
 }
 
 .main-content.desktop {
   margin-left: var(--nav-sidebar-width, 220px);
   padding-bottom: 0;
+  width: calc(100% - var(--nav-sidebar-width, 220px));
 }
 
 @media (max-width: 1023px) {
   .app-container {
     padding-bottom: 65px;
+  }
+  
+  .main-content {
+    width: 100%;
   }
 }
 </style>

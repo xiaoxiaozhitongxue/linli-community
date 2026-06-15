@@ -13,8 +13,6 @@
 // 或直接修改下面 MAP_KEY / MAP_SECURITY 的默认值。
 // ============================================================================
 
-import { toastInfo } from './toast'
-
 // ======= 可配置项（推荐用 Vite env 注入）====================================
 // 从 Vite 环境变量读取；若无配置则自动走浏览器原生定位兜底
 const AMAP_KEY: string = (import.meta as any).env?.VITE_AMAP_KEY || ''
@@ -401,12 +399,8 @@ export async function getLocation(options: { forceRefresh?: boolean } = {}): Pro
   const engine = pickEngine()
   console.log('[location] 使用引擎 =', engine)
 
-  // 浏览器定位前提示用户（部分浏览器需要用户手动授权）
-  toastInfo(
-    engine === 'browser'
-      ? '正在使用浏览器定位，请在弹窗中允许...'
-      : '正在定位中，请稍候...'
-  )
+  // 定位时不显示 toast 提示，静默定位，避免闪烁
+  // 用户可在地址栏看到定位状态变化
 
   // 顶层 Promise.race 超时保护（15秒），无论哪个引擎都不能永远挂起
   const overallTimeout = new Promise<LocationResult>((_, reject) => {
@@ -451,12 +445,12 @@ export function pickDisplayCommunity(
   result: LocationResult,
   registeredCommunity?: string | null
 ): string {
-  // 1. 优先：逆地理编码返回的真实"城市·区域"
+  // 1. 优先：逆地理编码返回的真实"市+区"
   if (result.city && result.district) {
-    return `${result.city.replace(/市$/, '')} · ${result.district.replace(/区$/, '')}`
+    return `${result.city} - ${result.district}`
   }
   if (result.city) {
-    return result.city.replace(/市$/, '')
+    return result.city
   }
   if (result.district) {
     return result.district

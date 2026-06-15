@@ -989,18 +989,18 @@ onMounted(() => {
   }
   
   .detail-content {
-    max-width: 768px;
+    max-width: 900px;
     margin: 0 auto;
   }
 }
 
 @media (min-width: 1024px) {
   .image-carousel {
-    height: 480px;
+    height: 520px;
   }
   
   .detail-content {
-    max-width: 800px;
+    max-width: 1100px;
   }
 
   .nav-header {
