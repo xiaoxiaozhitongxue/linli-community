@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page">
     <div class="auth-container">
       <!-- 背景装饰 -->
@@ -490,12 +490,17 @@ const handleLogin = async () => {
     hideLoading()
     loginForm.isLoading = false
     
-    // 立即跳转，不等待toast动画
+        // 显示成功提示
+    toastSuccess('登录成功')
+    
+    // 延迟跳转，确保toast显示
     const redirectPath = getAndClearLoginRedirect()
     const targetPath = redirectPath || '/pages/index/index'
     
-    // 使用最直接的方式跳转
-    window.location.replace(window.location.origin + window.location.pathname + '#' + targetPath)
+    setTimeout(() => {
+      window.location.hash = '#' + targetPath
+      window.location.reload()
+    }, 300)
     
   } catch (e: any) {
     hideLoading()
