@@ -210,131 +210,26 @@ export const authApi = {
 // ========================================================================
 export const userApi = {
   getProfile: (): Promise<User> => {
-    return new Promise((resolve, reject) => {
-      const cur = getCurrentUser()
-      if (!cur) {
-        reject(new Error('未登录'))
-        return
-      }
-      // 优先从该手机号的独立档案读取，保持与 profile 编辑保存一致
-      try {
-        const key = getUserStorageKey('linli_user_profile', cur.phone)
-        const raw = localStorage.getItem(key)
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          parsed.last_active_at = Date.now()
-          // 同步回 userInfo，保证首页显示一致
-          localStorage.setItem('userInfo', JSON.stringify(parsed))
-          resolve(parsed as User)
-          return
-        }
-      } catch (e) {
-        console.error('[user] getProfile 读取独立档案失败:', e)
-      }
-      // fallback：返回当前 userInfo
-      resolve(cur)
-    })
+    return get<User>('/api/user/profile')
   },
 
   updateProfile: (partial: Partial<User>): Promise<User> => {
-    return new Promise((resolve, reject) => {
-      const cur = getCurrentUser()
-      if (!cur) {
-        reject(new Error('未登录，无法保存'))
-        return
-      }
-
-      // 新老字段合并：以独立档案为主（保留历史字段），再合并新字段
-      let saved: User = cur
-      try {
-        const key = getUserStorageKey('linli_user_profile', cur.phone)
-        const raw = localStorage.getItem(key)
-        if (raw) saved = JSON.parse(raw)
-      } catch (e) {
-        console.error('[user] updateProfile 读取独立档案失败:', e)
-      }
-
-      const merged: User = {
-        ...saved,
-        ...partial,
-        updated_at: Date.now(),
-        last_active_at: Date.now()
-      }
-
-      try {
-        localStorage.setItem(getUserStorageKey('linli_user_profile', cur.phone), JSON.stringify(merged))
-        localStorage.setItem('userInfo', JSON.stringify(merged))
-        resolve(merged)
-      } catch (e) {
-        console.error('[user] updateProfile 持久化失败:', e)
-        reject(new Error('保存失败，请稍后重试'))
-      }
-    })
+    return put<User>('/api/user/profile', partial, { showError: true })
   },
 
   getMyPosts: (): Promise<PaginatedResponse<Post>> => {
-    return new Promise((resolve, reject) => {
-      try {
-        const biz = loadBusiness()
-        const u = getCurrentUser()
-        const myPosts = u
-          ? biz.posts.filter(p => p.user_phone === u.phone || p.user_id === u.id || p.user_id === u.phone)
-          : []
-        resolve({
-          items: myPosts.slice().sort((a, b) => b.created_at - a.created_at),
-          page: 1,
-          limit: myPosts.length,
-          total: myPosts.length,
-          total_pages: 1
-        })
-      } catch (e) {
-        reject(e)
-      }
-    })
+    return get<PaginatedResponse<Post>>('/api/user/posts')
   },
 
   getMyActivities: (): Promise<PaginatedResponse<Activity>> => {
-    return new Promise((resolve, reject) => {
-      try {
-        const biz = loadBusiness()
-        const u = getCurrentUser()
-        const my = u
-          ? biz.activities.filter(a =>
-              a.user_phone === u.phone ||
-              a.user_id === u.id ||
-              a.user_id === u.phone ||
-              (a.participants && a.participants.some(p => p.user_phone === u.phone))
-            )
-          : []
-        resolve({
-          items: my.slice().sort((a, b) => b.created_at - a.created_at),
-          page: 1,
-          limit: my.length,
-          total: my.length,
-          total_pages: 1
-        })
-      } catch (e) {
-        reject(e)
-      }
-    })
+    return get<PaginatedResponse<Activity>>('/api/user/activities')
   },
 
   getTaskStats: (): Promise<{ published: number; accepted: number; total: number }> => {
-    return new Promise((resolve, reject) => {
-      try {
-        const biz = loadBusiness()
-        const u = getCurrentUser()
-        if (!u) {
-          resolve({ published: 0, accepted: 0, total: 0 })
-          return
-        }
-        const published = biz.tasks.filter(t => t.user_phone === u.phone || t.user_id === u.id).length
-        const accepted = biz.tasks.filter(t => t.helper_phone === u.phone || t.helper_id === u.id).length
-        resolve({ published, accepted, total: published + accepted })
-      } catch (e) {
-        reject(e)
-      }
-    })
+    return get<{ published: number; accepted: number; total: number }>('/api/tasks/my').then((res: any) => {
+      const stats = res.stats || { published: 0, accepted: 0, total: 0 }
+      return stats
+    }).catch(() => ({ published: 0, accepted: 0, total: 0 }))
   },
 
   getOnlineUsers: (): Promise<User[]> => {
@@ -344,7 +239,6 @@ export const userApi = {
       if (cur) {
         users.push({ ...cur, is_online: true })
       }
-      // 演示账号
       users.push(
         {
           id: 'demo-neighbour-1',
@@ -380,9 +274,6 @@ export const userApi = {
   }
 }
 
-// ========================================================================
-//  postsApi —— 邻里动态
-// ========================================================================
 export const postsApi = {
   getPosts: (params?: { page?: number; limit?: number; sort?: string; order?: string; user_id?: string }): Promise<PaginatedResponse<Post>> => {
     return get<PaginatedResponse<Post>>('/api/posts', params)
@@ -424,225 +315,43 @@ export const postsApi = {
 //  activitiesApi —— 活动中心
 // ========================================================================
 export const activitiesApi = {
-  getActivities: (params?: {
-    page?: number
-    limit?: number
-    status?: string
-    category?: string
-    sort?: string
-    order?: string
-  }): Promise<PaginatedResponse<Activity>> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const biz = loadBusiness()
-        let items = biz.activities.slice()
-        if (params?.category && params.category !== 'all') {
-          items = items.filter(a => a.category === params?.category)
-        }
-        if (params?.status && params.status !== 'all') {
-          items = items.filter(a => a.status === params?.status)
-        }
-        items.sort((a, b) => b.created_at - a.created_at)
-        resolve({
-          items,
-          page: params?.page || 1,
-          limit: params?.limit || items.length,
-          total: items.length,
-          total_pages: 1
-        })
-      }, 200)
-    })
+  getActivities: (params?: { page?: number; limit?: number; status?: string; category?: string; sort?: string; order?: string }): Promise<PaginatedResponse<Activity>> => {
+    return get<PaginatedResponse<Activity>>('/api/activities', params)
   },
 
-  getActivity: (id: string): Promise<Activity | null> => {
-    return new Promise((resolve) => {
-      const biz = loadBusiness()
-      const a = biz.activities.find(x => x.id === id) || null
-      resolve(a)
-    })
+  getActivity: (id: string): Promise<Activity> => {
+    return get<Activity>(`/api/activities/${id}`)
   },
 
-  createActivity: (data: {
-    title: string
-    description: string
-    category: string
-    location: string
-    start_time: string
-    end_time?: string
-    max_participants?: number
-    images?: string[]
-  }): Promise<Activity> => {
-    return new Promise((resolve, reject) => {
-      const u = requireLogin()
-      if (!data.title || data.title.trim().length === 0) {
-        reject(new Error('请填写活动标题'))
-        return
-      }
-      if (!data.location || data.location.trim().length === 0) {
-        reject(new Error('请填写活动地点'))
-        return
-      }
-      const now = Date.now()
-      const activity: Activity = {
-        id: nowId('a_'),
-        user_id: u.id || u.phone,
-        user_phone: u.phone,
-        title: data.title.trim(),
-        description: data.description.trim(),
-        category: data.category || 'other',
-        location: data.location.trim(),
-        start_time: data.start_time ? new Date(data.start_time).getTime() : now,
-        end_time: data.end_time ? new Date(data.end_time).getTime() : undefined,
-        max_participants: data.max_participants,
-        current_participants: 1,
-        images: data.images || [],
-        status: 'upcoming',
-        created_at: now,
-        updated_at: now,
-        user: {
-          id: u.id || u.phone,
-          nickname: u.nickname,
-          avatar: u.avatar,
-          community: u.community
-        },
-        participants: [{
-          id: nowId('p_'),
-          user_id: u.id || u.phone,
-          user_phone: u.phone,
-          nickname: u.nickname,
-          avatar: u.avatar,
-          joined_at: now,
-          status: 'registered'
-        }],
-        is_participant: true
-      }
-
-      const biz = loadBusiness()
-      biz.activities.unshift(activity)
-      saveBusiness(biz)
-      resolve(activity)
-    })
+  createActivity: (data: { title: string; description: string; category: string; location: string; start_time: string; end_time?: string; max_participants?: number; images?: string[] }): Promise<Activity> => {
+    return post<Activity>('/api/activities', {
+      title: data.title.trim(),
+      description: data.description.trim(),
+      category: data.category || 'other',
+      location: data.location.trim(),
+      start_time: data.start_time,
+      end_time: data.end_time,
+      max_participants: data.max_participants,
+      images: data.images || []
+    }, { showError: true })
   },
 
   joinActivity: (id: string) => {
-    return new Promise((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const activity = biz.activities.find(a => a.id === id)
-      if (!activity) {
-        reject(new Error('活动不存在'))
-        return
-      }
-
-      if (activity.max_participants && (activity.current_participants || 0) >= activity.max_participants) {
-        reject(new Error('活动名额已满'))
-        return
-      }
-
-      const participants = activity.participants || []
-      const already = participants.some(p => p.user_phone === u.phone || p.user_id === u.id)
-      if (already) {
-        reject(new Error('您已经报名，不能重复报名'))
-        return
-      }
-
-      participants.push({
-        id: nowId('p_'),
-        user_id: u.id || u.phone,
-        user_phone: u.phone,
-        nickname: u.nickname,
-        avatar: u.avatar,
-        joined_at: Date.now(),
-        status: 'registered'
-      })
-      activity.participants = participants
-      activity.current_participants = participants.length
-      activity.is_participant = true
-      activity.updated_at = Date.now()
-      saveBusiness(biz)
-      resolve({ success: true, id })
-    })
+    return post(`/api/activities/${id}/join`, {}, { showError: true })
   },
 
   leaveActivity: (id: string) => {
-    return new Promise((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const activity = biz.activities.find(a => a.id === id)
-      if (!activity) {
-        reject(new Error('活动不存在'))
-        return
-      }
-      const participants = (activity.participants || []).filter(p =>
-        !(p.user_phone === u.phone || p.user_id === u.id || p.user_id === u.phone)
-      )
-      activity.participants = participants
-      activity.current_participants = participants.length
-      activity.is_participant = false
-      activity.updated_at = Date.now()
-      saveBusiness(biz)
-      resolve({ success: true })
-    })
+    return del(`/api/activities/${id}/leave`, {}, { showError: true })
   },
 
   updateActivity: (id: string, data: Partial<Activity>) => {
-    return new Promise((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const idx = biz.activities.findIndex(a => a.id === id)
-      if (idx < 0) {
-        reject(new Error('活动不存在'))
-        return
-      }
-      const activity = biz.activities[idx]
-      // 后端式鉴权：仅发布者可编辑
-      if (!(activity.user_phone === u.phone || activity.user_id === u.id || activity.user_id === u.phone)) {
-        reject(new Error('仅活动发布者可以修改'))
-        return
-      }
-      const updated = {
-        ...activity,
-        ...data,
-        start_time: (data as any).start_time && typeof (data as any).start_time === 'string'
-          ? new Date((data as any).start_time).getTime()
-          : (data as any).start_time || activity.start_time,
-        updated_at: Date.now()
-      }
-      biz.activities[idx] = updated
-      saveBusiness(biz)
-      resolve(updated)
-    })
+    return put(`/api/activities/${id}`, data, { showError: true })
   },
 
   deleteActivity: (id: string) => {
-    return new Promise((resolve, reject) => {
-      const u = requireLogin()
-      const biz = loadBusiness()
-      const idx = biz.activities.findIndex(a => a.id === id)
-      if (idx < 0) {
-        reject(new Error('活动不存在'))
-        return
-      }
-      const activity = biz.activities[idx]
-      if (!(activity.user_phone === u.phone || activity.user_id === u.id || activity.user_id === u.phone)) {
-        reject(new Error('仅活动发布者可以删除'))
-        return
-      }
-      biz.activities.splice(idx, 1)
-      saveBusiness(biz)
-      resolve({ success: true, id })
-    })
+    return del(`/api/activities/${id}`, {}, { showError: true })
   }
 }
-
-// ========================================================================
-//  tasksApi —— 互助任务
-// ========================================================================
-//  关键保障：
-//  - 发布任务：必须登录；任务带 user_phone
-//  - 接单：必须登录；不能接自己发布的；一账号一任务仅能接一次
-//  - 完成/取消：仅任务发布者或接单人可以操作
-// ========================================================================
 
 export const tasksApi = {
   getTasks: (params?: { page?: number; limit?: number; status?: string; category?: string }) => {

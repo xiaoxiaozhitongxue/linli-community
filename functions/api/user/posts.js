@@ -20,7 +20,7 @@ export async function onRequestGet(context) {
     const limit = parseInt(url.searchParams.get('limit')) || 10
     const offset = (page - 1) * limit
 
-    const posts = await db.all(`
+    const posts = await db.query(`
       SELECT 
         p.*,
         u.nickname as author_nickname,
@@ -52,10 +52,10 @@ export async function onRequestGet(context) {
       limit,
       total: totalCount.count,
       total_pages: Math.ceil(totalCount.count / limit)
-    }, '获取动态成功')
+    }, '获取动态成�?)
   } catch (error) {
     console.error('Get user posts error:', error)
-    return createErrorResponse(500, '获取动态失败', error.message)
+    return createErrorResponse(500, '获取动态失�?, error.message)
   }
 }
 

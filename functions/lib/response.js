@@ -1,3 +1,5 @@
+﻿import { corsHeaders } from './cors.js'
+
 export function createResponse(data, message = '成功', status = 200) {
   return new Response(
     JSON.stringify({
@@ -9,7 +11,8 @@ export function createResponse(data, message = '成功', status = 200) {
     {
       status,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...corsHeaders()
       }
     }
   )
@@ -32,7 +35,8 @@ export function createErrorResponse(code, message, details = null) {
   return new Response(JSON.stringify(response), {
     status: code,
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...corsHeaders()
     }
   })
 }

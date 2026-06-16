@@ -20,7 +20,7 @@ export async function onRequestGet(context) {
     const limit = parseInt(url.searchParams.get('limit')) || 10
     const offset = (page - 1) * limit
 
-    const activities = await db.all(`
+    const activities = await db.query(`
       SELECT 
         a.*,
         u.nickname as author_nickname,

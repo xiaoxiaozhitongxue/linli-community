@@ -21,7 +21,7 @@ export async function onRequestGet(context) {
     const limit = parseInt(url.searchParams.get('limit')) || 10
     const offset = (page - 1) * limit
 
-    const favorites = await db.all(`
+    const favorites = await db.query(`
       SELECT 
         l.*
       FROM likes l
