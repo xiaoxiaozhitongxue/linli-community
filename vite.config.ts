@@ -21,7 +21,13 @@ export default defineConfig({
   },
   server: {
     port: 8080,
-    host: '0.0.0.0'
+    host: '0.0.0.0',
+    proxy: {
+      '/api': {
+        target: 'https://a9d34a67.linli-community.pages.dev',
+        changeOrigin: true
+      }
+    }
   },
   publicDir: 'public',
   build: {

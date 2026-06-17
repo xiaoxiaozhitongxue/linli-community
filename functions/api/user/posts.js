@@ -52,10 +52,10 @@ export async function onRequestGet(context) {
       limit,
       total: totalCount.count,
       total_pages: Math.ceil(totalCount.count / limit)
-    }, '获取动态成�?)
+    }, '获取动态成功')
   } catch (error) {
     console.error('Get user posts error:', error)
-    return createErrorResponse(500, '获取动态失�?, error.message)
+    return createErrorResponse(500, '获取动态失败', error.message)
   }
 }
 

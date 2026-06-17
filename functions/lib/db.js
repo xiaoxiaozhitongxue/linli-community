@@ -6,10 +6,13 @@ export class Database {
   async query(sql, params = []) {
     try {
       const stmt = this.db.prepare(sql)
+      let result
       if (params.length > 0) {
-        return await stmt.bind(...params).all()
+        result = await stmt.bind(...params).all()
+      } else {
+        result = await stmt.all()
       }
-      return await stmt.all()
+      return result.results || result
     } catch (error) {
       console.error('Database query error:', error)
       throw new Error(`数据库查询失败: ${error.message}`)
