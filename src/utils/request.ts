@@ -81,19 +81,43 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
 
     fetch(requestUrl, requestInit)
       .then(async (res) => {
-        const response = await res.json() as ResponseData<T>
-        
         if (needLoading) {
           uiHideLoading()
         }
-        
+
+        // 检查 HTTP 状态码
+        if (!res.ok && res.status >= 500) {
+          if (needError) {
+            showError('服务器错误，请稍后重试')
+          }
+          reject(new Error(`HTTP ${res.status}: 服务器错误`))
+          return
+        }
+
+        let response: ResponseData<T>
+        try {
+          response = await res.json()
+        } catch (parseError) {
+          if (needError) {
+            showError('服务器响应格式错误')
+          }
+          reject(new Error('服务器响应格式错误'))
+          return
+        }
+
         if (response.success) {
           resolve(response.data)
         } else {
+          // 从 error.message 获取错误消息，再回退到 message，再回退到默认
+          const errorMessage = 
+            response.error?.message || 
+            response.message || 
+            '请求失败'
+
           if (needError) {
-            showError(response.message || '请求失败')
+            showError(errorMessage)
           }
-          
+
           if (response.error?.code === 401) {
             try {
               localStorage.removeItem('token')
@@ -103,19 +127,19 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
             }
             navigateTo('/pages/login/index')
           }
-          
-          reject(new Error(response.message || '请求失败'))
+
+          reject(new Error(errorMessage))
         }
       })
       .catch((err) => {
         if (needLoading) {
           uiHideLoading()
         }
-        
+
         if (needError) {
           showError('网络请求失败，请检查网络连接')
         }
-        
+
         reject(err)
       })
   })

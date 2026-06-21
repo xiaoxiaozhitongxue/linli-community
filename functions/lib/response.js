@@ -1,4 +1,4 @@
-﻿import { corsHeaders } from './cors.js'
+import { corsHeaders } from './cors.js'
 
 export function createResponse(data, message = '成功', status = 200) {
   return new Response(
@@ -21,6 +21,7 @@ export function createResponse(data, message = '成功', status = 200) {
 export function createErrorResponse(code, message, details = null) {
   const response = {
     success: false,
+    message,
     error: {
       code,
       message
