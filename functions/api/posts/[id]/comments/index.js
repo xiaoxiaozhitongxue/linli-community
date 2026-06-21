@@ -4,11 +4,18 @@ import { generateId, now, validateRequired, parseJsonBody, getQueryParams } from
 import { requireAuth } from '../../../../lib/auth.js'
 
 async function getCommentsWithUserInfo(db, comments) {
+  if (comments.length === 0) {
+    return []
+  }
+
   const userIds = [...new Set(comments.map(c => c.user_id))]
-  const users = await db.query(
-    `SELECT id, nickname, avatar FROM users WHERE id IN (${userIds.map(() => '?').join(', ')})`,
-    userIds
-  )
+  let users = []
+  if (userIds.length > 0) {
+    users = await db.query(
+      `SELECT id, nickname, avatar FROM users WHERE id IN (${userIds.map(() => '?').join(', ')})`,
+      userIds
+    )
+  }
   const userMap = {}
   for (const user of users) {
     userMap[user.id] = user

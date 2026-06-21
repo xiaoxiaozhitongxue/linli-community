@@ -10,7 +10,7 @@ export async function onRequestGet(context) {
       status: 'healthy',
       services: {
         api: 'ok',
-        database: dbCheck.results.length > 0 ? 'ok' : 'error'
+        database: dbCheck.length > 0 ? 'ok' : 'error'
       },
       timestamp: Date.now()
     })
