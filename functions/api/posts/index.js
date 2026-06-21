@@ -4,18 +4,25 @@ import { generateId, now, validateRequired, parseJsonBody, getQueryParams } from
 import { requireAuth } from '../../lib/auth.js'
 
 async function getPostsWithUserInfo(db, posts, userId) {
+  if (posts.length === 0) {
+    return []
+  }
+
   const userIds = [...new Set(posts.map(p => p.user_id))]
-  const users = await db.query(
-    `SELECT id, nickname, avatar, community FROM users WHERE id IN (${userIds.map(() => '?').join(', ')})`,
-    userIds
-  )
+  let users = []
+  if (userIds.length > 0) {
+    users = await db.query(
+      `SELECT id, nickname, avatar, community FROM users WHERE id IN (${userIds.map(() => '?').join(', ')})`,
+      userIds
+    )
+  }
   const userMap = {}
   for (const user of users) {
     userMap[user.id] = user
   }
 
   let likedMap = {}
-  if (userId) {
+  if (userId && posts.length > 0) {
     const postIds = posts.map(p => p.id)
     const likes = await db.query(
       `SELECT target_id FROM likes WHERE user_id = ? AND target_type = 'post' AND target_id IN (${postIds.map(() => '?').join(', ')})`,

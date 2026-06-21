@@ -9,18 +9,25 @@ import {
 } from '../../lib/index.js'
 
 async function getActivitiesWithUserInfo(db, activities, userId) {
+  if (activities.length === 0) {
+    return []
+  }
+
   const userIds = [...new Set(activities.map(a => a.user_id))]
-  const users = await db.query(
-    `SELECT id, nickname, avatar, community FROM users WHERE id IN (${userIds.map(() => '?').join(', ')})`,
-    userIds
-  )
+  let users = []
+  if (userIds.length > 0) {
+    users = await db.query(
+      `SELECT id, nickname, avatar, community FROM users WHERE id IN (${userIds.map(() => '?').join(', ')})`,
+      userIds
+    )
+  }
   const userMap = {}
   for (const user of users) {
     userMap[user.id] = user
   }
 
   let participantMap = {}
-  if (userId) {
+  if (userId && activities.length > 0) {
     const activityIds = activities.map(a => a.id)
     const placeholders = activityIds.map(() => '?').join(',')
     const participants = await db.query(
