@@ -145,8 +145,22 @@ const acceptButtonText = computed(() => {
 })
 
 function mapApiTaskToLocal(apiTask: Task): TaskDetail {
+  // 状态映射：与 index.vue 的 normalizeStatus 保持一致
+  const rawStatus = String(apiTask.status || '').toLowerCase()
+  let uiStatus: string
+  if (rawStatus === 'pending') {
+    uiStatus = 'open'
+  } else if (rawStatus === 'in_progress' || rawStatus === 'ongoing' || rawStatus === 'accepted') {
+    uiStatus = 'ongoing'
+  } else if (rawStatus === 'completed' || rawStatus === 'done') {
+    uiStatus = 'completed'
+  } else if (rawStatus === 'cancelled' || rawStatus === 'canceled') {
+    uiStatus = 'cancelled'
+  } else {
+    uiStatus = 'open' // 默认视为待接单
+  }
   return {
-    id: apiTask.id,
+    id: apiTask.id || '',
     type: apiTask.category || (apiTask as any).type || 'other',
     title: apiTask.title || '任务详情',
     description: apiTask.description || '暂无详细描述',
@@ -155,9 +169,9 @@ function mapApiTaskToLocal(apiTask: Task): TaskDetail {
     createTime: apiTask.created_at || Date.now(),
     creatorName: apiTask.creator?.nickname || '邻居',
     creatorAvatar: apiTask.creator?.avatar || '',
-    creatorRating: apiTask.creator?.credit_score || undefined,
+    creatorRating: apiTask.creator?.credit_score ? Number((apiTask.creator.credit_score / 20).toFixed(1)) : undefined,
     creatorTasks: undefined,
-    status: (apiTask.status as any) === 'pending' ? 'open' : (apiTask.status as any)
+    status: uiStatus
   }
 }
 

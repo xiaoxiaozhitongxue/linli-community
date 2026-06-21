@@ -70,10 +70,7 @@ export async function onRequestGet(context) {
       SELECT COUNT(*) as count FROM tasks ${countWhereClause}
     `, countParams)
 
-    // 分类任务
-    const publishedTasks = tasks.filter(t => t.user_id === user.id)
-    const acceptedTasks = tasks.filter(t => t.helper_id === user.id)
-
+    // 分类任务（按归属分组，同时应用格式化）
     const formatTask = (task) => ({
       ...task,
       role: task.user_id === user.id ? 'creator' : 'helper',
@@ -94,6 +91,8 @@ export async function onRequestGet(context) {
       } : null
     })
 
+    const publishedTasks = tasks.filter(t => t.user_id === user.id).map(formatTask)
+    const acceptedTasks = tasks.filter(t => t.helper_id === user.id).map(formatTask)
     const formattedTasks = tasks.map(formatTask)
 
     // 按状态分组统计
@@ -114,6 +113,9 @@ export async function onRequestGet(context) {
     }
 
     return createResponse({
+      published: publishedTasks,
+      accepted: acceptedTasks,
+      all: formattedTasks,
       items: formattedTasks,
       stats,
       pagination: {

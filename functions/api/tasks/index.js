@@ -31,9 +31,20 @@ export async function onRequestGet(context) {
     let whereClauses = []
     let params = []
 
+    // 前端可能传 'open' / 'ongoing'；映射到数据库的 'pending' / 'in_progress'
+    function normalizeStatus(s) {
+      if (!s) return null
+      const v = String(s).toLowerCase()
+      if (v === 'open' || v === 'pending') return 'pending'
+      if (v === 'ongoing' || v === 'in_progress' || v === 'accepted') return 'in_progress'
+      if (v === 'completed' || v === 'done') return 'completed'
+      if (v === 'cancelled' || v === 'canceled') return 'cancelled'
+      return s
+    }
+
     if (status) {
       whereClauses.push('t.status = ?')
-      params.push(status)
+      params.push(normalizeStatus(status))
     }
 
     if (category) {

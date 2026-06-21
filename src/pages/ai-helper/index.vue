@@ -241,9 +241,12 @@ function normalizeStatus(status: string): string {
 async function reloadTasks() {
   try {
     const result = await tasksApi.getTasks()
-    tasks.value = (result.items || []).map(mapApiTask)
+    // 防御性：确保 result 和 result.items 存在
+    tasks.value = (result && result.items) ? result.items.map(mapApiTask) : []
   } catch (e: any) {
     console.error('[ai-helper/index] 任务列表加载失败：', e?.message || e)
+    // API 失败时清空列表，显示空状态
+    tasks.value = []
   }
 }
 
