@@ -219,8 +219,6 @@ import { navigateTo } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { tasksApi, type Task } from '../../utils/api'
 
-const STORAGE_KEY = 'ai_helper_tasks'
-
 const statusBarHeight = ref(20)
 const selectedCategory = ref<string>('all')
 const statusFilter = ref<string>('open')  // open | all | in_progress | completed
@@ -237,13 +235,14 @@ function normalizeStatus(status: string): string {
   return 'open'
 }
 
-// 尝试从后端获取任务列表 → 统一通过 tasksApi 读取
+// 从云端 API 获取任务列表
 async function reloadTasks() {
   try {
     const result = await tasksApi.getTasks()
     tasks.value = (result.items || []).map(mapApiTask)
   } catch (e: any) {
     console.error('[ai-helper/index] 任务列表加载失败：', e?.message || e)
+    toastInfo('加载失败，请稍后重试')
   }
 }
 
@@ -265,11 +264,6 @@ function mapApiTask(t: any): any {
     creatorTasks: t.creator?.completed_count || t.creatorTasks || 0,
     location: t.location || ''
   }
-}
-
-// 尝试从后端获取任务列表（保留向后兼容：直接 fetch 作为 fallback）
-async function fetchTasksFromApi(): Promise<any[] | null> {
-  return null
 }
 
 // 统计数据

@@ -91,7 +91,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { navigateBackSmart, getUserStorageKey } from '../../utils/router'
+import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { tasksApi, type Task } from '../../utils/api'
 import { useAuth } from '../../store'
@@ -99,13 +99,10 @@ import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
 
 const { isLoggedIn } = useAuth()
 
-const STORAGE_KEY = 'ai_helper_tasks'
-const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
-const MY_ACCEPTED_TASKS_KEY = 'ai_helper_my_accepted_tasks'
-
 const route = useRoute()
 const statusBarHeight = ref(20)
 const loading = ref(true)
+const errorMessage = ref('')
 
 interface TaskDetail {
   id: string
@@ -161,32 +158,17 @@ function mapApiTaskToLocal(apiTask: Task): TaskDetail {
   }
 }
 
-function loadFromStorage(key: string, defaultValue: any[]) {
-  try {
-    const stored = localStorage.getItem(key)
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      if (Array.isArray(parsed)) {
-        return parsed
-      }
-    }
-  } catch (e) {
-    console.error(`加载数据失败: ${key}`, e)
-  }
-  return defaultValue
-}
-
 async function handleAccept() {
   const t = task.value
   if (!t) return
-  
+
   // 添加登录验证
   if (!isLoggedIn.value) {
     setLoginRedirect(window.location.hash.replace('#', '') || '/pages/ai-helper/detail')
     showLoginGuide()
     return
   }
-  
+
   if (t.status !== 'open' && t.status !== 'pending') {
     toastError('此任务当前不可接单')
     return
@@ -218,84 +200,27 @@ onMounted(async () => {
 
 async function fetchTask(id: string) {
   loading.value = true
+  errorMessage.value = ''
   task.value = null
+
   try {
-    console.log('[ai-helper/detail] 开始加载任务, id =', id)
+    console.log('[ai-helper/detail] 从云端加载任务, id =', id)
     const apiTask = await tasksApi.getTask(id)
     console.log('[ai-helper/detail] API返回任务:', apiTask)
+
     if (apiTask) {
       task.value = mapApiTaskToLocal(apiTask)
-      loading.value = false
-      return
+    } else {
+      errorMessage.value = '未找到该任务'
+      toastInfo('未找到该任务')
     }
   } catch (e: any) {
     console.error('[ai-helper/detail] 加载任务失败:', e)
+    errorMessage.value = e?.message || '加载失败，请稍后重试'
+    toastInfo('加载失败，请稍后重试')
+  } finally {
+    loading.value = false
   }
-
-  // API 失败或返回空，尝试从 localStorage 加载
-  console.log('[ai-helper/detail] 尝试从localStorage加载任务...')
-  try {
-    const storageKey = getUserStorageKey(STORAGE_KEY)
-    const createdKey = getUserStorageKey(MY_CREATED_TASKS_KEY)
-    const acceptedKey = getUserStorageKey(MY_ACCEPTED_TASKS_KEY)
-
-    const tasks = loadFromStorage(storageKey, [])
-    let found = tasks.find((t: any) => t.id === id)
-
-    if (!found) {
-      const myCreatedTasks = loadFromStorage(createdKey, [])
-      found = myCreatedTasks.find((t: any) => t.id === id)
-    }
-
-    if (!found) {
-      const myAcceptedTasks = loadFromStorage(acceptedKey, [])
-      found = myAcceptedTasks.find((t: any) => t.id === id)
-    }
-
-    if (found) {
-      console.log('[ai-helper/detail] 从localStorage找到任务:', found)
-      task.value = {
-        id: found.id || id,
-        type: found.type || 'other',
-        title: found.title || '任务详情',
-        description: found.description || '暂无详细描述',
-        reward: found.reward || 0,
-        location: found.location || '',
-        distance: found.distance || 0,
-        responses: found.responses || 0,
-        createTime: found.createTime || '',
-        creatorName: found.creatorName || '',
-        creatorAvatar: found.creatorAvatar || '',
-        creatorRating: found.creatorRating || 0,
-        creatorTasks: found.creatorTasks || 0,
-        status: (found.status === 'open' || found.status === 'pending') ? 'open' : (found.status === 'ongoing' || found.status === 'in_progress') ? 'ongoing' : (found.status as any) || 'open'
-      }
-      loading.value = false
-      return
-    }
-  } catch (storageError) {
-    console.error('[ai-helper/detail] localStorage读取失败:', storageError)
-  }
-
-  // 所有数据源都失败，显示默认任务（确保页面不是空白）
-  console.log('[ai-helper/detail] 所有数据源都失败，显示默认任务')
-  task.value = {
-    id: id,
-    type: 'other',
-    title: '任务详情',
-    description: '该任务可能已下架或不存在，您可以返回任务列表查看其他任务。',
-    reward: 0,
-    location: '未知地点',
-    distance: 0,
-    responses: 0,
-    createTime: Date.now(),
-    creatorName: '邻里社区',
-    creatorAvatar: '',
-    creatorRating: 5.0,
-    creatorTasks: 0,
-    status: 'open'
-  }
-  loading.value = false
 }
 
 // 监听路由参数变化
