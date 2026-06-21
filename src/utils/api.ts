@@ -1,25 +1,30 @@
 // ==========================================================================
-//  统一 API 层
+//  统一 API 层（前端 → 云端）
 // ==========================================================================
 //
 //  设计原则
 //  --------
-//  1. **所有业务数据都通过云端 API 交互**
-//  2. **后端权限校验**：修改/删除/接单等写操作必须是 owner 或合法状态
-//  3. **一任务一账号仅能接一次**：在 acceptTask 中校验 helper_phone/id
-//  4. **数据同步**：同一账号在任何页面修改后，其他页面重新加载会立即生效
+//  1. **所有业务数据都走云端 API**（任务、帖子、活动、健康记录等）
+//  2. **统一的响应格式**：所有 API 通过 get/post/put/del 调用，返回 {success, message, data}
+//  3. **后端权限校验**：修改/删除/接单等写操作由云端验证 owner 和合法性
+//  4. **登录态**：仅 JWT token + 当前用户信息存 localStorage
 //
 //  模块
 //  ----
 //    authApi       登录/注册（手机号为身份标识）
-//    userApi       用户档案（profile 保存/获取，我的帖子/活动/收藏等）
+//    userApi       用户档案 / 在线用户 / 我的任务/帖子/活动/收藏
 //    postsApi      邻里动态
 //    activitiesApi 活动中心
-//    tasksApi      互助任务（带发布者/接单者 owner 校验）
+//    tasksApi      互助任务
+//    healthApi     健康打卡记录
 //
 // ==========================================================================
 
-import { onLogout } from './storage'
+import {
+  getCurrentUser,
+  onLoginSuccess,
+  onLogout,
+} from './storage'
 import { get, post, put, del } from './request'
 
 // ========================================================================
@@ -141,6 +146,42 @@ export interface LikeResponse {
 }
 
 // ========================================================================
+//  辅助工具：构造写入后立即落盘的统一入口
+// ========================================================================
+
+const COMMENTS_STORAGE_KEY = 'linli_comments'  // 评论单独放一个桶，方便查询
+
+function nowId(prefix: string = ''): string {
+  return `${prefix}${Date.now()}_${Math.floor(Math.random() * 1000)}`
+}
+
+function getUserCommentsKey(phone: string): string {
+  return `${COMMENTS_STORAGE_KEY}_${phone}`
+}
+
+function getUserComments(): { [postId: string]: Comment[] } {
+  const phone = getCurrentUser()?.phone || 'public'
+  const key = getUserCommentsKey(phone)
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw) return JSON.parse(raw)
+  } catch (e) {
+    console.error('[api] 读取评论失败:', e)
+  }
+  return {}
+}
+
+function saveUserComments(data: { [postId: string]: Comment[] }): void {
+  const phone = getCurrentUser()?.phone || 'public'
+  const key = getUserCommentsKey(phone)
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch (e) {
+    console.error('[api] 保存评论失败:', e)
+  }
+}
+
+// ========================================================================
 //  authApi —— 登录/注册
 // ========================================================================
 export const authApi = {
@@ -186,7 +227,16 @@ export const userApi = {
   },
 
   getOnlineUsers: (): Promise<User[]> => {
-    return get<User[]>('/api/users', { is_online: true })
+    // 从云端获取最近活跃的用户
+    return get<{ items: User[]; total: number; page: number; limit: number; total_pages: number }>('/api/users', { online: '1', limit: 20 })
+      .then((res: any) => {
+        const items = (res && res.items) || []
+        return items.map((u: any) => ({ ...u, is_online: true }))
+      })
+      .catch(() => {
+        // API 失败时返回空列表
+        return []
+      })
   }
 }
 
@@ -321,5 +371,29 @@ export const tasksApi = {
       all: Task[]
       stats: { published: number; accepted: number; total: number }
     }>('/api/tasks/my')
+  }
+}
+
+// ========================================================================
+//  healthApi —— 健康打卡记录
+// ========================================================================
+export interface HealthRecord {
+  id: string
+  user_id?: string
+  date: string
+  health_status: 'good' | 'normal' | 'poor'
+  temperature?: number
+  notes?: string
+  timestamp?: number
+  created_at?: number
+}
+
+export const healthApi = {
+  getRecords: (): Promise<{ items: HealthRecord[]; page: number; limit: number; total: number; total_pages: number }> => {
+    return get<{ items: HealthRecord[]; page: number; limit: number; total: number; total_pages: number }>('/api/health/records')
+  },
+
+  addRecord: (data?: { health_status?: 'good' | 'normal' | 'poor'; temperature?: number; notes?: string; date?: string }): Promise<HealthRecord> => {
+    return post<HealthRecord>('/api/health/records', data || {}, { showError: true })
   }
 }

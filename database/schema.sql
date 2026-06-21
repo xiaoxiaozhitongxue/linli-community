@@ -212,3 +212,20 @@ WHEN OLD.status = 'registered'
 BEGIN
   UPDATE activities SET current_participants = current_participants - 1 WHERE id = OLD.activity_id;
 END;
+
+-- 健康打卡记录表 (health_records)
+CREATE TABLE IF NOT EXISTS health_records (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  date TEXT NOT NULL,              -- YYYY-MM-DD 格式，用于按天去重
+  health_status TEXT NOT NULL DEFAULT 'good' CHECK(health_status IN ('good', 'normal', 'poor')),
+  temperature REAL,
+  notes TEXT,
+  timestamp INTEGER NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_health_records_user_date ON health_records(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_health_records_user_id ON health_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_health_records_created_at ON health_records(created_at DESC);

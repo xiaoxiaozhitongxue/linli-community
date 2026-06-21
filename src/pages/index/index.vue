@@ -249,12 +249,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { postsApi, activitiesApi, tasksApi, type Post, type Comment, type Activity } from '../../utils/api'
+import { postsApi, activitiesApi, tasksApi, healthApi, type Post, type Comment, type Activity } from '../../utils/api'
 import { useAuth } from '../../store'
 import { toastSuccess, toastError } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
-import { loadHealthRecords } from '../../utils/storage'
 import { getLocation, pickDisplayCommunity } from '../../utils/location'
 import type { LocationResult } from '../../utils/location'
 
@@ -352,13 +351,18 @@ const quickActions = ref([
 const healthBadge = ref('未打卡')
 const helpBadge = ref('')
 async function loadQuickBadges() {
-  // 健康打卡状态 - 使用统一存储层
+  // 健康打卡状态 - 使用云端 API
   try {
-    const records: any[] = loadHealthRecords() || []
-    const today = new Date()
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-    const hasChecked = records.some((r: any) => r.date === todayStr)
-    healthBadge.value = hasChecked ? '已打卡' : '去打卡'
+    if (isLoggedIn.value) {
+      const res = await healthApi.getRecords()
+      const records = (res && res.items) || []
+      const today = new Date()
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      const hasChecked = records.some((r: any) => r.date === todayStr)
+      healthBadge.value = hasChecked ? '已打卡' : '去打卡'
+    } else {
+      healthBadge.value = '去打卡'
+    }
   } catch (e) {
     healthBadge.value = '去打卡'
   }

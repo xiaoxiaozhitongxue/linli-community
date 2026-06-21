@@ -89,7 +89,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { postsApi } from '../../utils/api'
-import { getCurrentUser } from '../../utils/storage'
 import { navigateBackSmart, navigateTo } from '../../utils/router'
 
 const statusBarHeight = ref(20)
@@ -117,8 +116,9 @@ const loadPosts = async () => {
     const res = await postsApi.getPosts({ page: 1, limit: 200 })
     const items: any[] = (res && (res as any).items) || []
     // 过滤：只显示我本人的帖子
-    const currentUser = getCurrentUser()
-    const userPhone = currentUser?.phone || null
+    const userPhone = localStorage.getItem('userInfo')
+      ? (JSON.parse(localStorage.getItem('userInfo') || '{}').phone || null)
+      : null
     if (userPhone) {
       posts.value = items.filter((p: any) =>
         (p as any).user_phone === userPhone ||

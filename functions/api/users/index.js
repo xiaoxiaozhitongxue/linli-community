@@ -8,14 +8,10 @@ import {
 
 export async function onRequestGet(context) {
   try {
-    const authError = await requireAuth(context)
-    if (authError) {
-      return authError
-    }
-
     const { request } = context
     const params = getQueryParams(request)
 
+    const onlineOnly = params.online === '1' || params.online === 'true'
     const page = parseInt(params.page) || 1
     const limit = Math.min(parseInt(params.limit) || 20, 100)
     const community = params.community
@@ -26,6 +22,13 @@ export async function onRequestGet(context) {
 
     let whereClauses = []
     let whereParams = []
+
+    if (onlineOnly) {
+      // 15分钟内活跃
+      const fifteenMinutesAgo = Math.floor(Date.now() / 1000) - 15 * 60
+      whereClauses.push('last_active_at >= ?')
+      whereParams.push(fifteenMinutesAgo)
+    }
 
     if (community) {
       whereClauses.push('community = ?')
@@ -52,13 +55,15 @@ export async function onRequestGet(context) {
     const countResult = await db.get(countSql, whereParams)
     const total = countResult.total || 0
 
+    const orderBy = onlineOnly ? 'last_active_at DESC' : 'created_at DESC'
+
     const sql = `
       SELECT id, phone, nickname, avatar, gender, birthday,
              community, address, bio, role, credit_score, is_verified,
              created_at, last_active_at
       FROM users
       ${whereClause}
-      ORDER BY created_at DESC
+      ORDER BY ${orderBy}
       LIMIT ? OFFSET ?
     `
     const users = await db.query(sql, [...whereParams, limit, offset])

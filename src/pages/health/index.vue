@@ -43,27 +43,24 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { navigateBack } from '../../utils/router'
-import { toastSuccess } from '../../utils/toast'
+import { toastSuccess, toastError } from '../../utils/toast'
+import { healthApi, type HealthRecord } from '../../utils/api'
+import { useAuth } from '../../store'
 
-interface HealthRecord {
-  date: string
-  healthStatus: 'good' | 'normal' | 'poor'
-  temperature?: number
-  notes?: string
-  timestamp: number
-}
+const { isLoggedIn } = useAuth()
 
 const statusBarHeight = ref(20)
 const records = ref<HealthRecord[]>([])
 
 const today = ref('')
 const todayChecked = ref(false)
+const loading = ref(false)
 
 const streak = computed(() => {
   let count = 0
   const todayStr = today.value
   let checkDate = new Date()
-  
+
   while (true) {
     const dateStr = formatDateKey(checkDate)
     const hasRecord = records.value.some(r => r.date === dateStr)
@@ -86,16 +83,21 @@ function formatDateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function loadRecords() {
-  const stored = localStorage.getItem('linli_health_records')
-  if (stored) {
-    records.value = JSON.parse(stored)
+async function loadRecords() {
+  if (!isLoggedIn.value) {
+    records.value = []
+    checkTodayStatus()
+    return
+  }
+
+  try {
+    const res = await healthApi.getRecords()
+    records.value = (res && res.items) || []
+  } catch (e: any) {
+    // 未登录或失败时保持空列表
+    records.value = []
   }
   checkTodayStatus()
-}
-
-function saveRecords() {
-  localStorage.setItem('linli_health_records', JSON.stringify(records.value))
 }
 
 function checkTodayStatus() {
@@ -103,19 +105,26 @@ function checkTodayStatus() {
   todayChecked.value = records.value.some(r => r.date === today.value)
 }
 
-function submitCheckIn() {
+async function submitCheckIn() {
   if (todayChecked.value) return
-
-  const newRecord: HealthRecord = {
-    date: today.value,
-    healthStatus: 'good',
-    timestamp: Date.now()
+  if (!isLoggedIn.value) {
+    toastError('请先登录后再打卡')
+    return
   }
 
-  records.value.push(newRecord)
-  saveRecords()
-  checkTodayStatus()
-  toastSuccess('打卡成功！')
+  loading.value = true
+  try {
+    const record = await healthApi.addRecord({
+      health_status: 'good'
+    })
+    records.value.unshift(record)
+    checkTodayStatus()
+    toastSuccess('打卡成功！')
+  } catch (e: any) {
+    // 错误提示已由 request.ts 处理
+  } finally {
+    loading.value = false
+  }
 }
 
 function goBack() {
