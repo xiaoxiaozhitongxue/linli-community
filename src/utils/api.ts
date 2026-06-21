@@ -1,14 +1,13 @@
 // ==========================================================================
-//  统一 API 层（前端 "后端"）
+//  统一 API 层
 // ==========================================================================
 //
 //  设计原则
 //  --------
-//  1. **所有业务数据都走 storage.ts 中的 loadBusiness/saveBusiness**
-//  2. **严格按手机号隔离**：每个账号使用 linli_business_data_${phone}
-//  3. **后端权限校验**：修改/删除/接单等写操作必须是 owner 或合法状态
-//  4. **一任务一账号仅能接一次**：在 acceptTask 中校验 helper_phone/id
-//  5. **数据同步**：同一账号在任何页面修改后，其他页面重新加载会立即生效
+//  1. **所有业务数据都通过云端 API 交互**
+//  2. **后端权限校验**：修改/删除/接单等写操作必须是 owner 或合法状态
+//  3. **一任务一账号仅能接一次**：在 acceptTask 中校验 helper_phone/id
+//  4. **数据同步**：同一账号在任何页面修改后，其他页面重新加载会立即生效
 //
 //  模块
 //  ----
@@ -20,18 +19,8 @@
 //
 // ==========================================================================
 
-import {
-  loadBusiness,
-  saveBusiness,
-  getCurrentUser,
-  isOwner,
-  requireLogin,
-  onLoginSuccess,
-  onLogout,
-  getUserStorageKey,
-} from './storage'
+import { onLogout } from './storage'
 import { get, post, put, del } from './request'
-import { accountExists, verifyPassword, getAccount, registerAccount } from './account'
 
 // ========================================================================
 //  共享类型（与 storage.ts 中的业务数据对齐）
@@ -152,42 +141,6 @@ export interface LikeResponse {
 }
 
 // ========================================================================
-//  辅助工具：构造写入后立即落盘的统一入口
-// ========================================================================
-
-const COMMENTS_STORAGE_KEY = 'linli_comments'  // 评论单独放一个桶，方便查询
-
-function nowId(prefix: string = ''): string {
-  return `${prefix}${Date.now()}_${Math.floor(Math.random() * 1000)}`
-}
-
-function getUserCommentsKey(phone: string): string {
-  return `${COMMENTS_STORAGE_KEY}_${phone}`
-}
-
-function getUserComments(): { [postId: string]: Comment[] } {
-  const phone = getCurrentUser()?.phone || 'public'
-  const key = getUserCommentsKey(phone)
-  try {
-    const raw = localStorage.getItem(key)
-    if (raw) return JSON.parse(raw)
-  } catch (e) {
-    console.error('[api] 读取评论失败:', e)
-  }
-  return {}
-}
-
-function saveUserComments(data: { [postId: string]: Comment[] }): void {
-  const phone = getCurrentUser()?.phone || 'public'
-  const key = getUserCommentsKey(phone)
-  try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch (e) {
-    console.error('[api] 保存评论失败:', e)
-  }
-}
-
-// ========================================================================
 //  authApi —— 登录/注册
 // ========================================================================
 export const authApi = {
@@ -233,44 +186,7 @@ export const userApi = {
   },
 
   getOnlineUsers: (): Promise<User[]> => {
-    return new Promise(resolve => {
-      const cur = getCurrentUser()
-      const users: User[] = []
-      if (cur) {
-        users.push({ ...cur, is_online: true })
-      }
-      users.push(
-        {
-          id: 'demo-neighbour-1',
-          phone: '13811112222',
-          nickname: '热心邻居张阿姨',
-          avatar: '',
-          community: '阳光社区',
-          role: 'volunteer',
-          credit_score: 98,
-          is_verified: true,
-          created_at: Date.now() - 86400000 * 30,
-          updated_at: Date.now(),
-          last_active_at: Date.now() - 1000 * 60 * 2,
-          is_online: true
-        },
-        {
-          id: 'demo-neighbour-2',
-          phone: '13811113333',
-          nickname: '社区达人李先生',
-          avatar: '',
-          community: '阳光社区',
-          role: 'resident',
-          credit_score: 92,
-          is_verified: true,
-          created_at: Date.now() - 86400000 * 60,
-          updated_at: Date.now(),
-          last_active_at: Date.now() - 1000 * 60 * 15,
-          is_online: true
-        }
-      )
-      resolve(users)
-    })
+    return get<User[]>('/api/users', { is_online: true })
   }
 }
 

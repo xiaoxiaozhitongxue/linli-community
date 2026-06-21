@@ -24,7 +24,7 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'https://6cd8dff7.linli-community.pages.dev',
+        target: 'https://01a51548.linli-community.pages.dev',
         changeOrigin: true
       }
     }
