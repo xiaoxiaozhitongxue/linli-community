@@ -220,7 +220,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { activitiesApi } from '../../utils/api'
+import { activityService } from '../../services/activityService'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
 
@@ -405,7 +405,7 @@ const submitActivity = async () => {
       images: form.value.images
     }
 
-    await activitiesApi.createActivity(data)
+    await activityService.createActivity(data)
     toastSuccess('发布成功')
 
     setTimeout(() => {

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page">
     <div class="auth-container">
       <!-- 背景装饰 -->
@@ -270,10 +270,11 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { toastSuccess, toastError } from '../../utils/toast'
 import { showLoading, hideLoading } from '../../utils/ui'
 import { useAuth } from '../../store'
-import { authApi } from '../../utils/api'
+import { authService } from '../../services/authService'
 import { getAndClearLoginRedirect } from '../../utils/auth'
 
 const { setUser } = useAuth()
@@ -458,6 +459,8 @@ const validateRegisterCommunity = () => {
 }
 
 // 处理登录
+const router = useRouter()
+
 const handleLogin = async () => {
   loginForm.phoneError = ''
   loginForm.passwordError = ''
@@ -469,44 +472,36 @@ const handleLogin = async () => {
     loginForm.isLoading = true
     showLoading('登录中...')
 
-    const result: any = await authApi.login({
+    const result: any = await authService.login({
       phone: loginForm.phone,
       password: loginForm.password
     })
     
-    console.log('登录API返回:', result)
-    
-    // 确保返回的数据结构正确
     if (!result.token || !result.user) {
       throw new Error('登录数据异常')
     }
     
     setUser(result.user, result.token, result.userData)
     
-    // 立即同步写入 localStorage
     localStorage.setItem('token', result.token)
     localStorage.setItem('userInfo', JSON.stringify(result.user))
     
     hideLoading()
     loginForm.isLoading = false
     
-        // 显示成功提示
     toastSuccess('登录成功')
     
-    // 延迟跳转，确保toast显示
     const redirectPath = getAndClearLoginRedirect()
     const targetPath = redirectPath || '/pages/index/index'
     
-    setTimeout(() => {
-      window.location.hash = '#' + targetPath
-      window.location.reload()
+    setTimeout(async () => {
+      await router.replace(targetPath)
     }, 300)
     
   } catch (e: any) {
     hideLoading()
     loginForm.isLoading = false
     const message = e?.message || '登录失败'
-    console.error('登录错误:', e)
     showGlobalError(message)
   }
 }
@@ -531,7 +526,7 @@ const handleRegister = async () => {
     registerForm.isLoading = true
     showLoading('注册中...')
 
-    const result: any = await authApi.register({
+    const result: any = await authService.register({
       phone: registerForm.phone,
       password: registerForm.password,
       nickname: registerForm.nickname,
@@ -543,9 +538,8 @@ const handleRegister = async () => {
     registerForm.isLoading = false
     toastSuccess('注册成功')
 
-    setTimeout(() => {
-      window.location.hash = '#/pages/index/index'
-      window.location.reload()
+    setTimeout(async () => {
+      await router.replace('/pages/index/index')
     }, 500)
   } catch (e: any) {
     hideLoading()

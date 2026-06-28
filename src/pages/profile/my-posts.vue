@@ -88,13 +88,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { postsApi } from '../../utils/api'
+import { postService } from '../../services/postService'
 import { navigateBackSmart, navigateTo } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
 const posts = ref<any[]>([])
+const hasMore = ref(true)
 const scrollRef = ref<HTMLElement | null>(null)
+
+const refreshing = ref(false)
 
 onMounted(async () => {
   statusBarHeight.value = 20
@@ -109,29 +112,33 @@ const goPublish = () => {
   navigateTo('/pages/post/create')
 }
 
-const loadPosts = async () => {
+const loadPosts = async (isRefresh = false) => {
   if (loading.value) return
   try {
     loading.value = true
-    const res = await postsApi.getPosts({ page: 1, limit: 200 })
+    if (isRefresh) {
+      refreshing.value = true
+    }
+    const res = await postService.getPosts({ page: 1, limit: 200 })
     const items: any[] = (res && (res as any).items) || []
-    // 过滤：只显示我本人的帖子
     const userPhone = localStorage.getItem('userInfo')
       ? (JSON.parse(localStorage.getItem('userInfo') || '{}').phone || null)
       : null
     if (userPhone) {
       posts.value = items.filter((p: any) =>
-        (p as any).user_phone === userPhone ||
+        p.user_phone === userPhone ||
         (p.user && p.user.phone === userPhone) ||
         (p.user_id && (p.user_id === userPhone))
       )
     } else {
       posts.value = items
     }
-  } catch (error) {
-    console.error('加载失败:', error)
+    hasMore.value = items.length >= 200
+  } catch {
+    posts.value = []
   } finally {
     loading.value = false
+    refreshing.value = false
   }
 }
 
@@ -143,12 +150,10 @@ const onRefresh = async () => {
 const onScroll = () => {
   if (!scrollRef.value) return
   const el = scrollRef.value
-  // 下拉刷新检测
   if (el.scrollTop <= -60 && !refreshing.value) {
     onRefresh()
   }
-  // 上拉加载更多检测
-  if (el.scrollHeight - el.scrollTop - el.clientHeight < 100) {
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 100 && !loading.value) {
     loadPosts()
   }
 }

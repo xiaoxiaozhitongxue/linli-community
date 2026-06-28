@@ -29,19 +29,13 @@
     <!-- 内容区域 -->
     <div class="content">
       <!-- 加载状态 -->
-      <div v-if="loading && activities.length === 0" class="loading-container">
-        <div class="loading-spinner"></div>
-        <span class="loading-text">加载中...</span>
-      </div>
+      <SkeletonLoader v-if="loading && activities.length === 0" type="card" :count="3" />
+
+      <!-- 错误状态 -->
+      <ErrorBoundary v-else-if="error" message="加载失败，请稍后重试" @retry="retry" />
 
       <!-- 空状态 -->
-      <div v-else-if="!loading && activities.length === 0" class="empty-state">
-        <span class="empty-emoji">📅</span>
-        <span class="empty-text">暂无活动</span>
-        <div class="empty-btn" @click="goToCreate">
-          <span>发起第一个活动</span>
-        </div>
-      </div>
+      <EmptyState v-else-if="!loading && activities.length === 0" icon="📅" title="暂无活动" description="还没有人发起活动" actionText="发起第一个活动" @action="goToCreate" />
 
       <!-- 活动列表 -->
       <div v-else class="activity-list">
@@ -156,12 +150,17 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { activitiesApi, type Activity } from '../../utils/api'
+import { activityService } from '../../services/activityService'
+import type { Activity } from '../../types/models'
 import { navigateTo, navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
+import SkeletonLoader from '../../components/SkeletonLoader.vue'
+import EmptyState from '../../components/EmptyState.vue'
+import ErrorBoundary from '../../components/ErrorBoundary.vue'
 
 const loading = ref(false)
 const loadingMore = ref(false)
+const error = ref(false)
 const activities = ref<Activity[]>([])
 const currentFilter = ref('all')
 const currentPage = ref(1)
@@ -296,7 +295,7 @@ const fetchActivities = async (page: number = 1, isRefresh: boolean = false) => 
       params.status = currentFilter.value
     }
     
-    const response = await activitiesApi.getActivities(params)
+    const response = await activityService.getActivities(params)
     
     if (isRefresh) {
       activities.value = response.items
@@ -306,8 +305,9 @@ const fetchActivities = async (page: number = 1, isRefresh: boolean = false) => 
     
     currentPage.value = page
     hasMore.value = page < response.total_pages
-  } catch (error) {
-    console.error('获取活动列表失败:', error)
+    error.value = false
+  } catch {
+    error.value = true
     toastError('加载失败，请稍后重试')
   } finally {
     loading.value = false
@@ -331,6 +331,12 @@ const goToCreate = () => {
 
 const goBack = () => {
   navigateBack()
+}
+
+const retry = () => {
+  error.value = false
+  loading.value = true
+  fetchActivities(1, true)
 }
 
 onMounted(async () => {

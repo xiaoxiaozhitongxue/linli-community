@@ -26,7 +26,7 @@ export async function requireAuth(context) {
       return createErrorResponse(401, '未授权', '请先登录')
     }
 
-    const payload = await verifyToken(token)
+    const payload = await verifyToken(token, context)
     if (!payload || !payload.userId) {
       return createErrorResponse(401, '未授权', '无效的登录凭证')
     }

@@ -9,33 +9,41 @@
     </div>
 
     <div class="content">
-      <div class="stats-card">
-        <div class="stat-item">
-          <span class="stat-value">{{ streak }}</span>
-          <span class="stat-label">连续打卡天数</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-value">{{ totalDays }}</span>
-          <span class="stat-label">累计打卡次数</span>
-        </div>
-      </div>
+      <SkeletonLoader v-if="loading" type="card" :count="1" />
 
-      <div class="check-section">
-        <div class="today-status" :class="{ checked: todayChecked }">
-          <span v-if="!todayChecked">今日未打卡</span>
-          <span v-else>✓ 今日已完成打卡</span>
-        </div>
+      <template v-else>
+        <EmptyState v-if="!isLoggedIn.value" icon="💪" title="登录后可打卡" description="登录即可记录每日健康打卡" />
 
-        <button
-          class="check-btn"
-          :class="{ checked: todayChecked }"
-          @click="submitCheckIn"
-          :disabled="todayChecked"
-        >
-          {{ todayChecked ? '已打卡' : '立即打卡' }}
-        </button>
-      </div>
+        <template v-else>
+          <div class="stats-card">
+            <div class="stat-item">
+              <span class="stat-value">{{ streak }}</span>
+              <span class="stat-label">连续打卡天数</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-value">{{ totalDays }}</span>
+              <span class="stat-label">累计打卡次数</span>
+            </div>
+          </div>
+
+          <div class="check-section">
+            <div class="today-status" :class="{ checked: todayChecked }">
+              <span v-if="!todayChecked">今日未打卡</span>
+              <span v-else>✓ 今日已完成打卡</span>
+            </div>
+
+            <button
+              class="check-btn"
+              :class="{ checked: todayChecked }"
+              @click="submitCheckIn"
+              :disabled="todayChecked || submitting"
+            >
+              {{ submitting ? '打卡中...' : todayChecked ? '已打卡' : '立即打卡' }}
+            </button>
+          </div>
+        </template>
+      </template>
     </div>
   </div>
 </template>
@@ -44,21 +52,24 @@
 import { ref, computed, onMounted } from 'vue'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
-import { healthApi, type HealthRecord } from '../../utils/api'
+import { healthService } from '../../services/healthService'
+import type { HealthRecord } from '../../types/models'
 import { useAuth } from '../../store'
+import SkeletonLoader from '../../components/SkeletonLoader.vue'
+import EmptyState from '../../components/EmptyState.vue'
 
 const { isLoggedIn } = useAuth()
 
 const statusBarHeight = ref(20)
 const records = ref<HealthRecord[]>([])
+const loading = ref(true)
+const submitting = ref(false)
 
 const today = ref('')
 const todayChecked = ref(false)
-const loading = ref(false)
 
 const streak = computed(() => {
   let count = 0
-  const todayStr = today.value
   let checkDate = new Date()
 
   while (true) {
@@ -84,20 +95,22 @@ function formatDateKey(date: Date) {
 }
 
 async function loadRecords() {
+  loading.value = true
   if (!isLoggedIn.value) {
     records.value = []
     checkTodayStatus()
+    loading.value = false
     return
   }
 
   try {
-    const res = await healthApi.getRecords()
+    const res = await healthService.getRecords()
     records.value = (res && res.items) || []
   } catch (e: any) {
-    // 未登录或失败时保持空列表
     records.value = []
   }
   checkTodayStatus()
+  loading.value = false
 }
 
 function checkTodayStatus() {
@@ -106,15 +119,15 @@ function checkTodayStatus() {
 }
 
 async function submitCheckIn() {
-  if (todayChecked.value) return
+  if (todayChecked.value || submitting.value) return
   if (!isLoggedIn.value) {
     toastError('请先登录后再打卡')
     return
   }
 
-  loading.value = true
+  submitting.value = true
   try {
-    const record = await healthApi.addRecord({
+    const record = await healthService.addRecord({
       health_status: 'good'
     })
     records.value.unshift(record)
@@ -123,7 +136,7 @@ async function submitCheckIn() {
   } catch (e: any) {
     // 错误提示已由 request.ts 处理
   } finally {
-    loading.value = false
+    submitting.value = false
   }
 }
 

@@ -130,7 +130,7 @@ export async function onRequestPost(context) {
         DELETE FROM likes WHERE id = ?
       `, [existingLike.id])
     } else {
-      const id = crypto.randomUUID()
+      const id = generateId()
       await db.run(`
         INSERT INTO likes (id, user_id, target_type, target_id, created_at)
         VALUES (?, ?, ?, ?, ?)

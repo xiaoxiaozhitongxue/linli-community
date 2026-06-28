@@ -21,169 +21,19 @@
 // ==========================================================================
 
 import {
-  getCurrentUser,
-  onLoginSuccess,
   onLogout,
 } from './storage'
 import { get, post, put, del } from './request'
 
 // ========================================================================
-//  共享类型（与 storage.ts 中的业务数据对齐）
+//  类型定义 - 请使用 src/types/models.ts
 // ========================================================================
-
-export interface User {
-  id: string
-  phone: string
-  nickname: string
-  avatar: string
-  gender?: 'male' | 'female' | 'other'
-  birthday?: string
-  community: string
-  address?: string
-  bio?: string
-  role: 'resident' | 'elderly' | 'volunteer' | 'merchant'
-  credit_score: number
-  is_verified: boolean
-  created_at: number
-  updated_at: number
-  last_active_at: number
-  is_online?: boolean
-}
-
-export interface Post {
-  id: string
-  user_id: string
-  user_phone: string       // 稳定身份标识（用于 owner 校验）
-  content: string
-  images?: string[]
-  location?: string
-  visibility: 'public' | 'community' | 'private'
-  like_count: number
-  comment_count: number
-  is_liked?: boolean
-  created_at: number
-  updated_at: number
-  user: Partial<User>
-  comments?: Comment[]
-}
-
-export interface Comment {
-  id: string
-  post_id: string
-  user_id: string
-  user_phone: string
-  parent_comment_id?: string
-  content: string
-  created_at: number
-  updated_at: number
-  user: Partial<User>
-}
-
-export interface Activity {
-  id: string
-  user_id: string
-  user_phone: string
-  title: string
-  description: string
-  category: 'sports' | 'culture' | 'charity' | 'party' | 'other' | string
-  location: string
-  start_time: number
-  end_time?: number
-  max_participants?: number
-  current_participants: number
-  images?: string[]
-  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | string
-  created_at: number
-  updated_at: number
-  user: Partial<User>
-  participants?: Array<{ id: string; user_id: string; user_phone: string; nickname: string; avatar?: string; joined_at: number; status: 'registered' | 'attended' | 'absent' }>
-  is_participant?: boolean
-}
-
-export interface Task {
-  id: string
-  user_id: string
-  user_phone: string        // 发布者手机号（稳定身份）
-  helper_id?: string        // 接单人的 id
-  helper_phone?: string     // 接单人的手机号（用于"一账号一任务"去重）
-  title: string
-  description: string
-  category: 'shopping' | 'delivery' | 'help' | 'companionship' | 'pet' | 'child' | 'other' | string
-  location: string
-  reward?: number | string
-  deadline?: number
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | string
-  created_at: number
-  updated_at: number
-  creator?: {
-    id: string
-    nickname: string
-    avatar?: string
-    credit_score: number
-    is_verified?: boolean
-    community?: string
-  }
-  helper?: {
-    id: string
-    nickname: string
-    avatar?: string
-    credit_score: number
-    is_verified?: boolean
-  }
-}
-
-export interface PaginatedResponse<T> {
-  items: T[]
-  page: number
-  limit: number
-  total: number
-  total_pages: number
-}
-
-export interface LikeResponse {
-  liked: boolean
-  like_count: number
-}
-
-// ========================================================================
-//  辅助工具：构造写入后立即落盘的统一入口
-// ========================================================================
-
-const COMMENTS_STORAGE_KEY = 'linli_comments'  // 评论单独放一个桶，方便查询
-
-function nowId(prefix: string = ''): string {
-  return `${prefix}${Date.now()}_${Math.floor(Math.random() * 1000)}`
-}
-
-function getUserCommentsKey(phone: string): string {
-  return `${COMMENTS_STORAGE_KEY}_${phone}`
-}
-
-function getUserComments(): { [postId: string]: Comment[] } {
-  const phone = getCurrentUser()?.phone || 'public'
-  const key = getUserCommentsKey(phone)
-  try {
-    const raw = localStorage.getItem(key)
-    if (raw) return JSON.parse(raw)
-  } catch (e) {
-    console.error('[api] 读取评论失败:', e)
-  }
-  return {}
-}
-
-function saveUserComments(data: { [postId: string]: Comment[] }): void {
-  const phone = getCurrentUser()?.phone || 'public'
-  const key = getUserCommentsKey(phone)
-  try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch (e) {
-    console.error('[api] 保存评论失败:', e)
-  }
-}
+export type { User, Post, Comment, Activity, Task, HealthRecord, PaginatedResponse, LikeResponse } from '../types/models'
 
 // ========================================================================
 //  authApi —— 登录/注册
 // ========================================================================
+// @deprecated 请使用 src/services/authService
 export const authApi = {
   login: (data: { phone: string; password: string }) => {
     return post<{ token: string; user: User }>('/api/auth/login', data, { showError: true })
@@ -202,6 +52,7 @@ export const authApi = {
 // ========================================================================
 //  userApi —— 用户档案（profile 保存/获取 / 我发布的 / 我的收藏）
 // ========================================================================
+// @deprecated 请使用 src/services/ 下的对应服务层
 export const userApi = {
   getProfile: (): Promise<User> => {
     return get<User>('/api/user/profile')
@@ -227,19 +78,18 @@ export const userApi = {
   },
 
   getOnlineUsers: (): Promise<User[]> => {
-    // 从云端获取最近活跃的用户
     return get<{ items: User[]; total: number; page: number; limit: number; total_pages: number }>('/api/users', { online: '1', limit: 20 })
       .then((res: any) => {
         const items = (res && res.items) || []
         return items.map((u: any) => ({ ...u, is_online: true }))
       })
       .catch(() => {
-        // API 失败时返回空列表
         return []
       })
   }
 }
 
+// @deprecated 请使用 src/services/postService
 export const postsApi = {
   getPosts: (params?: { page?: number; limit?: number; sort?: string; order?: string; user_id?: string }): Promise<PaginatedResponse<Post>> => {
     return get<PaginatedResponse<Post>>('/api/posts', params)
@@ -280,6 +130,7 @@ export const postsApi = {
 // ========================================================================
 //  activitiesApi —— 活动中心
 // ========================================================================
+// @deprecated 请使用 src/services/activityService
 export const activitiesApi = {
   getActivities: (params?: { page?: number; limit?: number; status?: string; category?: string; sort?: string; order?: string }): Promise<PaginatedResponse<Activity>> => {
     return get<PaginatedResponse<Activity>>('/api/activities', params)
@@ -319,6 +170,7 @@ export const activitiesApi = {
   }
 }
 
+// @deprecated 请使用 src/services/taskService
 export const tasksApi = {
   getTasks: (params?: { page?: number; limit?: number; status?: string; category?: string }) => {
     return get<{ items: Task[]; total: number; page: number; limit: number }>('/api/tasks', params)
@@ -377,17 +229,7 @@ export const tasksApi = {
 // ========================================================================
 //  healthApi —— 健康打卡记录
 // ========================================================================
-export interface HealthRecord {
-  id: string
-  user_id?: string
-  date: string
-  health_status: 'good' | 'normal' | 'poor'
-  temperature?: number
-  notes?: string
-  timestamp?: number
-  created_at?: number
-}
-
+// @deprecated 请使用 src/services/healthService
 export const healthApi = {
   getRecords: (): Promise<{ items: HealthRecord[]; page: number; limit: number; total: number; total_pages: number }> => {
     return get<{ items: HealthRecord[]; page: number; limit: number; total: number; total_pages: number }>('/api/health/records')

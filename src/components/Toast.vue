@@ -97,7 +97,7 @@ defineExpose(toastApi)
   background: var(--toast-bg);
   color: var(--toast-text);
   border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   line-height: 1.4;
   box-shadow: var(--shadow-toast);
   word-break: break-word;
@@ -120,7 +120,7 @@ defineExpose(toastApi)
 }
 
 .toast-icon {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   font-weight: bold;
   flex-shrink: 0;
 }

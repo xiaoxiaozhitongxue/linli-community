@@ -121,32 +121,15 @@
             <span class="section-title">📖 邻里动态</span>
           </div>
 
-          <div v-if="loading && feedList.length === 0" class="loading-container">
-            <div class="skeleton-card" v-for="i in 3" :key="i">
-              <div class="skeleton-header">
-                <div class="skeleton-avatar"></div>
-                <div class="skeleton-lines">
-                  <div class="skeleton-line short"></div>
-                  <div class="skeleton-line tiny"></div>
-                </div>
-              </div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line medium"></div>
-            </div>
-          </div>
+          <SkeletonLoader v-if="loading && posts.length === 0" type="list" :count="3" />
 
-          <div v-else-if="error && feedList.length === 0" class="error-container">
-            <span class="error-icon">😢</span>
-            <span class="error-text">{{ error }}</span>
-            <div class="retry-btn" @click="onRefresh">
-              <span>重试</span>
-            </div>
-          </div>
+          <ErrorBoundary v-else-if="error && posts.length === 0" :message="error" @retry="handleRefresh" />
 
           <div v-else class="feed-list">
-            <div class="feed-card animate-fadeIn" v-for="(post, index) in feedList" :key="post.id" :style="{ animationDelay: (index * 0.1) + 's' }">
+            <div class="feed-card animate-fadeIn" v-for="(post, index) in posts" :key="post.id" :style="{ animationDelay: (index * 0.1) + 's' }">
               <div class="feed-header">
-                <img class="feed-avatar" :src="post.user?.avatar || 'https://via.placeholder.com/40'" />
+                <img v-if="post.user?.avatar" class="feed-avatar" :src="post.user.avatar" @error="onAvatarError" />
+                <div v-else class="feed-avatar feed-avatar-placeholder">{{ getInitial(post.user?.nickname) }}</div>
                 <div class="feed-user-info">
                   <span class="feed-username">{{ post.user?.nickname || '邻居' }}</span>
                   <div class="feed-meta">
@@ -164,7 +147,7 @@
               </div>
 
               <div class="feed-actions">
-                <div class="feed-action" :class="{ liked: post.is_liked }" @click="likePost(post, $event)">
+                <div class="feed-action" :class="{ liked: post.is_liked }" @click="handleLikePost(post)">
                   <span class="action-icon" :class="{ 'heart-beat': post.is_liked }">{{ post.is_liked ? '❤️' : '🤍' }}</span>
                   <span class="action-count">{{ post.like_count || 0 }}</span>
                 </div>
@@ -180,15 +163,15 @@
             </div>
           </div>
 
-          <div v-if="hasMore && feedList.length > 0" class="load-more">
-            <span v-if="!loadingMore" @click="loadMorePosts">加载更多</span>
+          <div v-if="hasMore && posts.length > 0" class="load-more">
+            <span v-if="!loadingMore" @click="handleLoadMore">加载更多</span>
             <div v-else class="loading-more">
               <div class="loading-spinner small"></div>
               <span>加载中...</span>
             </div>
           </div>
 
-          <div v-if="!hasMore && feedList.length > 0" class="no-more">
+          <div v-if="!hasMore && posts.length > 0" class="no-more">
             <span>— 没有更多了 —</span>
           </div>
 
@@ -208,12 +191,10 @@
           <div v-if="commentLoading && comments.length === 0" class="comment-loading">
             <div class="loading-spinner small"></div>
           </div>
-          <div v-else-if="comments.length === 0" class="comment-empty">
-            <span class="empty-icon">💬</span>
-            <span class="empty-text">暂无评论，快来抢沙发吧！</span>
-          </div>
+          <EmptyState v-else-if="comments.length === 0" icon="💬" title="暂无评论" description="快来抢沙发吧！" />
           <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
-            <img class="comment-avatar" :src="comment.user?.avatar || 'https://via.placeholder.com/36'" />
+            <img v-if="comment.user?.avatar" class="comment-avatar" :src="comment.user.avatar" @error="onAvatarError" />
+            <div v-else class="comment-avatar comment-avatar-placeholder">{{ getInitial(comment.user?.nickname) }}</div>
             <div class="comment-content">
               <span class="comment-user">{{ comment.user?.nickname || '邻居' }}</span>
               <span class="comment-text">{{ comment.content }}</span>
@@ -223,8 +204,8 @@
         </div>
 
         <div class="comment-input-wrapper">
-          <input class="comment-input" v-model="commentText" placeholder="说点什么..." :disabled="!isLoggedIn" @keyup.enter="submitComment" />
-          <div class="comment-submit" :class="{ disabled: !commentText.trim() || !isLoggedIn }" @click="submitComment">
+          <input class="comment-input" v-model="commentText" placeholder="说点什么..." :disabled="!isLoggedIn" @keyup.enter="handleSubmitComment" />
+          <div class="comment-submit" :class="{ disabled: !commentText.trim() || !isLoggedIn }" @click="handleSubmitComment">
             <span>发送</span>
           </div>
         </div>
@@ -249,77 +230,44 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { postsApi, activitiesApi, tasksApi, healthApi, type Post, type Comment, type Activity } from '../../utils/api'
+import { activitiesApi, tasksApi, healthApi, type Post, type Comment, type Activity } from '../../utils/api'
 import { useAuth } from '../../store'
-import { toastSuccess, toastError } from '../../utils/toast'
+import { toastSuccess, toastInfo } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
-import { getLocation, pickDisplayCommunity } from '../../utils/location'
-import type { LocationResult } from '../../utils/location'
+import { usePosts } from '../../composables/usePosts'
+import { useLocation } from '../../composables/useLocation'
+import SkeletonLoader from '../../components/SkeletonLoader.vue'
+import EmptyState from '../../components/EmptyState.vue'
+import ErrorBoundary from '../../components/ErrorBoundary.vue'
 
 const { initAuth, isLoggedIn, user } = useAuth()
+const {
+  posts,
+  loading,
+  error,
+  hasMore,
+  currentPage,
+  fetchPosts,
+  loadMorePosts,
+  refreshPosts,
+  likePost,
+  submitComment,
+  loadComments
+} = usePosts()
+const {
+  communityName,
+  locating,
+  chooseLocation,
+  startAutoLocate,
+  cleanup: cleanupLocation
+} = useLocation()
 
 const statusBarHeight = ref(20)
-const communityName = ref('点击定位')
-const locating = ref(false)
-const locationResult = ref<LocationResult | null>(null)
-let lastAutoLocateAt = 0          // 上次自动定位的时间戳（用于去抖）
-let hardResetTimer: any = null    // 组件级硬重置（20s 还没完成则强制恢复）
-let pageHiddenAt = 0              // visibilitychange 时记住页面什么时候隐藏的
+let pageHiddenAt = 0
 
-async function chooseLocation(opts: { auto?: boolean } = {}) {
-  // 1) 已经在定位中：直接 skip（防止重复触发）
-  if (locating.value) return
-
-  // 2) 自动定位的 60 秒去抖
-  const now = Date.now()
-  if (opts.auto && now - lastAutoLocateAt < 60 * 1000) {
-    return
-  }
-  lastAutoLocateAt = now
-
-  locating.value = true
-
-  // 3) 组件级 20 秒硬重置：
-  //    如果底层任何一个 Promise 都永远不 resolve，这里兜底强制把 locating 复位，
-  //    并保留当前的 communityName（不回退成"点击定位"）
-  if (hardResetTimer) clearTimeout(hardResetTimer)
-  hardResetTimer = setTimeout(() => {
-    console.warn('[index] 定位超过 20 秒仍未返回 — 已强制复位')
-    if (locating.value) {
-      locating.value = false
-      // 没有定位到新地址的情况下：如果之前有地址就保留，否则显示"点击定位"
-      if (!communityName.value || communityName.value === '点击定位') {
-        communityName.value = '点击定位'
-      }
-      // 静默处理，不显示 toast，避免闪烁
-    }
-  }, 20000)
-
-  try {
-    const result = await getLocation({ forceRefresh: true })
-    locationResult.value = result
-    // 展示策略：优先展示真实城市·区域；注册社区仅在拿不到地理编码时作为兜底
-    const display = pickDisplayCommunity(result, user.value?.community)
-    communityName.value = display
-    console.log('[index] chooseLocation 完成, result =', result, 'display =', display)
-  } catch (err: any) {
-    // 失败静默处理，不覆盖已有的社区名 — 用户可能之前已经定位成功过
-    console.warn('[index] 定位失败:', err)
-  } finally {
-    locating.value = false
-    if (hardResetTimer) {
-      clearTimeout(hardResetTimer)
-      hardResetTimer = null
-    }
-  }
-}
 const refreshing = ref(false)
-const loading = ref(false)
 const loadingMore = ref(false)
-const error = ref('')
-const hasMore = ref(true)
-const currentPage = ref(1)
 const currentBanner = ref(0)
 let bannerTimer: any = null
 const showRefreshIndicator = ref(false)
@@ -351,7 +299,6 @@ const quickActions = ref([
 const healthBadge = ref('未打卡')
 const helpBadge = ref('')
 async function loadQuickBadges() {
-  // 健康打卡状态 - 使用云端 API
   try {
     if (isLoggedIn.value) {
       const res = await healthApi.getRecords()
@@ -367,7 +314,6 @@ async function loadQuickBadges() {
     healthBadge.value = '去打卡'
   }
 
-  // 互助任务数量 - 使用统一 API 层
   try {
     const res: any = await tasksApi.getTasks()
     const items: any[] = (res && res.items) || (Array.isArray(res) ? (res as any) : [])
@@ -385,7 +331,22 @@ const activities = ref<Activity[]>([])
 const hotActivities = ref<Activity[]>([])
 const recentActivities = ref<Activity[]>([])
 
-const feedList = ref<Post[]>([])
+async function fetchActivities() {
+  try {
+    const response = await activitiesApi.getActivities({ limit: 20 })
+    activities.value = response.items
+
+    hotActivities.value = [...activities.value]
+      .sort((a, b) => b.current_participants - a.current_participants)
+      .slice(0, 4)
+
+    recentActivities.value = [...activities.value]
+      .sort((a, b) => a.start_time - b.start_time)
+      .slice(0, 3)
+  } catch (err) {
+    // 静默处理
+  }
+}
 
 const showCommentModal = ref(false)
 const currentPost = ref<Post | null>(null)
@@ -441,7 +402,7 @@ function onTouchMove(e: TouchEvent) {
 
 function onTouchEnd() {
   if (pullDistance > 80 && !refreshing.value) {
-    onRefresh()
+    handleRefresh()
   }
   pullDistance = 0
   setTimeout(() => {
@@ -451,92 +412,28 @@ function onTouchEnd() {
   }, 300)
 }
 
-async function fetchPosts(page: number = 1, isRefresh: boolean = false) {
-  if (isRefresh) {
-    error.value = ''
-  }
-
-  try {
-    const response = await postsApi.getPosts({ page, limit: 10 })
-
-    if (isRefresh) {
-      feedList.value = response.items
-    } else {
-      feedList.value = [...feedList.value, ...response.items]
-    }
-
-    currentPage.value = page
-    hasMore.value = page < response.total_pages
-  } catch (err) {
-    if (isRefresh) {
-      error.value = '加载失败，请稍后重试'
-    }
-    console.error('获取动态失败:', err)
-  } finally {
-    loading.value = false
-    loadingMore.value = false
-    refreshing.value = false
-    showRefreshIndicator.value = false
-  }
-}
-
-async function fetchActivities() {
-  try {
-    const response = await activitiesApi.getActivities({ limit: 20 })
-    activities.value = response.items
-    
-    hotActivities.value = [...activities.value]
-      .sort((a, b) => b.current_participants - a.current_participants)
-      .slice(0, 4)
-    
-    recentActivities.value = [...activities.value]
-      .sort((a, b) => a.start_time - b.start_time)
-      .slice(0, 3)
-  } catch (err) {
-    console.error('获取活动失败:', err)
-  }
-}
-
-async function onRefresh() {
+async function handleRefresh() {
   refreshing.value = true
   showRefreshIndicator.value = true
-  currentPage.value = 1
-  hasMore.value = true
-  await Promise.all([fetchPosts(1, true), fetchActivities()])
+  await Promise.all([refreshPosts(), fetchActivities()])
+  refreshing.value = false
+  showRefreshIndicator.value = false
 }
 
-async function loadMorePosts() {
+async function handleLoadMore() {
   if (loadingMore.value || !hasMore.value) return
-
   loadingMore.value = true
-  await fetchPosts(currentPage.value + 1)
+  await loadMorePosts()
+  loadingMore.value = false
 }
 
-async function likePost(post: Post, event?: MouseEvent) {
+async function handleLikePost(post: Post) {
   if (!isLoggedIn.value) {
     setLoginRedirect(window.location.hash.replace('#', '') || '/pages/index/index')
     showLoginGuide()
     return
   }
-
-  const index = feedList.value.findIndex(p => p.id === post.id)
-  if (index === -1) return
-
-  const originalLiked = post.is_liked
-  const originalCount = post.like_count
-
-  feedList.value[index].is_liked = !originalLiked
-  feedList.value[index].like_count = originalCount + (!originalLiked ? 1 : -1)
-
-  try {
-    const response = await postsApi.likePost(post.id)
-    feedList.value[index].is_liked = response.liked
-    feedList.value[index].like_count = response.like_count
-  } catch (err) {
-    feedList.value[index].is_liked = originalLiked
-    feedList.value[index].like_count = originalCount
-    toastError('操作失败')
-  }
+  await likePost(post)
 }
 
 async function showComments(post: Post) {
@@ -544,7 +441,7 @@ async function showComments(post: Post) {
   showCommentModal.value = true
   commentText.value = ''
   comments.value = []
-  await loadComments(post.id)
+  await handleLoadComments(post.id)
 }
 
 function hideComments() {
@@ -554,19 +451,13 @@ function hideComments() {
   commentText.value = ''
 }
 
-async function loadComments(postId: string) {
+async function handleLoadComments(postId: string) {
   commentLoading.value = true
-  try {
-    const response = await postsApi.getComments(postId, { limit: 50 })
-    comments.value = response.items
-  } catch (err) {
-    toastError('加载评论失败')
-  } finally {
-    commentLoading.value = false
-  }
+  comments.value = await loadComments(postId)
+  commentLoading.value = false
 }
 
-async function submitComment() {
+async function handleSubmitComment() {
   if (!commentText.value.trim() || !currentPost.value) return
 
   if (!isLoggedIn.value) {
@@ -575,22 +466,10 @@ async function submitComment() {
     return
   }
 
-  try {
-    const newComment = await postsApi.createComment(currentPost.value.id, {
-      content: commentText.value.trim()
-    })
-
-    comments.value = [newComment, ...comments.value]
-
-    const postIndex = feedList.value.findIndex(p => p.id === currentPost.value!.id)
-    if (postIndex !== -1) {
-      feedList.value[postIndex].comment_count = (feedList.value[postIndex].comment_count || 0) + 1
-    }
-
+  const result = await submitComment(currentPost.value.id, commentText.value.trim())
+  if (result) {
+    comments.value = [result, ...comments.value]
     commentText.value = ''
-    toastSuccess('评论成功')
-  } catch (err) {
-    toastError('评论失败')
   }
 }
 
@@ -625,7 +504,7 @@ function formatShortTime(timestamp: number) {
   const now = new Date()
   const diff = date.getTime() - now.getTime()
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  
+
   if (days === 0) {
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
@@ -680,6 +559,15 @@ function getActivityCoverBg(category: string) {
   return map[category] || '#F5F5F0'
 }
 
+function getInitial(nickname?: string): string {
+  return (nickname?.[0] || '邻').toUpperCase()
+}
+
+function onAvatarError(e: Event) {
+  const target = e.target as HTMLImageElement
+  target.style.display = 'none'
+}
+
 function goToSearch() {
   navigateTo('/pages/search/index')
 }
@@ -706,7 +594,7 @@ function sharePost(post: Post) {
       title: '邻里社区',
       text: post.content,
       url: window.location.href
-    }).catch(console.error)
+    }).catch(() => {})
   } else {
     navigator.clipboard.writeText(window.location.href).then(() => {
       toastSuccess('链接已复制到剪贴板')
@@ -768,22 +656,14 @@ function stopBannerAutoPlay() {
 onMounted(() => {
   initAuth()
   statusBarHeight.value = 20
-  loading.value = true
   Promise.all([fetchPosts(1, true), fetchActivities(), loadQuickBadges()])
   startBannerAutoPlay()
 
-  // 每次进入首页自动定位一次（稍延迟，等首屏资源加载完毕后再触发）
   const runAutoLocate = () => {
-    chooseLocation({ auto: true }).catch((err) => {
-      console.warn('[index] 自动定位出错（非阻塞错误）:', err)
-    })
+    startAutoLocate(user.value?.community)
   }
   const autoTimer = setTimeout(runAutoLocate, 600)
 
-  // visibilitychange：页面从不可见切回可见时定位
-  // — 只有页面隐藏超过 30 秒才重新定位
-  // — 且遵守 60s 全局去抖
-  // — 避免每次切回首页时触发新地址
   const onVisibility = () => {
     if (document.visibilityState === 'hidden') {
       pageHiddenAt = Date.now()
@@ -797,14 +677,10 @@ onMounted(() => {
   }
   document.addEventListener('visibilitychange', onVisibility)
 
-  // 记录清理标记
   ;(window as any).__indexCleanup = () => {
     clearTimeout(autoTimer)
     document.removeEventListener('visibilitychange', onVisibility)
-    if (hardResetTimer) {
-      clearTimeout(hardResetTimer)
-      hardResetTimer = null
-    }
+    cleanupLocation()
   }
 })
 
@@ -1399,64 +1275,6 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
-.skeleton-card {
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.skeleton-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: var(--spacing-lg);
-}
-
-.skeleton-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.8s ease-in-out infinite;
-  margin-right: var(--spacing-md);
-  flex-shrink: 0;
-}
-
-.skeleton-lines {
-  flex: 1;
-}
-
-.skeleton-line {
-  height: 14px;
-  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-secondary) 50%, var(--color-bg-tertiary) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.8s ease-in-out infinite;
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-sm);
-}
-
-.skeleton-line.short {
-  width: 45%;
-  height: 12px;
-}
-
-.skeleton-line.medium {
-  width: 70%;
-  height: 16px;
-}
-
-.skeleton-line.tiny {
-  width: 25%;
-  height: 10px;
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
 .feed-list {
   display: flex;
   flex-direction: column;
@@ -1494,6 +1312,16 @@ onUnmounted(() => {
   margin-right: var(--spacing-md);
   background: var(--color-bg-tertiary);
   object-fit: cover;
+  flex-shrink: 0;
+}
+
+.feed-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
 }
 
 .feed-user-info {
@@ -1629,15 +1457,6 @@ onUnmounted(() => {
   font-weight: var(--font-weight-medium);
 }
 
-.loading-container,
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-2xl) 0;
-}
-
 .loading-spinner {
   width: 40px;
   height: 40px;
@@ -1652,37 +1471,6 @@ onUnmounted(() => {
   width: 24px;
   height: 24px;
   border-width: 2px;
-}
-
-.error-icon {
-  font-size: 40px;
-  margin-bottom: var(--spacing-md);
-}
-
-.error-text {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-lg);
-}
-
-.retry-btn {
-  padding: var(--spacing-sm) var(--spacing-xl);
-  background: var(--color-primary-gradient);
-  color: var(--color-text-white);
-  border-radius: var(--radius-lg);
-  font-size: 14px;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  box-shadow: var(--shadow-sm);
-  min-height: var(--touch-min-size);
-  display: flex;
-  align-items: center;
-}
-
-.retry-btn:active {
-  transform: scale(0.98);
-  box-shadow: none;
 }
 
 .load-more,
@@ -1784,23 +1572,6 @@ onUnmounted(() => {
   padding: var(--spacing-xl) 0;
 }
 
-.comment-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--spacing-2xl) 0;
-}
-
-.empty-icon {
-  font-size: 40px;
-  margin-bottom: var(--spacing-md);
-}
-
-.empty-text {
-  font-size: 14px;
-  color: var(--color-text-muted);
-}
-
 .comment-item {
   display: flex;
   gap: var(--spacing-md);
@@ -1814,6 +1585,15 @@ onUnmounted(() => {
   background: var(--color-bg-tertiary);
   flex-shrink: 0;
   object-fit: cover;
+}
+
+.comment-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
 }
 
 .comment-content {
@@ -2009,7 +1789,7 @@ onUnmounted(() => {
   .page-wrapper {
     max-width: 500px;
   }
-  
+
   .status-content {
     max-width: 500px;
   }
@@ -2019,33 +1799,33 @@ onUnmounted(() => {
   .page-wrapper {
     max-width: 600px;
   }
-  
+
   .status-content {
     max-width: 600px;
   }
-  
+
   .banner-section {
     padding: var(--spacing-lg) var(--spacing-xl);
   }
-  
+
   .banner-swiper {
     height: 160px;
     border-radius: var(--radius-xl);
   }
-  
+
   .banner-item {
     height: 160px;
     padding: var(--spacing-2xl);
   }
-  
+
   .banner-title {
     font-size: 22px;
   }
-  
+
   .banner-desc {
     font-size: 15px;
   }
-  
+
   .quick-actions {
     max-width: 600px;
     margin: 0 auto var(--spacing-xl);
@@ -2067,7 +1847,7 @@ onUnmounted(() => {
   .section-header {
     padding: 0;
   }
-  
+
   .activity-scroll {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -2076,20 +1856,20 @@ onUnmounted(() => {
     padding-left: 0;
     padding-right: 0;
   }
-  
+
   .activity-card {
     width: 100% !important;
     margin-right: 0 !important;
   }
-  
+
   .activity-cover {
     height: 100px;
   }
-  
+
   .activity-emoji {
     font-size: 44px;
   }
-  
+
   .recent-activity-scroll {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -2098,24 +1878,24 @@ onUnmounted(() => {
     padding-left: 0;
     padding-right: 0;
   }
-  
+
   .recent-activity-card {
     width: 100%;
   }
-  
+
   .section-title {
     font-size: 18px;
   }
-  
+
   .feed-list {
     padding: 0;
   }
-  
+
   .feed-card {
     padding: var(--spacing-xl);
     border-radius: var(--radius-xl);
   }
-  
+
   .feed-avatar {
     width: 48px;
     height: 48px;
@@ -2128,42 +1908,42 @@ onUnmounted(() => {
     max-width: 100%;
     padding: 0 var(--spacing-2xl);
   }
-  
+
   .status-content {
     width: 100%;
     max-width: 100%;
     padding: 0 var(--spacing-2xl);
   }
-  
+
   .status-bar {
     left: var(--nav-sidebar-width, 220px);
     right: 0;
     width: auto;
   }
-  
+
   .banner-section {
     padding: var(--spacing-2xl) 0;
   }
-  
+
   .banner-swiper {
     height: 280px;
     width: 100%;
     max-width: 100%;
     border-radius: var(--radius-2xl);
   }
-  
+
   .banner-item {
     height: 280px;
   }
-  
+
   .banner-title {
     font-size: 24px;
   }
-  
+
   .banner-desc {
     font-size: 15px;
   }
-  
+
   .quick-actions {
     grid-template-columns: repeat(4, 1fr);
     width: 100%;
@@ -2171,38 +1951,38 @@ onUnmounted(() => {
     gap: var(--spacing-xl);
     padding: 0;
   }
-  
+
   .quick-card {
     min-height: 120px;
     padding: var(--spacing-xl);
   }
-  
+
   .quick-icon {
     font-size: 28px;
   }
-  
+
   .quick-name {
     font-size: 16px;
   }
-  
+
   .section {
     padding: var(--spacing-2xl) 0;
   }
-  
+
   .section-header {
     width: 100%;
     max-width: 100%;
     margin-bottom: var(--spacing-xl);
   }
-  
+
   .section-title {
     font-size: 20px;
   }
-  
+
   .section-more {
     font-size: 15px;
   }
-  
+
   .activity-scroll {
     grid-template-columns: repeat(4, 1fr);
     width: 100%;
@@ -2210,20 +1990,20 @@ onUnmounted(() => {
     gap: var(--spacing-xl);
     padding: 0;
   }
-  
+
   .activity-card {
     width: 100% !important;
     margin-right: 0 !important;
   }
-  
+
   .activity-cover {
     height: 120px;
   }
-  
+
   .activity-emoji {
     font-size: 48px;
   }
-  
+
   .recent-activity-scroll {
     grid-template-columns: repeat(4, 1fr);
     width: 100%;
@@ -2231,11 +2011,11 @@ onUnmounted(() => {
     gap: var(--spacing-xl);
     padding: 0;
   }
-  
+
   .recent-activity-card {
     width: 100%;
   }
-  
+
   .feed-list {
     width: 100%;
     max-width: 100%;
@@ -2244,21 +2024,21 @@ onUnmounted(() => {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-xl);
   }
-  
+
   .feed-card {
     padding: var(--spacing-2xl);
     border-radius: var(--radius-2xl);
   }
-  
+
   .feed-avatar {
     width: 52px;
     height: 52px;
   }
-  
+
   .feed-username {
     font-size: 16px;
   }
-  
+
   .feed-text {
     font-size: 15px;
     line-height: 1.7;
@@ -2274,48 +2054,48 @@ onUnmounted(() => {
   .page-wrapper {
     padding: 0 var(--spacing-3xl);
   }
-  
+
   .status-content {
     padding: 0 var(--spacing-3xl);
   }
-  
+
   .banner-section {
     padding: var(--spacing-2xl) 0;
   }
-  
+
   .banner-swiper {
     height: 340px;
     border-radius: var(--radius-2xl);
   }
-  
+
   .banner-item {
     height: 340px;
   }
-  
+
   .banner-title {
     font-size: 28px;
   }
-  
+
   .quick-actions {
     grid-template-columns: repeat(6, 1fr);
     gap: var(--spacing-2xl);
   }
-  
+
   .activity-scroll {
     grid-template-columns: repeat(6, 1fr);
     gap: var(--spacing-2xl);
   }
-  
+
   .recent-activity-scroll {
     grid-template-columns: repeat(6, 1fr);
     gap: var(--spacing-2xl);
   }
-  
+
   .feed-list {
     grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-2xl);
   }
-  
+
   .feed-card {
     padding: var(--spacing-2xl);
   }

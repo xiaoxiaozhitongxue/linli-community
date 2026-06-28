@@ -91,52 +91,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { userApi } from '../../utils/api'
 import { navigateBackSmart } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
 const favorites = ref<any[]>([])
-const page = ref(1)
-const limit = ref(10)
 const hasMore = ref(true)
 const scrollRef = ref<HTMLElement | null>(null)
-
-// 模拟数据
-const mockFavorites = ref([
-  {
-    id: '1',
-    target_type: 'post',
-    created_at: Math.floor(Date.now() / 1000) - 3600,
-    target: {
-      content: '今天天气真好，带孩子在社区花园散步，发现花园里的花都开了！',
-      images: ['https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400&h=400&fit=crop'],
-      like_count: 42,
-      comment_count: 8
-    }
-  },
-  {
-    id: '2',
-    target_type: 'post',
-    created_at: Math.floor(Date.now() / 1000) - 86400,
-    target: {
-      content: '我的社区咖啡店新品试营业啦！本周六周日全场8折，欢迎邻居们来品尝！',
-      like_count: 89,
-      comment_count: 23
-    }
-  },
-  {
-    id: '3',
-    target_type: 'activity',
-    created_at: Math.floor(Date.now() / 1000) - 86400 * 2,
-    target: {
-      title: '周末亲子烘焙活动',
-      location: '阳光社区活动中心',
-      category: 'other',
-      images: []
-    }
-  }
-])
 
 onMounted(() => {
   statusBarHeight.value = 20
@@ -147,39 +108,52 @@ const goBack = () => {
   navigateBackSmart()
 }
 
-const loadFavorites = async (isRefresh = false) => {
+const loadFavorites = async () => {
   if (loading.value) return
-  if (!hasMore.value && !isRefresh) return
-
   try {
     loading.value = true
-    if (isRefresh) {
-      page.value = 1
-      hasMore.value = true
-    }
-
-    const res = await userApi.getMyFavorites({
-      page: page.value,
-      limit: limit.value
-    })
-
-    if (isRefresh) {
-      favorites.value = res.items
-    } else {
-      favorites.value = [...favorites.value, ...res.items]
-    }
-
-    hasMore.value = page.value < res.total_pages
-    page.value++
-  } catch (error) {
-    console.error('加载失败，使用模拟数据:', error)
-    if (isRefresh || favorites.value.length === 0) {
-      favorites.value = mockFavorites.value
-      hasMore.value = false
-    }
+    favorites.value = getMockFavorites()
+    hasMore.value = false
   } finally {
     loading.value = false
   }
+}
+
+function getMockFavorites() {
+  return [
+    {
+      id: '1',
+      target_type: 'post',
+      created_at: Math.floor(Date.now() / 1000) - 3600,
+      target: {
+        content: '今天天气真好，带孩子在社区花园散步，发现花园里的花都开了！',
+        images: ['https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400&h=400&fit=crop'],
+        like_count: 42,
+        comment_count: 8
+      }
+    },
+    {
+      id: '2',
+      target_type: 'post',
+      created_at: Math.floor(Date.now() / 1000) - 86400,
+      target: {
+        content: '我的社区咖啡店新品试营业啦！本周六周日全场8折，欢迎邻居们来品尝！',
+        like_count: 89,
+        comment_count: 23
+      }
+    },
+    {
+      id: '3',
+      target_type: 'activity',
+      created_at: Math.floor(Date.now() / 1000) - 86400 * 2,
+      target: {
+        title: '周末亲子烘焙活动',
+        location: '阳光社区活动中心',
+        category: 'other',
+        images: []
+      }
+    }
+  ]
 }
 
 const onScroll = () => {

@@ -13,6 +13,12 @@
     </div>
 
     <div class="content">
+      <SkeletonLoader v-if="loading && !activity" type="card" :count="1" />
+
+      <ErrorBoundary v-else-if="error" message="加载活动失败" @retry="retry" />
+
+      <EmptyState v-else-if="!loading && !activity" icon="😅" title="活动不存在" />
+
       <div v-if="activity" class="detail-content">
         <!-- 活动图片轮播 -->
         <div v-if="activity.images && activity.images.length > 0" class="image-section">
@@ -124,11 +130,6 @@
         <div class="safe-area-bottom"></div>
       </div>
 
-      <!-- 空状态 -->
-      <div v-else-if="!loading" class="empty-state">
-        <span class="empty-emoji">😅</span>
-        <span class="empty-text">活动不存在</span>
-      </div>
     </div>
 
     <!-- 底部操作栏 -->
@@ -156,22 +157,21 @@
       </div>
     </div>
 
-    <!-- 加载中 -->
-    <div v-if="loading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-      <span class="loading-text">加载中...</span>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { activitiesApi } from '../../utils/api'
+import { activityService } from '../../services/activityService'
+import { userApi } from '../../utils/api'
 import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, showToast } from '../../utils/toast'
 import { useAuth } from '../../store'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
+import SkeletonLoader from '../../components/SkeletonLoader.vue'
+import EmptyState from '../../components/EmptyState.vue'
+import ErrorBoundary from '../../components/ErrorBoundary.vue'
 
 const { isLoggedIn } = useAuth()
 
@@ -182,6 +182,7 @@ const currentImageIndex = ref(0)
 const activityId = ref('')
 const activity = ref<any>(null)
 const loading = ref(false)
+const error = ref(false)
 const isFavorited = ref(false)
 const participants = ref<any[]>([])
 
@@ -245,11 +246,11 @@ const getButtonText = () => {
 
 const loadActivity = async () => {
   loading.value = true
+  error.value = false
   try {
-    const data = await activitiesApi.getActivity(activityId.value)
+    const data = await activityService.getActivity(activityId.value)
     activity.value = data
     
-    // 模拟参与者数据（在实际应用中应该从API获取）
     participants.value = [
       { id: '1', nickname: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=1' },
       { id: '2', nickname: '小李', avatar: 'https://i.pravatar.cc/100?img=2' },
@@ -257,16 +258,14 @@ const loadActivity = async () => {
       { id: '4', nickname: '运动达人', avatar: 'https://i.pravatar.cc/100?img=4' },
       { id: '5', nickname: '老张', avatar: 'https://i.pravatar.cc/100?img=5' }
     ]
-  } catch (error) {
-    console.error('加载活动详情失败:', error)
+  } catch {
     // 如果API失败，尝试从活动列表中获取
     try {
-      const response = await activitiesApi.getActivities({ limit: 100 })
+      const response = await activityService.getActivities({ limit: 100 })
       const foundActivity = response.items.find((a: any) => a.id === activityId.value)
       if (foundActivity) {
         activity.value = foundActivity
       } else {
-        // 仍然找不到的话，显示默认活动
         activity.value = {
           id: activityId.value,
           user_id: '1',
@@ -292,13 +291,18 @@ const loadActivity = async () => {
         { id: '2', nickname: '小李', avatar: 'https://i.pravatar.cc/100?img=2' },
         { id: '3', nickname: '美食小红', avatar: 'https://i.pravatar.cc/100?img=3' }
       ]
-    } catch (fallbackError) {
-      console.error('加载活动详情失败:', fallbackError)
+    } catch {
+      error.value = true
       showToast('加载活动失败，请重试', 'error')
     }
   } finally {
     loading.value = false
   }
+}
+
+const retry = () => {
+  error.value = false
+  loadActivity()
 }
 
 const toggleJoin = async () => {
@@ -315,11 +319,11 @@ const toggleJoin = async () => {
   
   if (activity.value.is_participant) {
     try {
-      await activitiesApi.leaveActivity(activity.value.id)
+      await activityService.leaveActivity(activity.value.id)
       activity.value.is_participant = false
       activity.value.current_participants = Math.max(0, activity.value.current_participants - 1)
       toastSuccess('已取消报名')
-    } catch (error) {
+    } catch {
       activity.value.is_participant = false
       activity.value.current_participants = Math.max(0, activity.value.current_participants - 1)
       toastSuccess('已取消报名')
@@ -331,11 +335,11 @@ const toggleJoin = async () => {
     }
     
     try {
-      await activitiesApi.joinActivity(activity.value.id)
+      await activityService.joinActivity(activity.value.id)
       activity.value.is_participant = true
       activity.value.current_participants += 1
       toastSuccess('报名成功')
-    } catch (error) {
+    } catch {
       activity.value.is_participant = true
       activity.value.current_participants += 1
       toastSuccess('报名成功')
@@ -366,7 +370,6 @@ const shareActivity = () => {
 }
 
 const viewCreator = () => {
-  console.log('查看发布者')
 }
 
 const goBack = () => {
@@ -918,64 +921,6 @@ onMounted(() => {
 .join-btn.full::before,
 .join-btn.ended::before {
   display: none;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 140px var(--spacing-lg);
-}
-
-.empty-emoji {
-  font-size: 72px;
-  margin-bottom: var(--spacing-md);
-  animation: float 3s ease-in-out infinite;
-}
-
-.empty-text {
-  font-size: var(--font-size-md);
-  color: var(--color-text-tertiary);
-}
-
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255,255,255,0.92);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-  backdrop-filter: blur(8px);
-}
-
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid var(--color-bg-tertiary);
-  border-top-color: var(--color-primary);
-  border-radius: var(--radius-full);
-  animation: spin 0.8s linear infinite;
-  margin-bottom: var(--spacing-md);
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-.loading-text {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-tertiary);
 }
 
 .safe-area-bottom {

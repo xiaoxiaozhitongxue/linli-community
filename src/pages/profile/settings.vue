@@ -206,8 +206,8 @@ const loadSettings = () => {
     }
 
     cacheSize.value = '12.5MB'
-  } catch (error) {
-    console.error('加载设置失败:', error)
+  } catch {
+    // 静默处理
   }
 }
 
@@ -215,8 +215,8 @@ const saveSettings = () => {
   try {
     localStorage.setItem('notifications', JSON.stringify(notifications.value))
     localStorage.setItem('theme', theme.value)
-  } catch (error) {
-    console.error('保存设置失败:', error)
+  } catch {
+    // 静默处理
   }
 }
 

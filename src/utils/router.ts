@@ -159,15 +159,10 @@ export function switchTab(url: string) {
   // 切换 tabBar 时清除历史记录栈，因为 tabBar 页面是根级别
   clearPageHistory()
   
-  console.log('switchTab: 尝试跳转到', url)
-  
   router.replace({ path: url, force: true }).then(() => {
-    console.log('switchTab: 跳转成功')
   }).catch((err: any) => {
     console.error('TabBar 切换失败', err)
-    // 如果 replace 失败，尝试使用 push
     router.push({ path: url, force: true }).then(() => {
-      console.log('switchTab: 使用 push 跳转成功')
     }).catch((pushErr: any) => {
       console.error('TabBar push 跳转也失败', pushErr)
     })
@@ -345,7 +340,7 @@ function setupRouteGuard(router: any) {
   // 页面切换后的处理
   router.afterEach((to: any, from: any) => {
     // 可以在这里添加页面埋码等逻辑
-    console.log('页面跳转:', from.path, '->', to.path)
+
   })
 }
 

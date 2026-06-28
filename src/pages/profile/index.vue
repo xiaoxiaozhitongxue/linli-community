@@ -249,8 +249,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuth } from '../../store/index'
-import { userApi, tasksApi } from '../../utils/api'
-import { navigateTo, getUserStorageKey } from '../../utils/router'
+import { userApi } from '../../utils/api'
+import { taskService } from '../../services/taskService'
+import { navigateTo } from '../../utils/router'
 import { toastInfo } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
 
@@ -258,9 +259,6 @@ const { user, logout: authLogout, isLoggedIn, initAuth, updateUser } = useAuth()
 const statusBarHeight = ref(20)
 const loading = ref(false)
 const hasUnreadNotification = ref(true)
-
-const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
-const MY_ACCEPTED_TASKS_KEY = 'ai_helper_my_accepted_tasks'
 
 const taskStats = ref({
   published: {
@@ -294,8 +292,8 @@ const loadUserProfile = async () => {
     const profile = await userApi.getProfile()
     updateUser(profile)
     await loadTaskStats()
-  } catch (error) {
-    console.error('加载用户信息失败:', error)
+  } catch {
+    // 静默处理加载失败
   } finally {
     loading.value = false
   }
@@ -303,7 +301,7 @@ const loadUserProfile = async () => {
 
 const loadTaskStats = async () => {
   try {
-    const result = await tasksApi.getMyTasks()
+    const result = await taskService.getMyTasks()
     const myPublished = result.published || []
     const myAccepted = result.accepted || []
 
@@ -322,8 +320,8 @@ const loadTaskStats = async () => {
     }
 
     taskStats.value = { published, accepted }
-  } catch (error) {
-    console.error('加载任务统计失败:', error)
+  } catch {
+    // 静默处理加载失败
   }
 }
 

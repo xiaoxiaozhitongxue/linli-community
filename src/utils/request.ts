@@ -11,6 +11,7 @@ interface RequestConfig {
   header?: any
   showLoading?: boolean
   showError?: boolean
+  timeout?: number
 }
 
 interface ResponseData<T = any> {
@@ -23,6 +24,12 @@ interface ResponseData<T = any> {
     message: string
     details?: any
   }
+}
+
+const pendingRequests = new Map<string, Promise<any>>()
+
+function getRequestKey(url: string, method: string, data?: any): string {
+  return `${method}:${url}:${JSON.stringify(data || {})}`
 }
 
 function getToken(): string {
@@ -47,16 +54,25 @@ function buildQueryString(params: any): string {
 }
 
 export function request<T = any>(config: RequestConfig): Promise<T> {
-  const { 
-    url, 
-    method = 'GET', 
-    data, 
-    header = {}, 
-    showLoading: needLoading = true, 
-    showError: needError = true 
+  const {
+    url,
+    method = 'GET',
+    data,
+    header = {},
+    showLoading: needLoading = true,
+    showError: needError = true,
+    timeout = 15000
   } = config
 
-  return new Promise((resolve, reject) => {
+  const dedupKey = getRequestKey(url, method, data)
+
+  if (pendingRequests.has(dedupKey)) {
+    return pendingRequests.get(dedupKey)!
+  }
+
+  const abortController = new AbortController()
+
+  const promise: Promise<T> = new Promise((resolve, reject) => {
     if (needLoading) {
       uiShowLoading()
     }
@@ -70,7 +86,8 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
 
     const requestInit: RequestInit = {
       method,
-      headers: requestHeaders
+      headers: requestHeaders,
+      signal: abortController.signal
     }
 
     if (method === 'GET' && data) {
@@ -79,16 +96,24 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
       requestInit.body = JSON.stringify(data)
     }
 
+    const timeoutId = setTimeout(() => {
+      abortController.abort()
+      if (needError) {
+        showError('请求超时，请稍后重试')
+      }
+      reject(new Error('请求超时'))
+    }, timeout)
+
     fetch(requestUrl, requestInit)
       .then(async (res) => {
+        clearTimeout(timeoutId)
         if (needLoading) {
           uiHideLoading()
         }
 
-        // 检查 HTTP 状态码
         if (!res.ok && res.status >= 500) {
           if (needError) {
-            showError('服务器错误，请稍后重试')
+            showError('服务器繁忙，请稍后重试')
           }
           reject(new Error(`HTTP ${res.status}: 服务器错误`))
           return
@@ -99,7 +124,7 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
           response = await res.json()
         } catch (parseError) {
           if (needError) {
-            showError('服务器响应格式错误')
+            showError('服务器响应异常，请稍后重试')
           }
           reject(new Error('服务器响应格式错误'))
           return
@@ -108,11 +133,10 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
         if (response.success) {
           resolve(response.data)
         } else {
-          // 从 error.message 获取错误消息，再回退到 message，再回退到默认
-          const errorMessage = 
-            response.error?.message || 
-            response.message || 
-            '请求失败'
+          const errorMessage =
+            response.error?.message ||
+            response.message ||
+            '请求失败，请稍后重试'
 
           if (needError) {
             showError(errorMessage)
@@ -132,17 +156,33 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
         }
       })
       .catch((err) => {
+        clearTimeout(timeoutId)
         if (needLoading) {
           uiHideLoading()
         }
 
+        if (err.name === 'AbortError') {
+          return
+        }
+
         if (needError) {
-          showError('网络请求失败，请检查网络连接')
+          showError('网络连接失败，请检查网络设置')
         }
 
         reject(err)
       })
+      .finally(() => {
+        pendingRequests.delete(dedupKey)
+      })
   })
+
+  pendingRequests.set(dedupKey, promise)
+  ;(promise as any).cancel = () => {
+    abortController.abort()
+    pendingRequests.delete(dedupKey)
+  }
+
+  return promise
 }
 
 export function get<T = any>(url: string, data?: any, config?: Partial<RequestConfig>) {

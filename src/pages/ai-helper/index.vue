@@ -111,15 +111,24 @@
             </div>
           </div>
 
+          <!-- 加载状态 -->
+          <SkeletonLoader v-if="loading" type="card" :count="3" />
+
+          <!-- 错误状态 -->
+          <ErrorBoundary
+            v-else-if="error"
+            :message="error"
+            @retry="refreshTasks"
+          />
+
           <!-- 任务列表 -->
-          <div class="task-list" v-if="filteredTasks.length > 0">
+          <div class="task-list" v-else-if="displayTasks.length > 0">
             <div
               class="task-card"
-              v-for="task in filteredTasks"
+              v-for="task in displayTasks"
               :key="task.id"
               @click="goToTaskDetail(task)"
             >
-              <!-- 卡片头部：状态标签 + 类型标签 -->
               <div class="task-top-bar">
                 <div class="task-status-badge" :class="'status-' + task.status">
                   <span class="status-dot"></span>
@@ -130,7 +139,6 @@
                 </div>
               </div>
 
-              <!-- 任务主体 -->
               <div class="task-body">
                 <div class="task-creator">
                   <img class="task-creator-avatar" :src="task.creatorAvatar" />
@@ -152,7 +160,6 @@
                 </div>
               </div>
 
-              <!-- 任务底部 -->
               <div class="task-footer">
                 <div class="task-reward-block">
                   <span class="reward-label">悬赏</span>
@@ -171,7 +178,6 @@
                 </div>
               </div>
 
-              <!-- 操作按钮 -->
               <div class="task-action-bar" v-if="task.status === 'open'">
                 <div class="respond-btn" @click.stop="respondToTask(task, $event)">
                   <span class="btn-icon">🤝</span>
@@ -200,11 +206,7 @@
           </div>
 
           <!-- 空状态 -->
-          <div class="empty-state" v-else>
-            <span class="empty-icon">🔍</span>
-            <span class="empty-text">暂无{{ getCategoryName(selectedCategory) }}任务</span>
-            <span class="empty-hint">试试其他分类或切换到全部任务</span>
-          </div>
+          <EmptyState v-else icon="🔍" :title="'暂无' + getCategoryName(selectedCategory) + '任务'" description="试试其他分类或切换到全部任务" />
 
           <div class="safe-area-bottom"></div>
         </div>
@@ -217,17 +219,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { navigateTo } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
-import { tasksApi, type Task } from '../../utils/api'
+import { taskService } from '../../services/taskService'
+import { useTasks } from '../../composables/useTasks'
+import type { Task } from '../../types/models'
+import SkeletonLoader from '../../components/SkeletonLoader.vue'
+import EmptyState from '../../components/EmptyState.vue'
+import ErrorBoundary from '../../components/ErrorBoundary.vue'
 
-const STORAGE_KEY = 'ai_helper_tasks'
-
-const statusBarHeight = ref(20)
 const selectedCategory = ref<string>('all')
-const statusFilter = ref<string>('open')  // open | all | in_progress | completed
+const statusFilter = ref<string>('open')
 
-const tasks = ref<any[]>([])
+const { tasks: apiTasks, loading, error, refreshTasks } = useTasks()
 
-// 规范化状态值：后端可能用 pending/in_progress/completed 等
 function normalizeStatus(status: string): string {
   if (!status) return 'open'
   const s = String(status).toLowerCase()
@@ -237,57 +240,56 @@ function normalizeStatus(status: string): string {
   return 'open'
 }
 
-// 尝试从后端获取任务列表 → 统一通过 tasksApi 读取
-async function reloadTasks() {
-  try {
-    const result = await tasksApi.getTasks()
-    // 防御性：确保 result 和 result.items 存在
-    tasks.value = (result && result.items) ? result.items.map(mapApiTask) : []
-  } catch (e: any) {
-    console.error('[ai-helper/index] 任务列表加载失败：', e?.message || e)
-    // API 失败时清空列表，显示空状态
-    tasks.value = []
-  }
-}
-
-// 把后端 API 返回的任务对象映射到前端 UI 字段
-function mapApiTask(t: any): any {
+function mapTaskToDisplay(t: Task) {
   return {
     id: t.id,
-    type: t.category || t.type || 'other',
+    type: t.category || 'other',
     title: t.title || '任务详情',
     description: t.description || '',
     reward: Number(t.reward) || 0,
-    distance: t.distance || 0,
-    responses: t.responses || 0,
-    creatorName: t.creator?.nickname || t.creatorName || '邻居',
-    creatorAvatar: t.creator?.avatar || t.creatorAvatar || '',
-    createTime: t.created_at || t.createTime || Date.now(),
+    distance: (t as any).distance || 0,
+    responses: (t as any).responses || 0,
+    creatorName: t.creator?.nickname || '邻居',
+    creatorAvatar: t.creator?.avatar || '',
+    createTime: t.created_at || Date.now(),
     status: normalizeStatus(t.status),
-    creatorRating: t.creator?.credit_score || t.creatorRating || 4.8,
-    creatorTasks: t.creator?.completed_count || t.creatorTasks || 0,
+    creatorRating: t.creator?.credit_score || 4.8,
+    creatorTasks: (t as any).completed_count || 0,
     location: t.location || ''
   }
 }
 
-// 尝试从后端获取任务列表（保留向后兼容：直接 fetch 作为 fallback）
-async function fetchTasksFromApi(): Promise<any[] | null> {
-  return null
-}
+const displayTasks = computed(() => {
+  const mapped = apiTasks.value.map(mapTaskToDisplay)
+  let result = [...mapped]
 
-// 统计数据
+  if (selectedCategory.value !== 'all') {
+    result = result.filter(t => t.type === selectedCategory.value)
+  }
+
+  if (statusFilter.value !== 'all') {
+    result = result.filter(t => t.status === statusFilter.value)
+  }
+
+  result.sort((a, b) => {
+    const timeA = new Date(a.createTime).getTime() || 0
+    const timeB = new Date(b.createTime).getTime() || 0
+    return timeB - timeA
+  })
+
+  return result
+})
+
 const openTaskCount = computed(() => {
-  return tasks.value.filter(t => t.status === 'open').length
+  return displayTasks.value.filter(t => t.status === 'open').length
 })
 
 const todayCount = computed(() => {
-  // 简化统计：今天发布的任务数
-  return tasks.value.filter(t => {
+  return displayTasks.value.filter(t => {
     return t.status === 'open' || t.status === 'ongoing'
   }).length
 })
 
-// 获取分类名称
 const getCategoryName = (category: string) => {
   const map: Record<string, string> = {
     all: '',
@@ -300,46 +302,19 @@ const getCategoryName = (category: string) => {
   return map[category] || ''
 }
 
-// 获取某个分类的待接单任务数量
 const getCategoryOpenCount = (category: string) => {
   if (category === 'all') {
     return openTaskCount.value
   }
-  return tasks.value.filter(t => 
+  return displayTasks.value.filter(t =>
     t.type === category && t.status === 'open'
   ).length
 }
 
-// 筛选任务
-const filteredTasks = computed(() => {
-  let result = [...tasks.value]
-  
-  // 按分类筛选
-  if (selectedCategory.value !== 'all') {
-    result = result.filter(t => t.type === selectedCategory.value)
-  }
-  
-  // 按状态筛选（默认只显示待接单）
-  if (statusFilter.value !== 'all') {
-    result = result.filter(t => t.status === statusFilter.value)
-  }
-  
-  // 按时间排序（最新的在前）
-  result.sort((a, b) => {
-    const timeA = new Date(a.createTime).getTime() || 0
-    const timeB = new Date(b.createTime).getTime() || 0
-    return timeB - timeA
-  })
-  
-  return result
-})
-
-// 选择分类
 const selectCategory = (category: string) => {
   selectedCategory.value = category
 }
 
-// 设置状态筛选
 const setStatusFilter = (status: string) => {
   statusFilter.value = status
 }
@@ -352,14 +327,12 @@ const respondToTask = async (task: any, event: Event) => {
   event.stopPropagation()
   if (!window.confirm('确定要接下这个任务吗？')) return
   try {
-    await tasksApi.acceptTask(task.id)
+    await taskService.acceptTask(task.id)
     toastSuccess('接单成功')
-    // 重新加载任务列表（本地数据已更新），前端状态立即更新
-    await reloadTasks()
+    await refreshTasks()
   } catch (e: any) {
     const msg = e?.message || '接单失败，请稍后重试'
     toastInfo(msg)
-    console.error('[ai-helper/index] acceptTask 失败:', e)
   }
 }
 
@@ -385,8 +358,7 @@ const getStatusName = (status: string) => {
 }
 
 onMounted(async () => {
-  // 统一通过 tasksApi.getTasks 读取，支持账号隔离与状态筛选
-  await reloadTasks()
+  await refreshTasks()
 })
 </script>
 

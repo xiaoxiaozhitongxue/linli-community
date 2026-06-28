@@ -8,15 +8,9 @@
       </div>
     </div>
 
-    <div v-if="loading" class="loading-wrap">
-      <div class="loading-spinner"></div>
-      <span class="loading-text">加载中...</span>
-    </div>
+    <SkeletonLoader v-if="loading" type="card" :count="2" />
 
-    <div v-else-if="!task" class="empty-wrap">
-      <span class="empty-icon">😢</span>
-      <span class="empty-text">未找到该任务</span>
-    </div>
+    <EmptyState v-else-if="!task" icon="😢" title="未找到该任务" />
 
     <div v-else class="content">
       <div class="task-card">
@@ -93,9 +87,12 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { navigateBackSmart, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
-import { tasksApi, type Task } from '../../utils/api'
+import { taskService } from '../../services/taskService'
+import type { Task } from '../../types/models'
 import { useAuth } from '../../store'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
+import SkeletonLoader from '../../components/SkeletonLoader.vue'
+import EmptyState from '../../components/EmptyState.vue'
 
 const { isLoggedIn } = useAuth()
 
@@ -121,7 +118,7 @@ interface TaskDetail {
   creatorAvatar: string
   creatorRating?: number
   creatorTasks?: number
-  status: 'open' | 'pending' | 'in_progress' | 'ongoing' | 'completed' | 'cancelled'
+  status: 'open' | 'ongoing' | 'completed' | 'cancelled'
 }
 
 const task = ref<TaskDetail | null>(null)
@@ -129,10 +126,8 @@ const task = ref<TaskDetail | null>(null)
 const acceptButtonText = computed(() => {
   if (!task.value) return ''
   switch (task.value.status) {
-    case 'pending':
     case 'open':
       return '接下这个任务'
-    case 'in_progress':
     case 'ongoing':
       return '任务进行中'
     case 'completed':
@@ -144,21 +139,16 @@ const acceptButtonText = computed(() => {
   }
 })
 
+function normalizeStatus(rawStatus: string): 'open' | 'ongoing' | 'completed' | 'cancelled' {
+  const s = String(rawStatus || '').toLowerCase()
+  if (s === 'open' || s === 'pending') return 'open'
+  if (s === 'in_progress' || s === 'ongoing' || s === 'accepted') return 'ongoing'
+  if (s === 'completed' || s === 'done') return 'completed'
+  if (s === 'cancelled' || s === 'canceled') return 'cancelled'
+  return 'open'
+}
+
 function mapApiTaskToLocal(apiTask: Task): TaskDetail {
-  // 状态映射：与 index.vue 的 normalizeStatus 保持一致
-  const rawStatus = String(apiTask.status || '').toLowerCase()
-  let uiStatus: string
-  if (rawStatus === 'pending') {
-    uiStatus = 'open'
-  } else if (rawStatus === 'in_progress' || rawStatus === 'ongoing' || rawStatus === 'accepted') {
-    uiStatus = 'ongoing'
-  } else if (rawStatus === 'completed' || rawStatus === 'done') {
-    uiStatus = 'completed'
-  } else if (rawStatus === 'cancelled' || rawStatus === 'canceled') {
-    uiStatus = 'cancelled'
-  } else {
-    uiStatus = 'open' // 默认视为待接单
-  }
   return {
     id: apiTask.id || '',
     type: apiTask.category || (apiTask as any).type || 'other',
@@ -171,7 +161,7 @@ function mapApiTaskToLocal(apiTask: Task): TaskDetail {
     creatorAvatar: apiTask.creator?.avatar || '',
     creatorRating: apiTask.creator?.credit_score ? Number((apiTask.creator.credit_score / 20).toFixed(1)) : undefined,
     creatorTasks: undefined,
-    status: uiStatus
+    status: normalizeStatus(apiTask.status)
   }
 }
 
@@ -185,7 +175,7 @@ function loadFromStorage(key: string, defaultValue: any[]) {
       }
     }
   } catch (e) {
-    console.error(`加载数据失败: ${key}`, e)
+    // ignore storage errors
   }
   return defaultValue
 }
@@ -193,26 +183,24 @@ function loadFromStorage(key: string, defaultValue: any[]) {
 async function handleAccept() {
   const t = task.value
   if (!t) return
-  
-  // 添加登录验证
+
   if (!isLoggedIn.value) {
     setLoginRedirect(window.location.hash.replace('#', '') || '/pages/ai-helper/detail')
     showLoginGuide()
     return
   }
-  
-  if (t.status !== 'open' && t.status !== 'pending') {
+
+  if (t.status !== 'open') {
     toastError('此任务当前不可接单')
     return
   }
   try {
-    await tasksApi.acceptTask(t.id)
-    task.value = { ...task.value, status: 'in_progress' }
+    await taskService.acceptTask(t.id)
+    task.value = { ...task.value, status: 'ongoing' }
     toastSuccess('接单成功')
   } catch (e: any) {
     const msg = e?.message || '接单失败，请稍后重试'
     toastError(msg)
-    console.error('[ai-helper/detail] acceptTask 失败:', e)
   }
 }
 
@@ -234,20 +222,16 @@ async function fetchTask(id: string) {
   loading.value = true
   task.value = null
   try {
-    console.log('[ai-helper/detail] 开始加载任务, id =', id)
-    const apiTask = await tasksApi.getTask(id)
-    console.log('[ai-helper/detail] API返回任务:', apiTask)
+    const apiTask = await taskService.getTask(id)
     if (apiTask) {
       task.value = mapApiTaskToLocal(apiTask)
       loading.value = false
       return
     }
   } catch (e: any) {
-    console.error('[ai-helper/detail] 加载任务失败:', e)
+    // API 失败，尝试从 localStorage 加载
   }
 
-  // API 失败或返回空，尝试从 localStorage 加载
-  console.log('[ai-helper/detail] 尝试从localStorage加载任务...')
   try {
     const storageKey = getUserStorageKey(STORAGE_KEY)
     const createdKey = getUserStorageKey(MY_CREATED_TASKS_KEY)
@@ -267,7 +251,6 @@ async function fetchTask(id: string) {
     }
 
     if (found) {
-      console.log('[ai-helper/detail] 从localStorage找到任务:', found)
       task.value = {
         id: found.id || id,
         type: found.type || 'other',
@@ -282,17 +265,15 @@ async function fetchTask(id: string) {
         creatorAvatar: found.creatorAvatar || '',
         creatorRating: found.creatorRating || 0,
         creatorTasks: found.creatorTasks || 0,
-        status: (found.status === 'open' || found.status === 'pending') ? 'open' : (found.status === 'ongoing' || found.status === 'in_progress') ? 'ongoing' : (found.status as any) || 'open'
+        status: normalizeStatus(found.status)
       }
       loading.value = false
       return
     }
   } catch (storageError) {
-    console.error('[ai-helper/detail] localStorage读取失败:', storageError)
+    // ignore storage errors
   }
 
-  // 所有数据源都失败，显示默认任务（确保页面不是空白）
-  console.log('[ai-helper/detail] 所有数据源都失败，显示默认任务')
   task.value = {
     id: id,
     type: 'other',
@@ -312,7 +293,6 @@ async function fetchTask(id: string) {
   loading.value = false
 }
 
-// 监听路由参数变化
 watch(
   () => route.query.id,
   (newId) => {

@@ -124,7 +124,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { navigateTo, navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
-import { tasksApi } from '../../utils/api'
+import { taskService } from '../../services/taskService'
 
 const statusBarHeight = ref(20)
 const currentTab = ref('published')
@@ -160,11 +160,10 @@ function normalizeStatus(status: string): string {
 async function loadTasks() {
   loading.value = true
   try {
-    const result = await tasksApi.getMyTasks()
+    const result = await taskService.getMyTasks()
     publishedTasks.value = (result.published || []).map(mapTask)
     acceptedTasks.value = (result.accepted || []).map(mapTask)
-  } catch (e: any) {
-    console.error('[profile/my-tasks] 加载任务失败:', e)
+  } catch {
     toastInfo('加载任务失败')
   } finally {
     loading.value = false
@@ -219,29 +218,25 @@ const switchTab = (tab: string) => {
   loadTasks()
 }
 
-// 接单人完成任务
 const completeTask = async (task: any) => {
   if (!window.confirm('确定要提交完成申请吗？')) return
   try {
-    await tasksApi.completeTask(task.id)
+    await taskService.completeTask(task.id)
     toastSuccess('已提交完成申请')
     await loadTasks()
   } catch (e: any) {
     toastInfo(e?.message || '操作失败，请稍后重试')
-    console.error('[profile/my-tasks] completeTask 失败:', e)
   }
 }
 
-// 发布人确认完成
 const confirmTask = async (task: any) => {
   if (!window.confirm('确认任务已完成吗？')) return
   try {
-    await tasksApi.completeTask(task.id)
+    await taskService.completeTask(task.id)
     toastSuccess('任务已完成！感谢互帮互助')
     await loadTasks()
   } catch (e: any) {
     toastInfo(e?.message || '操作失败，请稍后重试')
-    console.error('[profile/my-tasks] confirmTask 失败:', e)
   }
 }
 

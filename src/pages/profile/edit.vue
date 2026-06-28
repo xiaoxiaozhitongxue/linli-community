@@ -102,11 +102,10 @@ import { useAuth } from '../../store/index'
 import { userApi } from '../../utils/api'
 import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
-import { showLoading, hideLoading } from '../../utils/ui'
 
 const { user, updateUser } = useAuth()
 const statusBarHeight = ref(20)
-const loading = ref(false)
+const saving = ref(false)
 const avatarInput = ref<HTMLInputElement | null>(null)
 
 const form = ref({
@@ -119,6 +118,22 @@ const form = ref({
   bio: '',
   role: 'resident' as const
 })
+
+const formErrors = ref<Record<string, string>>({})
+
+const validateForm = (): boolean => {
+  const errors: Record<string, string> = {}
+  if (!form.value.nickname.trim()) {
+    errors.nickname = '请输入昵称'
+  } else if (form.value.nickname.trim().length > 20) {
+    errors.nickname = '昵称不能超过20个字符'
+  }
+  if (form.value.bio && form.value.bio.length > 100) {
+    errors.bio = '个性签名不能超过100个字符'
+  }
+  formErrors.value = errors
+  return Object.keys(errors).length === 0
+}
 
 onMounted(() => {
   statusBarHeight.value = 20
@@ -165,30 +180,24 @@ const selectRole = (role: 'resident' | 'volunteer' | 'merchant' | 'elderly') => 
 }
 
 const saveProfile = async () => {
-  if (!form.value.nickname.trim()) {
-    toastError('请输入昵称')
+  if (!validateForm()) {
+    const firstError = Object.values(formErrors.value)[0]
+    if (firstError) toastError(firstError)
     return
   }
 
   try {
-    loading.value = true
-    showLoading('保存中...')
-
+    saving.value = true
     const updatedUser = await userApi.updateProfile(form.value)
     updateUser(updatedUser)
-
-    hideLoading()
     toastSuccess('保存成功')
-
     setTimeout(() => {
       navigateBackSmart()
     }, 1500)
-  } catch (error) {
-    hideLoading()
-    toastError('保存失败')
-    console.error('保存失败:', error)
+  } catch {
+    toastError('保存失败，请稍后重试')
   } finally {
-    loading.value = false
+    saving.value = false
   }
 }
 </script>

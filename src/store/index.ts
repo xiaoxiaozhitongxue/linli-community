@@ -1,16 +1,6 @@
 import { ref, computed } from 'vue'
-import type { User } from '../utils/api'
-
-// 用户数据结构
-interface UserData {
-  posts: any[]
-  activities: any[]
-  tasks: any[]
-  myCreatedTasks: any[]
-  myAcceptedTasks: any[]
-  messages: any[]
-  notifications: any[]
-}
+import type { User } from '../types/models'
+import type { UserData, AuthState } from '../types/store'
 
 const user = ref<User | null>(null)
 const token = ref<string>('')
@@ -24,44 +14,75 @@ const userData = ref<UserData>({
   notifications: []
 })
 
-function safeGetStorage(key: string) {
+// --- 工具：安全读取/写入 ---
+function safeGet<T>(key: string, defaultValue: T): T {
   try {
-    const value = localStorage.getItem(key)
-    if (!value) return null
+    const raw = localStorage.getItem(key)
+    if (raw == null) return defaultValue
     try {
-      return JSON.parse(value)
+      return JSON.parse(raw) as T
     } catch {
-      return value
+      return defaultValue
     }
   } catch (e) {
-    console.error(`获取 localStorage 失败: ${key}`, e)
+    console.error(`[store] 读取失败 [${key}]:`, e)
+    return defaultValue
+  }
+}
+
+function safeSet(key: string, value: unknown): void {
+  try {
+    const str = typeof value === 'string' ? value : JSON.stringify(value)
+    localStorage.setItem(key, str)
+  } catch (e) {
+    console.error(`[store] 写入失败 [${key}]:`, e)
+  }
+}
+
+function safeRemove(key: string): void {
+  try {
+    localStorage.removeItem(key)
+  } catch (e) {
+    console.error(`[store] 移除失败 [${key}]:`, e)
+  }
+}
+
+const USER_INFO_KEY = 'userInfo'
+const TOKEN_KEY = 'token'
+
+// --- 独立工具函数（安全，不依赖 reactive 上下文）---
+
+export function getCurrentUser(): User | null {
+  try {
+    const raw = localStorage.getItem(USER_INFO_KEY)
+    if (!raw) return null
+    const u = JSON.parse(raw)
+    if (!u || !u.phone) return null
+    return u
+  } catch {
     return null
   }
 }
 
-function safeSetStorage(key: string, value: any) {
-  try {
-    const strValue = typeof value === 'string' ? value : JSON.stringify(value)
-    localStorage.setItem(key, strValue)
-  } catch (e) {
-    console.error(`设置 localStorage 失败: ${key}`, e)
-  }
+export function isLoggedIn(): boolean {
+  return !!getCurrentUser()
 }
 
-function safeRemoveStorage(key: string) {
-  try {
-    localStorage.removeItem(key)
-  } catch (e) {
-    console.error(`移除 localStorage 失败: ${key}`, e)
-  }
+export function onLoginSuccess(newUser: User, newToken: string): void {
+  safeSet(USER_INFO_KEY, newUser)
+  safeSet(TOKEN_KEY, newToken)
 }
 
-// 获取用户数据键名
+export function onLogout(): void {
+  safeRemove(TOKEN_KEY)
+  safeRemove(USER_INFO_KEY)
+}
+
+// --- 用户数据键名 ---
 function getUserDataKey(phone: string): string {
   return `linli_user_data_${phone}`
 }
 
-// 初始化用户数据
 function initUserData(): UserData {
   return {
     posts: [],
@@ -77,59 +98,52 @@ function initUserData(): UserData {
 export function useAuth() {
   const isLoggedIn = computed(() => !!token.value || !!user.value)
 
-  function initAuth() {
-    const savedToken = safeGetStorage('token')
-    const savedUser = safeGetStorage('userInfo')
-    
+  function initAuth(): void {
+    const savedToken = safeGet<string>(TOKEN_KEY, '')
+    const savedUser = safeGet<User | null>(USER_INFO_KEY, null)
+
     if (savedToken) {
       token.value = savedToken
     }
-    
+
     if (savedUser) {
       user.value = savedUser
-      // 加载该用户的独立数据
       const userDataKey = getUserDataKey(savedUser.phone)
-      const savedUserData = safeGetStorage(userDataKey)
-      if (savedUserData) {
-        userData.value = savedUserData
-      } else {
-        userData.value = initUserData()
-      }
+      const savedUserData = safeGet<UserData>(userDataKey, initUserData())
+      userData.value = savedUserData
     }
   }
 
-  function setUser(newUser: User, newToken: string, newUserData?: UserData) {
+  function setUser(newUser: User, newToken: string, newUserData?: UserData): void {
     user.value = newUser
     token.value = newToken
-    safeSetStorage('token', newToken)
-    safeSetStorage('userInfo', newUser)
-    
-    // 保存用户独立数据
+    safeSet(TOKEN_KEY, newToken)
+    safeSet(USER_INFO_KEY, newUser)
+
     if (newUserData) {
       userData.value = newUserData
-      safeSetStorage(getUserDataKey(newUser.phone), newUserData)
+      safeSet(getUserDataKey(newUser.phone), newUserData)
     }
   }
 
-  function setUserData(data: UserData) {
+  function setUserData(data: UserData): void {
     userData.value = data
     if (user.value) {
-      safeSetStorage(getUserDataKey(user.value.phone), data)
+      safeSet(getUserDataKey(user.value.phone), data)
     }
   }
 
-  function logout() {
+  function logout(): void {
+    onLogout()
     user.value = null
     token.value = ''
     userData.value = initUserData()
-    safeRemoveStorage('token')
-    safeRemoveStorage('userInfo')
   }
 
-  function updateUser(partialUser: Partial<User>) {
+  function updateUser(partialUser: Partial<User>): void {
     if (user.value) {
       user.value = { ...user.value, ...partialUser }
-      safeSetStorage('userInfo', user.value)
+      safeSet(USER_INFO_KEY, user.value)
     }
   }
 
@@ -143,7 +157,21 @@ export function useAuth() {
     setUserData,
     logout,
     updateUser,
-    // 导出获取当前用户手机号的函数，供 api.ts 使用
-    getCurrentPhone: () => user.value?.phone || null
+    getCurrentPhone: (): string | null => user.value?.phone || null
   }
 }
+
+export type { UserData }
+
+// ==========================================================================
+//  安全调用说明
+//  ============
+//  getCurrentUser()   → 可在任何地方安全调用（组件 / api.ts / router），
+//                        直接读 localStorage，不依赖 Vue reactive 上下文。
+//  isLoggedIn()       → 同上，无 reactive 依赖。
+//  onLoginSuccess()   → 登录成功后调用，写入 token + userInfo 到 localStorage。
+//  onLogout()         → 登出时调用，清除 token + userInfo。
+//
+//  useAuth()          → 仅在 setup() / <script setup> 中调用，返回 reactive 状态。
+//                       其返回的 isLoggedIn 是 ComputedRef，需通过 .value 访问。
+// ==========================================================================

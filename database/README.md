@@ -123,16 +123,27 @@ wrangler d1 create linli-community-db
 
 ### 2. 更新 wrangler.toml
 
-将上一步返回的 `database_id` 替换到 `wrangler.toml` 中的 `your-database-id-here`。
+将上一步返回的 `database_id` 替换到 `wrangler.toml` 中的对应位置。
 
 ### 3. 执行初始化脚本
 
-```bash
-# 本地开发环境
-wrangler d1 execute linli-community-db --local --file=./database/schema.sql
+**Windows PowerShell**:
+```powershell
+.\database\init.ps1 -Environment local    # 本地开发
+.\database\init.ps1 -Environment production  # 生产环境
+```
 
-# 生产环境
-wrangler d1 execute linli-community-db --file=./database/schema.sql
+**Unix/macOS**:
+```bash
+chmod +x ./database/init.sh
+./database/init.sh local     # 本地开发
+./database/init.sh production  # 生产环境
+```
+
+**或使用 npm scripts**:
+```bash
+npm run db:init:local        # 本地开发
+npm run db:init:production   # 生产环境
 ```
 
 ### 4. 验证数据库

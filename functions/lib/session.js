@@ -1,7 +1,14 @@
 import { generateId, now } from './utils.js'
 
-const JWT_SECRET = 'linli-community-secret-key-2024'
+const JWT_SECRET_DEFAULT = 'linli-community-secret-key-2024'
 const TOKEN_EXPIRE = 7 * 24 * 60 * 60
+
+function getJwtSecret(context) {
+  if (context && context.env && context.env.JWT_SECRET) {
+    return context.env.JWT_SECRET
+  }
+  return JWT_SECRET_DEFAULT
+}
 
 function base64UrlEncode(str) {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
@@ -28,7 +35,7 @@ async function hmacSha256(data, secret) {
   return base64UrlEncode(String.fromCharCode(...new Uint8Array(signature)))
 }
 
-export async function createToken(payload) {
+export async function createToken(payload, context) {
   const header = { alg: 'HS256', typ: 'JWT' }
   const nowTimestamp = now()
   const tokenPayload = {
@@ -39,12 +46,12 @@ export async function createToken(payload) {
 
   const headerB64 = base64UrlEncode(JSON.stringify(header))
   const payloadB64 = base64UrlEncode(JSON.stringify(tokenPayload))
-  const signature = await hmacSha256(`${headerB64}.${payloadB64}`, JWT_SECRET)
+  const signature = await hmacSha256(`${headerB64}.${payloadB64}`, getJwtSecret(context))
 
   return `${headerB64}.${payloadB64}.${signature}`
 }
 
-export async function verifyToken(token) {
+export async function verifyToken(token, context) {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) {
@@ -52,7 +59,7 @@ export async function verifyToken(token) {
     }
 
     const [headerB64, payloadB64, signature] = parts
-    const expectedSignature = await hmacSha256(`${headerB64}.${payloadB64}`, JWT_SECRET)
+    const expectedSignature = await hmacSha256(`${headerB64}.${payloadB64}`, getJwtSecret(context))
 
     if (signature !== expectedSignature) {
       return null

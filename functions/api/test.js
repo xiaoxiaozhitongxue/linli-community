@@ -8,7 +8,7 @@ export async function onRequestGet(context) {
 
     return createResponse({
       message: 'API 测试成功',
-      sqliteVersion: result.results[0].version,
+      sqliteVersion: result[0].version,
       timestamp: now()
     })
   } catch (error) {

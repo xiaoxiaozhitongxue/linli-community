@@ -10,13 +10,16 @@
     "serve:api": "wrangler pages dev ./dist --port 8787",
     "cloudflare:dev": "wrangler pages dev ./dist",
     "cloudflare:deploy": "npm run build && wrangler pages deploy ./dist",
-    "deploy": "npm run build && wrangler pages deploy ./dist"
+    "deploy": "npm run build && wrangler pages deploy ./dist",
+    "db:init:local": "wrangler d1 execute linli-community-db --local --file=./database/schema.sql",
+    "db:init:production": "wrangler d1 execute linli-community-db --file=./database/schema.sql"
   },
   "dependencies": {
     "vue": "^3.4.21",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260628.1",
     "@vitejs/plugin-vue": "^5.0.4",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",

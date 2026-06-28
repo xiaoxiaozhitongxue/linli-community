@@ -129,7 +129,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { navigateTo, navigateBackSmart, getUserStorageKey } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
-import { tasksApi } from '../../utils/api'
+import { taskService } from '../../services/taskService'
 import { useAuth } from '../../store'
 import { setLoginRedirect } from '../../utils/auth'
 
@@ -157,7 +157,7 @@ function loadFromStorage(key: string, defaultValue: any[]) {
       }
     }
   } catch (e) {
-    console.error(`加载数据失败: ${key}`, e)
+    // ignore storage errors
   }
   return defaultValue
 }
@@ -166,7 +166,7 @@ function saveToStorage(key: string, data: any) {
   try {
     localStorage.setItem(key, JSON.stringify(data))
   } catch (e) {
-    console.error(`保存数据失败: ${key}`, e)
+    // ignore storage errors
   }
 }
 
@@ -204,7 +204,7 @@ const submitTask = async () => {
   }
 
   try {
-    await tasksApi.createTask({
+    await taskService.createTask({
       title: form.value.title.trim(),
       description: form.value.description.trim(),
       category: form.value.category,
@@ -213,16 +213,13 @@ const submitTask = async () => {
     })
     toastSuccess('任务发布成功')
     setTimeout(() => {
-      // 使用 window.location 强制刷新页面，确保新任务能显示
       window.location.href = window.location.origin + window.location.pathname + '#/pages/ai-helper/index'
     }, 800)
   } catch (e: any) {
     const msg = e?.message || '发布失败，请稍后重试'
     toastInfo(msg)
-    console.error('[ai-helper/publish] createTask 失败:', e)
   }
 
-  // 同时保存到本地存储，确保数据不丢失
   try {
     const userTaskKey = getUserStorageKey('ai_helper_tasks')
     const userCreatedKey = getUserStorageKey('ai_helper_my_created_tasks')
@@ -252,7 +249,7 @@ const submitTask = async () => {
     myCreatedTasks.unshift(localTask)
     saveToStorage(userCreatedKey, myCreatedTasks)
   } catch (e) {
-    console.error('[ai-helper/publish] 本地存储保存失败:', e)
+    // ignore storage errors
   }
 }
 

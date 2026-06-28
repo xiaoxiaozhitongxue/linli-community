@@ -65,7 +65,7 @@ export async function onRequestPost(context) {
     const user = await db.get('SELECT * FROM users WHERE id = ?', [userId])
 
     // 生成 token
-    const token = await createToken({ userId: user.id })
+    const token = await createToken({ userId: user.id }, context)
 
     const safeUser = {
       id: user.id,

@@ -40,13 +40,7 @@
       </div>
     </div>
 
-    <!-- 加载状态 -->
-    <div class="loading-container" v-if="loading">
-      <div class="loading-spinner">
-        <div class="spinner-ring"></div>
-        <span class="loading-text">加载中...</span>
-      </div>
-    </div>
+    <SkeletonLoader v-if="loading" type="list" :count="5" />
 
     <!-- 未登录提示 -->
     <div class="not-logged-in-container" v-else-if="!isLoggedIn">
@@ -90,11 +84,7 @@
         <div class="unread-bar" v-if="item.unread"></div>
       </div>
 
-      <div class="empty-state" v-if="taskNotifications.length === 0 && !loading">
-        <div class="empty-illustration">🔔</div>
-        <div class="empty-title">暂无任务通知</div>
-        <div class="empty-desc">任务相关的通知会在这里显示</div>
-      </div>
+      <EmptyState v-if="taskNotifications.length === 0 && !loading" icon="🔔" title="暂无任务通知" description="任务相关的通知会在这里显示" />
     </div>
 
     <!-- 私信列表 -->
@@ -121,11 +111,7 @@
         <div class="unread-bar" v-if="item.unread > 0"></div>
       </div>
 
-      <div class="empty-state" v-if="privateMessages.length === 0 && !loading && isLoggedIn">
-        <div class="empty-illustration">💬</div>
-        <div class="empty-title">暂无私信消息</div>
-        <div class="empty-desc">和其他邻居开始对话吧</div>
-      </div>
+      <EmptyState v-if="privateMessages.length === 0 && !loading && isLoggedIn" icon="💬" title="暂无私信消息" description="和其他邻居开始对话吧" />
     </div>
 
     <!-- 群聊列表 -->
@@ -156,11 +142,7 @@
         <div class="unread-bar" v-if="item.unread > 0"></div>
       </div>
 
-      <div class="empty-state" v-if="groupChats.length === 0 && !loading && isLoggedIn">
-        <div class="empty-illustration">👥</div>
-        <div class="empty-title">暂无群聊消息</div>
-        <div class="empty-desc">加入社区群组，和邻居聊天吧</div>
-      </div>
+      <EmptyState v-if="groupChats.length === 0 && !loading && isLoggedIn" icon="👥" title="暂无群聊消息" description="加入社区群组，和邻居聊天吧" />
     </div>
 
     <div class="safe-area-bottom"></div>
@@ -172,6 +154,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { navigateBack, navigateTo, getUserStorageKey } from '../../utils/router'
 import { useAuth } from '../../store'
 import { toastInfo } from '../../utils/toast'
+import SkeletonLoader from '../../components/SkeletonLoader.vue'
+import EmptyState from '../../components/EmptyState.vue'
 
 interface Message {
   id: string
@@ -287,8 +271,7 @@ const loadMessages = () => {
         groupChats.value = []
         saveMessages()
       }
-    } catch (e) {
-      console.error('消息数据加载失败:', e)
+    } catch {
       taskNotifications.value = []
       privateMessages.value = []
       groupChats.value = []

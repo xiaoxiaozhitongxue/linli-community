@@ -89,12 +89,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { activitiesApi } from '../../utils/api'
+import { activityService } from '../../services/activityService'
 import { navigateBackSmart } from '../../utils/router'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
 const activities = ref<any[]>([])
+const page = ref(1)
+const hasMore = ref(true)
+const scrollRef = ref<HTMLElement | null>(null)
 
 onMounted(async () => {
   statusBarHeight.value = 20
@@ -105,16 +108,26 @@ const goBack = () => {
   navigateBackSmart()
 }
 
-const loadActivities = async () => {
+const loadActivities = async (isRefresh = false) => {
   if (loading.value) return
+  if (!hasMore.value && !isRefresh) return
   try {
     loading.value = true
-    // 只加载本人参与/发布的活动
-    const allRes = await activitiesApi.getActivities({ limit: 200 })
-    const items: any[] = (allRes && (allRes as any).items) || []
-    activities.value = items
-  } catch (error) {
-    console.error('加载失败:', error)
+    if (isRefresh) {
+      page.value = 1
+      hasMore.value = true
+    }
+    const res = await activityService.getActivities({ page: page.value, limit: 10 })
+    const items: any[] = (res && (res as any).items) || []
+    if (isRefresh) {
+      activities.value = items
+    } else {
+      activities.value = [...activities.value, ...items]
+    }
+    hasMore.value = (res as any).total_pages ? page.value < (res as any).total_pages : items.length >= 10
+    page.value++
+  } catch {
+    activities.value = []
   } finally {
     loading.value = false
   }

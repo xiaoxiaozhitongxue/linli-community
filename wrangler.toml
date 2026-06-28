@@ -10,3 +10,6 @@ database_id = "420190fe-57fa-475d-9948-af57eeaedb26"
 [vars]
 APP_NAME = "邻里社区"
 APP_VERSION = "1.0.0"
+
+# JWT 签名密钥（生产环境务必修改为高强度随机字符串）
+# JWT_SECRET = "your-strong-random-secret-key"

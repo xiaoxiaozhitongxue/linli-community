@@ -33,12 +33,11 @@
         </div>
       </div>
 
-      <div v-else-if="hasSearched && searchResults.length === 0" class="search-empty">
-        <span class="empty-icon">🔍</span>
-        <span class="empty-text">没有找到相关内容</span>
-      </div>
+      <SkeletonLoader v-if="searching" type="list" :count="5" />
 
-      <div v-else-if="hasSearched && searchResults.length > 0" class="search-results">
+      <EmptyState v-else-if="hasSearched && !searching && resultActivities.length === 0 && resultTasks.length === 0 && resultPosts.length === 0" icon="🔍" title="没有找到相关内容" />
+
+      <div v-else-if="hasSearched && !searching" class="search-results">
         <div v-if="resultActivities.length > 0" class="result-section">
           <div class="result-section-title">📋 活动</div>
           <div
@@ -81,7 +80,10 @@
             :key="post.id"
             @click="goToPost(post)"
           >
-            <img class="result-avatar" :src="post.user?.avatar || 'https://via.placeholder.com/40'" />
+            <div class="result-avatar-wrap">
+              <img v-if="post.user?.avatar" class="result-avatar" :src="post.user?.avatar" />
+              <span v-else class="result-avatar-placeholder">{{ post.user?.nickname?.charAt(0) || '邻' }}</span>
+            </div>
             <div class="result-content">
               <div class="result-title">{{ post.user?.nickname || '邻居' }}</div>
               <div class="result-desc">{{ post.content.substring(0, 50) }}{{ post.content.length > 50 ? '...' : '' }}</div>
@@ -95,20 +97,24 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { postsApi, activitiesApi, type Post, type Activity } from '../../utils/api'
+import { postService } from '../../services/postService'
+import { activityService } from '../../services/activityService'
+import { taskService } from '../../services/taskService'
 import { navigateTo } from '../../utils/router'
 import { toastInfo } from '../../utils/toast'
+import EmptyState from '../../components/EmptyState.vue'
+import SkeletonLoader from '../../components/SkeletonLoader.vue'
 
 const searchText = ref('')
 const hasSearched = ref(false)
-const searchResults = ref<any[]>([])
+const searching = ref(false)
 const searchInput = ref<HTMLInputElement>()
 
 const hotSearches = ref(['邻里集市', '志愿者', '老人关怀', '社区活动', '健身'])
 
-const resultActivities = ref<Activity[]>([])
+const resultActivities = ref<any[]>([])
 const resultTasks = ref<any[]>([])
-const resultPosts = ref<Post[]>([])
+const resultPosts = ref<any[]>([])
 
 function goBack() {
   window.history.back()
@@ -136,46 +142,54 @@ async function doSearch() {
     return
   }
   hasSearched.value = true
+  searching.value = true
   try {
     await Promise.all([searchActivities(), searchTasks(), searchPosts()])
-  } catch (err) {
-    console.error('搜索失败:', err)
+  } catch {
+    // 静默处理搜索失败
+  } finally {
+    searching.value = false
   }
 }
 
 async function searchActivities() {
   try {
-    const response = await activitiesApi.getActivities({ limit: 20 })
-    resultActivities.value = response.items.filter(activity =>
-      activity.title.toLowerCase().includes(searchText.value.toLowerCase())
+    const response = await activityService.getActivities({ limit: 20 })
+    const items = (response as any).items || []
+    const keyword = searchText.value.toLowerCase()
+    resultActivities.value = items.filter((activity: any) =>
+      activity.title?.toLowerCase().includes(keyword)
     )
-  } catch (err) {
-    console.error('搜索活动失败:', err)
+  } catch {
+    resultActivities.value = []
   }
 }
 
 async function searchTasks() {
-  resultTasks.value = []
-  const mockTasks = [
-    { id: '1', title: '帮我取个快递', category: '跑腿', reward: 20 },
-    { id: '2', title: '求助电脑维修', category: '技术', reward: 50 },
-    { id: '3', title: '需要帮忙遛狗', category: '宠物', reward: 30 }
-  ]
-  resultTasks.value = mockTasks.filter(task =>
-    task.title.toLowerCase().includes(searchText.value.toLowerCase()) ||
-    task.category.toLowerCase().includes(searchText.value.toLowerCase())
-  )
+  try {
+    const response = await taskService.getTasks({ limit: 20 })
+    const items = (response as any).items || []
+    const keyword = searchText.value.toLowerCase()
+    resultTasks.value = items.filter((task: any) =>
+      task.title?.toLowerCase().includes(keyword) ||
+      task.category?.toLowerCase().includes(keyword)
+    )
+  } catch {
+    resultTasks.value = []
+  }
 }
 
 async function searchPosts() {
   try {
-    const response = await postsApi.getPosts({ limit: 50 })
-    resultPosts.value = response.items.filter(post =>
-      post.content.toLowerCase().includes(searchText.value.toLowerCase()) ||
-      (post.user?.nickname && post.user.nickname.toLowerCase().includes(searchText.value.toLowerCase()))
+    const response = await postService.getPosts({ limit: 50 })
+    const items = (response as any).items || []
+    const keyword = searchText.value.toLowerCase()
+    resultPosts.value = items.filter((post: any) =>
+      post.content?.toLowerCase().includes(keyword) ||
+      (post.user?.nickname && post.user.nickname.toLowerCase().includes(keyword))
     )
-  } catch (err) {
-    console.error('搜索动态失败:', err)
+  } catch {
+    resultPosts.value = []
   }
 }
 
@@ -187,7 +201,7 @@ function goToTask(id: string) {
   navigateTo('/pages/ai-helper/detail?id=' + id)
 }
 
-function goToPost(post: Post) {
+function goToPost(post: any) {
   toastInfo('查看详情功能开发中')
 }
 

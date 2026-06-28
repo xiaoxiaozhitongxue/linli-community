@@ -48,6 +48,11 @@ const router = createRouter({
       meta: { title: '养老服务', tabBar: false }
     },
     {
+      path: '/pages/business/index',
+      component: () => import('./pages/business/index.vue'),
+      meta: { title: '社区创业', tabBar: false }
+    },
+    {
       path: '/pages/messages/index',
       component: () => import('./pages/messages/index.vue'),
       meta: { title: '消息', tabBar: true }
@@ -141,6 +146,10 @@ const router = createRouter({
       path: '/pages/search/index',
       component: () => import('./pages/search/index.vue'),
       meta: { title: '搜索', tabBar: false }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/pages/index/index'
     }
   ],
   // 页面切换的滚动行为

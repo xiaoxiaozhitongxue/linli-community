@@ -13,11 +13,17 @@
     <div class="content">
       <div class="form-section">
         <div class="user-info">
-          <img 
-            class="user-avatar" 
-            :src="userInfo?.avatar || 'https://via.placeholder.com/48'" 
-            alt="avatar"
-          />
+          <div 
+            class="user-avatar-wrap"
+          >
+            <img 
+              v-if="userInfo?.avatar"
+              class="user-avatar" 
+              :src="userInfo?.avatar" 
+              alt="avatar"
+            />
+            <span v-else class="user-avatar-placeholder">{{ userInfo?.nickname?.charAt(0) || '邻' }}</span>
+          </div>
           <div class="user-detail">
             <span class="user-name">{{ userInfo?.nickname || '邻居' }}</span>
             <span class="user-community">{{ userInfo?.community || '阳光社区' }}</span>
@@ -154,7 +160,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { postsApi } from '../../utils/api'
+import { postService } from '../../services/postService'
 import { useAuth } from '../../store'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
@@ -187,7 +193,7 @@ const canPublish = computed(() => {
 
 onMounted(() => {
   initAuth()
-  
+
   if (!isLoggedIn.value) {
     setLoginRedirect('/pages/post/create')
     showLoginModal.value = true
@@ -256,7 +262,7 @@ async function publishPost() {
   try {
     const imageUrls = images.value
 
-    await postsApi.createPost({
+    await postService.createPost({
       content: content.value.trim(),
       images: imageUrls,
       location: location.value || undefined,
@@ -268,8 +274,7 @@ async function publishPost() {
     setTimeout(() => {
       navigateBack()
     }, 1500)
-  } catch (err) {
-    console.error('发布失败:', err)
+  } catch {
     toastError('发布失败，请稍后重试')
   } finally {
     publishing.value = false
