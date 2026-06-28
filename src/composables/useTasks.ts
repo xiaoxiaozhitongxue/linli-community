@@ -25,7 +25,7 @@ export function useTasks() {
       }
 
       currentPage.value = page
-      hasMore.value = page < response.total_pages
+      hasMore.value = page * 10 < response.total
     } catch (err) {
       if (isRefresh) {
         error.value = '加载失败，请稍后重试'

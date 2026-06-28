@@ -72,7 +72,7 @@
       <div class="action-buttons">
         <div
           class="accept-btn"
-          :class="{ disabled: task.status !== 'open' && task.status !== 'pending' }"
+          :class="{ disabled: task.status !== 'open' }"
           @click="handleAccept"
         >
           <span>{{ acceptButtonText }}</span>
@@ -165,6 +165,40 @@ function mapApiTaskToLocal(apiTask: Task): TaskDetail {
   }
 }
 
+function getTypeName(type: string): string {
+  const map: Record<string, string> = {
+    delivery: '配送',
+    shopping: '购物',
+    pet: '宠物',
+    child: '育儿',
+    help: '帮忙',
+    companionship: '陪伴',
+    other: '其他'
+  }
+  return map[type] || '其他'
+}
+
+function getStatusName(status: string): string {
+  const map: Record<string, string> = {
+    open: '待接单',
+    ongoing: '进行中',
+    completed: '已完成',
+    cancelled: '已取消'
+  }
+  return map[status] || '未知'
+}
+
+function formatTime(time: string | number): string {
+  if (!time) return ''
+  const date = new Date(Number(time))
+  if (isNaN(date.getTime())) return String(time)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${month}-${day} ${hours}:${minutes}`
+}
+
 function loadFromStorage(key: string, defaultValue: any[]) {
   try {
     const stored = localStorage.getItem(key)
@@ -196,7 +230,7 @@ async function handleAccept() {
   }
   try {
     await taskService.acceptTask(t.id)
-    task.value = { ...task.value, status: 'ongoing' }
+    task.value = { ...t, status: 'ongoing' }
     toastSuccess('接单成功')
   } catch (e: any) {
     const msg = e?.message || '接单失败，请稍后重试'

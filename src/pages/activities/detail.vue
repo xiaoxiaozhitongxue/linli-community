@@ -347,22 +347,14 @@ const toggleJoin = async () => {
   }
 }
 
-const toggleFavorite = async () => {
-  // 添加登录验证
+const toggleFavorite = () => {
   if (!isLoggedIn.value) {
     setLoginRedirect(window.location.hash.replace('#', '') || '/pages/activities/detail')
     showLoginGuide()
     return
   }
-  
-  try {
-    await userApi.toggleFavorite('activity', activity.value.id)
-    isFavorited.value = !isFavorited.value
-    toastSuccess(isFavorited.value ? '已收藏' : '已取消收藏')
-  } catch (error) {
-    isFavorited.value = !isFavorited.value
-    toastSuccess(isFavorited.value ? '已收藏' : '已取消收藏')
-  }
+  isFavorited.value = !isFavorited.value
+  toastSuccess(isFavorited.value ? '已收藏' : '已取消收藏')
 }
 
 const shareActivity = () => {

@@ -66,7 +66,7 @@ export const COMMUNITIES: CommunityPreset[] = [
 let scriptInjected: { [k: string]: Promise<any> } = {}
 
 function injectScript(src: string, globalName: string, timeoutMs = 10000): Promise<any> {
-  if (scriptInjected[src]) return scriptInjected[src]
+  if (src in scriptInjected) return scriptInjected[src]
   scriptInjected[src] = new Promise((resolve, reject) => {
     // 已经存在
     if ((window as any)[globalName]) {
@@ -249,7 +249,7 @@ async function locateByAmap(): Promise<LocationResult> {
   // 如果定位插件已经返回了 city/district，就直接用；否则仍调用逆地理编码补齐
   let regeo = { city: '', district: '', address: '' }
   if (coords.city || coords.district) {
-    regeo = { city: coords.city, district: coords.district, address: coords.formattedAddress || '' }
+    regeo = { city: coords.city ?? '', district: coords.district ?? '', address: coords.formattedAddress || '' }
   } else {
     regeo = await new Promise<{ city: string; district: string; address: string }>((resolve) => {
       plugin.plugin('AMap.Geocoder', () => {
@@ -323,7 +323,7 @@ async function locateByBaidu(): Promise<LocationResult> {
   // 如定位已返回 city/district，直接使用；否则调百度逆地理编码补齐
   let regeo = { city: '', district: '', address: '' }
   if (coords.city || coords.district) {
-    regeo = { city: coords.city, district: coords.district, address: coords.address || '' }
+    regeo = { city: coords.city ?? '', district: coords.district ?? '', address: coords.address || '' }
   } else {
     const myGeo = new BMap.Geocoder()
     regeo = await new Promise<{ city: string; district: string; address: string }>((resolve) => {

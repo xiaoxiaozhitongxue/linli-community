@@ -103,6 +103,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuth } from '../../store/index'
 import { userApi } from '../../utils/api'
+import type { User } from '../../types/models'
 import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
 
@@ -119,7 +120,7 @@ const form = ref({
   community: '',
   address: '',
   bio: '',
-  role: 'resident' as const
+  role: 'resident'
 })
 
 const formErrors = ref<Record<string, string>>({})
@@ -191,7 +192,7 @@ const saveProfile = async () => {
 
   try {
     saving.value = true
-    const updatedUser = await userApi.updateProfile(form.value)
+    const updatedUser = await userApi.updateProfile(form.value as Partial<User>)
     updateUser(updatedUser)
     toastSuccess('保存成功')
     setTimeout(() => {

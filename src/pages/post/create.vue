@@ -17,16 +17,16 @@
             class="user-avatar-wrap"
           >
             <img 
-              v-if="userInfo?.avatar"
+              v-if="user?.avatar"
               class="user-avatar" 
-              :src="userInfo?.avatar" 
+              :src="user?.avatar" 
               alt="avatar"
             />
-            <span v-else class="user-avatar-placeholder">{{ userInfo?.nickname?.charAt(0) || '邻' }}</span>
+            <span v-else class="user-avatar-placeholder">{{ user?.nickname?.charAt(0) || '邻' }}</span>
           </div>
           <div class="user-detail">
-            <span class="user-name">{{ userInfo?.nickname || '邻居' }}</span>
-            <span class="user-community">{{ userInfo?.community || '阳光社区' }}</span>
+            <span class="user-name">{{ user?.nickname || '邻居' }}</span>
+            <span class="user-community">{{ user?.community || '阳光社区' }}</span>
           </div>
         </div>
 
@@ -167,7 +167,7 @@ import { toastSuccess, toastError } from '../../utils/toast'
 import { setLoginRedirect } from '../../utils/auth'
 
 const router = useRouter()
-const { userInfo, isLoggedIn, initAuth } = useAuth()
+const { user, isLoggedIn, initAuth } = useAuth()
 
 const content = ref('')
 const images = ref<string[]>([])

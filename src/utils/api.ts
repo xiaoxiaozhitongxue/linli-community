@@ -28,7 +28,8 @@ import { get, post, put, del } from './request'
 // ========================================================================
 //  类型定义 - 请使用 src/types/models.ts
 // ========================================================================
-export type { User, Post, Comment, Activity, Task, HealthRecord, PaginatedResponse, LikeResponse } from '../types/models'
+import type { User, Post, Comment, Activity, Task, HealthRecord, PaginatedResponse, LikeResponse } from '../types/models'
+export type { User, Post, Comment, Activity, Task, HealthRecord, PaginatedResponse, LikeResponse }
 
 // ========================================================================
 //  authApi —— 登录/注册
@@ -116,8 +117,8 @@ export const postsApi = {
     return del<{ success: boolean }>(`/api/posts/${postId}`, {}, { showError: true })
   },
 
-  getComments: (postId: string): Promise<PaginatedResponse<Comment>> => {
-    return get<PaginatedResponse<Comment>>(`/api/posts/${postId}/comments`)
+  getComments: (postId: string, params?: { limit?: number }): Promise<PaginatedResponse<Comment>> => {
+    return get<PaginatedResponse<Comment>>(`/api/posts/${postId}/comments`, params)
   },
 
   createComment: (postId: string, data: { content: string }): Promise<Comment> => {

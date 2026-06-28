@@ -291,11 +291,10 @@ function setupRouteGuard(router: any) {
   // 获取 auth store（延迟加载避免循环依赖）
   let getAuthState: (() => { isLoggedIn: boolean }) | null = null
   
-  const loadAuthHook = () => {
+  const loadAuthHook = async () => {
     if (!getAuthState) {
       try {
-        // 尝试从 store 获取 auth 状态
-        const { useAuth } = require('../store')
+        const { useAuth } = await import('../store')
         getAuthState = () => {
           const auth = useAuth()
           return {
@@ -304,14 +303,14 @@ function setupRouteGuard(router: any) {
         }
       } catch (e) {
         console.warn('无法加载 auth store，登录状态检查将被跳过')
-        getAuthState = () => ({ isLoggedIn: true }) // 默认放行
+        getAuthState = () => ({ isLoggedIn: true })
       }
     }
     return getAuthState()
   }
   
-  router.beforeEach((to: any, from: any, next: any) => {
-    const { isLoggedIn } = loadAuthHook()
+  router.beforeEach(async (to: any, from: any, next: any) => {
+    const { isLoggedIn } = await loadAuthHook()
     const toPath = to.path
     const fromPath = from.path
     

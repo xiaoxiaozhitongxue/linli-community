@@ -1,5 +1,5 @@
 let loadingCount = 0
-let loadingElement = null
+let loadingElement: HTMLDivElement | null = null
 
 export function showLoading(title = '加载中...') {
   loadingCount++
@@ -32,7 +32,18 @@ export function hideLoading() {
   }
 }
 
-export function showModal(options) {
+interface ModalOptions {
+  title?: string
+  content: string
+  showCancel?: boolean
+  confirmText?: string
+  cancelText?: string
+  confirmColor?: string
+  success?: (res: { confirm: boolean; cancel: boolean }) => void
+  fail?: (err: any) => void
+}
+
+export function showModal(options: ModalOptions) {
   const { title, content, showCancel = true, confirmText = '确定', cancelText = '取消', success } = options
   
   const modal = document.createElement('div')
@@ -43,7 +54,7 @@ export function showModal(options) {
   
   const header = document.createElement('div')
   header.style.cssText = 'padding: 20px 20px 10px; text-align: center; font-size: 17px; font-weight: 600; color: var(--color-text-primary);'
-  header.textContent = title
+  header.textContent = title ?? ''
   
   const body = document.createElement('div')
   body.style.cssText = 'padding: 0 20px 20px; text-align: center; font-size: 14px; color: var(--color-text-secondary); line-height: 1.5;'

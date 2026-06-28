@@ -86,7 +86,7 @@ export function showLoginGuide(afterLoginAction?: () => void) {
     content: '该功能需要登录后才能使用，是否前往登录？',
     confirmText: '去登录',
     cancelText: '取消',
-    success: (res) => {
+    success: (res: { confirm: boolean }) => {
       if (res.confirm) {
         navigateTo('/pages/login/index')
       }
@@ -103,7 +103,7 @@ export function quickLoginTip() {
     content: '请先登录后再进行操作',
     confirmText: '去登录',
     cancelText: '取消',
-    success: (res) => {
+    success: (res: { confirm: boolean }) => {
       if (res.confirm) {
         navigateTo('/pages/login/index')
       }

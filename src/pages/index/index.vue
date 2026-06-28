@@ -2,7 +2,7 @@
   <div class="page">
     <div class="status-bar" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%);">
       <div class="status-content">
-        <div class="location" @click="chooseLocation">
+        <div class="location" @click="() => chooseLocation()">
           <span class="location-icon">{{ locating ? '📡' : '📍' }}</span>
           <span class="location-text" :class="{ locating }">{{ locating ? '定位中' : communityName }}</span>
           <span class="location-arrow">▼</span>

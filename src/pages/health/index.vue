@@ -12,7 +12,7 @@
       <SkeletonLoader v-if="loading" type="card" :count="1" />
 
       <template v-else>
-        <EmptyState v-if="!isLoggedIn.value" icon="💪" title="登录后可打卡" description="登录即可记录每日健康打卡" />
+        <EmptyState v-if="!isLoggedIn" icon="💪" title="登录后可打卡" description="登录即可记录每日健康打卡" />
 
         <template v-else>
           <div class="stats-card">
