@@ -87,7 +87,10 @@
         </div>
         <div class="visit-plan">
           <div class="visit-header">
-            <img class="elder-avatar" :src="currentElder.avatar" alt="老人头像" />
+            <div class="avatar-wrap" v-if="currentElder.avatar">
+              <img class="elder-avatar" :src="currentElder.avatar" alt="老人头像" />
+            </div>
+            <div v-else class="elder-avatar avatar-placeholder">{{ (currentElder.name || '邻').charAt(0) }}</div>
             <div class="elder-info">
               <span class="elder-name">{{ currentElder.name }}</span>
               <span class="elder-info-text">{{ currentElder.address }}</span>
@@ -135,7 +138,10 @@
         </div>
         <div class="volunteer-list">
           <div class="volunteer-card" v-for="v in topVolunteers" :key="v.id">
-            <img class="volunteer-avatar" :src="v.avatar" alt="志愿者头像" />
+            <div class="avatar-wrap" v-if="v.avatar">
+              <img class="volunteer-avatar" :src="v.avatar" alt="志愿者头像" />
+            </div>
+            <div v-else class="volunteer-avatar avatar-placeholder">{{ (v.name || '邻').charAt(0) }}</div>
             <span class="volunteer-name">{{ v.name }}</span>
             <span class="volunteer-hours">{{ v.hours }}小时</span>
             <div class="volunteer-tag">{{ v.tag }}</div>
@@ -271,7 +277,7 @@ const volunteerStats = ref({
 
 const currentElder = ref({
   name: '张奶奶',
-  avatar: 'https://i.pravatar.cc/100?img=8',
+  avatar: '',
   address: '阳光社区 5号楼 301',
   nextVisit: '6月10日'
 })
@@ -319,28 +325,28 @@ const topVolunteers = ref([
   {
     id: '1',
     name: '王大哥',
-    avatar: 'https://i.pravatar.cc/100?img=11',
+    avatar: '',
     hours: 120,
     tag: '热心达人'
   },
   {
     id: '2',
     name: '李阿姨',
-    avatar: 'https://i.pravatar.cc/100?img=12',
+    avatar: '',
     hours: 98,
     tag: '爱心天使'
   },
   {
     id: '3',
     name: '小张',
-    avatar: 'https://i.pravatar.cc/100?img=13',
+    avatar: '',
     hours: 85,
     tag: '优秀青年'
   },
   {
     id: '4',
     name: '赵大姐',
-    avatar: 'https://i.pravatar.cc/100?img=14',
+    avatar: '',
     hours: 76,
     tag: '贴心好邻'
   }
@@ -877,6 +883,16 @@ const getStatusName = (status: string) => {
   border-radius: 10px;
   background: #FFF3E0;
   color: #FF9800;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-soft, rgba(255,107,53,0.1));
+  color: var(--color-primary, #FF6B35);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .safe-area-bottom {

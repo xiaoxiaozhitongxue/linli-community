@@ -210,7 +210,10 @@
               <span class="story-title">{{ story.title }}</span>
               <span class="story-excerpt">{{ story.excerpt }}</span>
               <div class="story-meta">
-                <img class="story-avatar" :src="story.avatar" alt="作者头像" />
+                <div class="avatar-wrap" v-if="story.avatar">
+                  <img class="story-avatar" :src="story.avatar" alt="作者头像" />
+                </div>
+                <div v-else class="story-avatar avatar-placeholder">{{ (story.author || '邻').charAt(0) }}</div>
                 <span class="story-author">{{ story.author }}</span>
               </div>
             </div>
@@ -407,7 +410,7 @@ const successStories = ref([
     title: '从家庭主妇到月入过万的烘焙店主',
     excerpt: '王阿姨的烘焙之路，从给邻居送蛋糕开始，如今已是社区里的明星店主...',
     cover: 'https://picsum.photos/300/200?random=10',
-    avatar: 'https://i.pravatar.cc/100?img=1',
+    avatar: '',
     author: '王阿姨'
   },
   {
@@ -415,7 +418,7 @@ const successStories = ref([
     title: '程序员下班后做私房菜的真实故事',
     excerpt: '小李利用周末时间为邻居做健康私房菜，不仅赚了零花钱，还交到了朋友...',
     cover: 'https://picsum.photos/300/200?random=11',
-    avatar: 'https://i.pravatar.cc/100?img=2',
+    avatar: '',
     author: '小李'
   },
   {
@@ -423,7 +426,7 @@ const successStories = ref([
     title: '退休教师的手工编织创业记',
     excerpt: '刘老师退休后重拾编织爱好，现在她的手工包要排队一个月才能买到...',
     cover: 'https://picsum.photos/300/200?random=12',
-    avatar: 'https://i.pravatar.cc/100?img=3',
+    avatar: '',
     author: '刘老师'
   }
 ])
@@ -1048,6 +1051,16 @@ const goToStoryDetail = (story: any) => {
 .story-author {
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-soft, rgba(255,107,53,0.1));
+  color: var(--color-primary, #FF6B35);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .safe-area-bottom {

@@ -17,7 +17,10 @@
       <!-- 头像区域 -->
       <div class="avatar-section">
         <div class="avatar-wrapper" @click="chooseAvatar">
-          <img class="avatar" :src="form.avatar || 'https://i.pravatar.cc/100?img=10'" alt="头像" />
+          <div class="avatar-wrap" v-if="form.avatar">
+            <img class="avatar" :src="form.avatar" alt="头像" />
+          </div>
+          <div v-else class="avatar avatar-placeholder">{{ (user?.nickname || '邻').charAt(0) }}</div>
           <div class="avatar-overlay">
             <span class="camera-icon">📷</span>
           </div>
@@ -446,5 +449,15 @@ const saveProfile = async () => {
 .role-option.active span:nth-child(2) {
   color: var(--color-primary);
   font-weight: 500;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-soft, rgba(255,107,53,0.1));
+  color: var(--color-primary, #FF6B35);
+  font-size: 14px;
+  font-weight: 600;
 }
 </style>

@@ -5,7 +5,10 @@
       <div class="nav-content">
         <span class="nav-back" @click="goBack">‹</span>
         <div class="nav-user">
-          <img class="nav-avatar" :src="chatUser.avatar" />
+          <div class="avatar-wrap" v-if="chatUser.avatar">
+            <img class="nav-avatar" :src="chatUser.avatar" />
+          </div>
+          <div v-else class="nav-avatar avatar-placeholder">{{ (chatUser.name || '邻').charAt(0) }}</div>
           <span class="nav-name">{{ chatUser.name }}</span>
         </div>
         <span class="nav-right"></span>
@@ -20,11 +23,12 @@
         v-for="(msg, index) in messages" 
         :key="index"
       >
-        <img 
-          class="chat-avatar" 
-          :src="msg.isSelf ? myAvatar : chatUser.avatar" 
-          v-if="!msg.isSystem"
-        />
+        <template v-if="!msg.isSystem">
+          <div class="avatar-wrap" v-if="msg.isSelf ? myAvatar : chatUser.avatar">
+            <img class="chat-avatar" :src="msg.isSelf ? myAvatar : chatUser.avatar" />
+          </div>
+          <div v-else class="chat-avatar avatar-placeholder">{{ (msg.isSelf ? '我' : chatUser.name || '邻').charAt(0) }}</div>
+        </template>
         <div class="message-bubble" :class="{ 'bubble-self': msg.isSelf, 'bubble-other': !msg.isSelf }" v-if="!msg.isSystem">
           <div class="bubble-content">{{ msg.content }}</div>
           <div class="bubble-time">{{ formatTime(msg.time) }}</div>
@@ -77,7 +81,7 @@ const chatUser = ref({
   avatar: ''
 })
 
-const myAvatar = ref('https://i.pravatar.cc/100?img=10')
+const myAvatar = ref('')
 const inputText = ref('')
 const messages = ref<ChatMessage[]>([])
 
@@ -101,7 +105,7 @@ const loadMessages = () => {
   chatUser.value = {
     id: chatId,
     name: decodeURIComponent(route.query.name as string || '未知用户'),
-    avatar: decodeURIComponent(route.query.avatar as string || 'https://i.pravatar.cc/100?img=10')
+    avatar: decodeURIComponent(route.query.avatar as string || '')
   }
 
   // 加载我的头像
@@ -384,6 +388,16 @@ onMounted(() => {
   background: var(--color-text-muted);
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-soft, rgba(255,107,53,0.1));
+  color: var(--color-primary, #FF6B35);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .safe-area-bottom {

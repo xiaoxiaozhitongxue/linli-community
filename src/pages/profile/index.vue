@@ -5,7 +5,10 @@
       <div class="header-bg"></div>
       <div class="profile-content">
         <div class="profile-main" @click="goToEditProfile" v-if="isLoggedIn">
-          <img class="profile-avatar" :src="user?.avatar || 'https://i.pravatar.cc/100?img=10'" />
+          <div class="avatar-wrap" v-if="user?.avatar">
+            <img class="profile-avatar" :src="user?.avatar" />
+          </div>
+          <div v-else class="profile-avatar avatar-placeholder">{{ (user?.nickname || '邻').charAt(0) }}</div>
           <div class="profile-info">
             <div class="profile-name-row">
               <span class="profile-name">{{ user?.nickname || '用户' }}</span>
@@ -23,7 +26,7 @@
 
         <!-- 未登录状态 -->
         <div class="profile-main" @click="goToLogin" v-else>
-          <img class="profile-avatar" src="https://i.pravatar.cc/100?img=10" />
+          <div class="profile-avatar avatar-placeholder">邻</div>
           <div class="profile-info">
             <div class="profile-name-row">
               <span class="profile-name">点击登录</span>
@@ -989,6 +992,16 @@ onMounted(() => {
 
 .safe-area-bottom {
   height: 100px;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-soft, rgba(255,107,53,0.1));
+  color: var(--color-primary, #FF6B35);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 @media (max-width: 480px) {

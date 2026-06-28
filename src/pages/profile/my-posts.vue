@@ -27,7 +27,10 @@
       <div v-else class="post-list">
         <div class="post-card" v-for="post in posts" :key="post.id">
           <div class="post-header">
-            <img class="post-avatar" :src="post.user?.avatar || 'https://i.pravatar.cc/100?img=10'" alt="头像" />
+            <div class="avatar-wrap" v-if="post.user?.avatar">
+              <img class="post-avatar" :src="post.user?.avatar" alt="头像" />
+            </div>
+            <div v-else class="post-avatar avatar-placeholder">{{ (post.user?.nickname || '邻').charAt(0) }}</div>
             <div class="post-user-info">
               <span class="post-username">{{ post.user?.nickname }}</span>
               <span class="post-time">{{ formatTime(post.created_at) }}</span>
@@ -414,6 +417,16 @@ const getVisibilityText = (visibility: string) => {
 .action-text {
   font-size: 13px;
   color: var(--color-text-secondary);
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-soft, rgba(255,107,53,0.1));
+  color: var(--color-primary, #FF6B35);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 /* 加载状态 */

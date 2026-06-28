@@ -252,11 +252,11 @@ const loadActivity = async () => {
     activity.value = data
     
     participants.value = [
-      { id: '1', nickname: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=1' },
-      { id: '2', nickname: '小李', avatar: 'https://i.pravatar.cc/100?img=2' },
-      { id: '3', nickname: '美食小红', avatar: 'https://i.pravatar.cc/100?img=3' },
-      { id: '4', nickname: '运动达人', avatar: 'https://i.pravatar.cc/100?img=4' },
-      { id: '5', nickname: '老张', avatar: 'https://i.pravatar.cc/100?img=5' }
+      { id: '1', nickname: '王阿姨', avatar: '' },
+      { id: '2', nickname: '小李', avatar: '' },
+      { id: '3', nickname: '美食小红', avatar: '' },
+      { id: '4', nickname: '运动达人', avatar: '' },
+      { id: '5', nickname: '老张', avatar: '' }
     ]
   } catch {
     // 如果API失败，尝试从活动列表中获取
@@ -281,15 +281,15 @@ const loadActivity = async () => {
           status: 'upcoming',
           created_at: Date.now() / 1000,
           updated_at: Date.now() / 1000,
-          user: { id: '1', nickname: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=1' },
+          user: { id: '1', nickname: '王阿姨', avatar: '' },
           is_participant: false
         }
       }
       
       participants.value = [
-        { id: '1', nickname: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=1' },
-        { id: '2', nickname: '小李', avatar: 'https://i.pravatar.cc/100?img=2' },
-        { id: '3', nickname: '美食小红', avatar: 'https://i.pravatar.cc/100?img=3' }
+        { id: '1', nickname: '王阿姨', avatar: '' },
+        { id: '2', nickname: '小李', avatar: '' },
+        { id: '3', nickname: '美食小红', avatar: '' }
       ]
     } catch {
       error.value = true

@@ -1,4 +1,4 @@
-import { handleCors } from '../../../../lib/index.js'
+import { handleCors } from '../../../lib/index.js'
 
 export async function onRequest(context) {
   const { request } = context

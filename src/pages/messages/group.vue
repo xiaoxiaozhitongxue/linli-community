@@ -24,10 +24,10 @@
           <div class="system-message">{{ msg.content }}</div>
         </template>
         <template v-else>
-          <img 
-            class="chat-avatar" 
-            :src="msg.isSelf ? myAvatar : msg.avatar" 
-          />
+          <div class="avatar-wrap" v-if="msg.isSelf ? myAvatar : msg.avatar">
+            <img class="chat-avatar" :src="msg.isSelf ? myAvatar : msg.avatar" />
+          </div>
+          <div v-else class="chat-avatar avatar-placeholder">{{ (msg.isSelf ? '我' : msg.senderName || '邻').charAt(0) }}</div>
           <div class="message-body">
             <div class="message-sender" v-if="!msg.isSelf">{{ msg.senderName }}</div>
             <div class="message-bubble" :class="{ 'bubble-self': msg.isSelf, 'bubble-other': !msg.isSelf }">
@@ -63,7 +63,10 @@
         </div>
         <div class="members-list">
           <div class="member-item" v-for="member in members" :key="member.id">
-            <img class="member-avatar" :src="member.avatar" />
+            <div class="avatar-wrap" v-if="member.avatar">
+              <img class="member-avatar" :src="member.avatar" />
+            </div>
+            <div v-else class="member-avatar avatar-placeholder">{{ (member.name || '邻').charAt(0) }}</div>
             <div class="member-info">
               <span class="member-name">{{ member.name }}</span>
               <span class="member-role" v-if="member.role">{{ member.role }}</span>
@@ -112,7 +115,7 @@ const groupInfo = ref({
   memberCount: 0
 })
 
-const myAvatar = ref('https://i.pravatar.cc/100?img=10')
+const myAvatar = ref('')
 const myName = ref('我')
 const inputText = ref('')
 const messages = ref<GroupMessage[]>([])
@@ -139,7 +142,7 @@ const loadGroupChat = () => {
   groupInfo.value = {
     id: groupId,
     name: decodeURIComponent(route.query.name as string || '群聊'),
-    avatar: decodeURIComponent(route.query.avatar as string || 'https://i.pravatar.cc/100?img=50'),
+    avatar: decodeURIComponent(route.query.avatar as string || ''),
     memberCount: parseInt(route.query.members as string) || 0
   }
 
@@ -153,11 +156,11 @@ const loadGroupChat = () => {
 
   // 加载群成员
   members.value = [
-    { id: '1', name: '张大爷', avatar: 'https://i.pravatar.cc/100?img=60', role: '群主' },
-    { id: '2', name: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=21' },
-    { id: '3', name: '李姐', avatar: 'https://i.pravatar.cc/100?img=25' },
-    { id: '4', name: '刘叔', avatar: 'https://i.pravatar.cc/100?img=35' },
-    { id: '5', name: '赵妹', avatar: 'https://i.pravatar.cc/100?img=30' }
+    { id: '1', name: '张大爷', avatar: '', role: '群主' },
+    { id: '2', name: '王阿姨', avatar: '' },
+    { id: '3', name: '李姐', avatar: '' },
+    { id: '4', name: '刘叔', avatar: '' },
+    { id: '5', name: '赵妹', avatar: '' }
   ]
 
   const stored = localStorage.getItem(getGroupKey())
@@ -171,7 +174,7 @@ const loadGroupChat = () => {
         id: '1',
         senderId: '1',
         senderName: '张大爷',
-        avatar: 'https://i.pravatar.cc/100?img=60',
+        avatar: '',
         content: '大家好，欢迎来到邻里互助群！',
         time: new Date(now - 7200000).toISOString(),
         isSelf: false,
@@ -181,7 +184,7 @@ const loadGroupChat = () => {
         id: '2',
         senderId: '2',
         senderName: '王阿姨',
-        avatar: 'https://i.pravatar.cc/100?img=21',
+        avatar: '',
         content: '群主好！以后多多关照',
         time: new Date(now - 7100000).toISOString(),
         isSelf: false
@@ -190,7 +193,7 @@ const loadGroupChat = () => {
         id: '3',
         senderId: '3',
         senderName: '李姐',
-        avatar: 'https://i.pravatar.cc/100?img=25',
+        avatar: '',
         content: '有人知道附近哪有便宜的菜市场吗？',
         time: new Date(now - 3600000).toISOString(),
         isSelf: false
@@ -199,7 +202,7 @@ const loadGroupChat = () => {
         id: '4',
         senderId: '4',
         senderName: '刘叔',
-        avatar: 'https://i.pravatar.cc/100?img=35',
+        avatar: '',
         content: '小区东门外面有一个，每天早上7点前去最便宜',
         time: new Date(now - 3500000).toISOString(),
         isSelf: false
@@ -208,7 +211,7 @@ const loadGroupChat = () => {
         id: '5',
         senderId: '2',
         senderName: '王阿姨',
-        avatar: 'https://i.pravatar.cc/100?img=21',
+        avatar: '',
         content: '太好了，谢谢刘叔！',
         time: new Date(now - 3400000).toISOString(),
         isSelf: false
@@ -243,9 +246,9 @@ const sendMessage = () => {
   // 模拟其他群成员回复
   setTimeout(() => {
     const replies = [
-      { name: '王阿姨', avatar: 'https://i.pravatar.cc/100?img=21', content: '收到！' },
-      { name: '李姐', avatar: 'https://i.pravatar.cc/100?img=25', content: '好的，明白了' },
-      { name: '刘叔', avatar: 'https://i.pravatar.cc/100?img=35', content: '没问题' }
+      { name: '王阿姨', avatar: '', content: '收到！' },
+      { name: '李姐', avatar: '', content: '好的，明白了' },
+      { name: '刘叔', avatar: '', content: '没问题' }
     ]
     const reply = replies[Math.floor(Math.random() * replies.length)]
     const replyMsg: GroupMessage = {
@@ -599,6 +602,16 @@ onMounted(() => {
   color: var(--color-text-white);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-soft, rgba(255,107,53,0.1));
+  color: var(--color-primary, #FF6B35);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .safe-area-bottom {

@@ -62,7 +62,10 @@
 
             <div class="activity-footer">
               <div class="creator-info">
-                <img class="creator-avatar" :src="activity.user?.avatar || 'https://i.pravatar.cc/100?img=10'" alt="头像" />
+                <div class="avatar-wrap" v-if="activity.user?.avatar">
+                  <img class="creator-avatar" :src="activity.user?.avatar" alt="头像" />
+                </div>
+                <div v-else class="creator-avatar avatar-placeholder">{{ (activity.user?.nickname || '邻').charAt(0) }}</div>
                 <span class="creator-name">{{ activity.user?.nickname }}</span>
               </div>
               <div class="activity-actions">
@@ -428,6 +431,16 @@ const getStatusText = (status: string) => {
 .action-tag.other {
   background: var(--color-bg-tertiary);
   color: var(--color-text-muted);
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-soft, rgba(255,107,53,0.1));
+  color: var(--color-primary, #FF6B35);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 /* 加载状态 */

@@ -233,7 +233,7 @@ const submitTask = async () => {
       distance: Math.floor(Math.random() * 500) + 50,
       responses: 0,
       creatorName: user.value?.nickname || '邻里用户',
-      creatorAvatar: user.value?.avatar || 'https://i.pravatar.cc/100?img=8',
+      creatorAvatar: user.value?.avatar || '',
       createTime: '刚刚',
       status: 'open',
       creatorRating: user.value?.credit_score ? Number((user.value.credit_score / 20).toFixed(1)) : 4.5,
