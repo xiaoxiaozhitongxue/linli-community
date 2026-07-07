@@ -126,7 +126,7 @@
           <ErrorBoundary v-else-if="error && posts.length === 0" :message="error" @retry="handleRefresh" />
 
           <div v-else class="feed-list">
-            <div class="feed-card animate-fadeIn" v-for="(post, index) in posts" :key="post.id" :style="{ animationDelay: (index * 0.1) + 's' }">
+            <div class="feed-card animate-fadeIn" v-for="(post, index) in posts" :key="post.id" :style="{ animationDelay: (index * 0.1) + 's' }" @click="goToPostDetail(post)">
               <div class="feed-header">
                 <img v-if="post.user?.avatar" class="feed-avatar" :src="post.user.avatar" @error="onAvatarError" />
                 <div v-else class="feed-avatar feed-avatar-placeholder">{{ getInitial(post.user?.nickname) }}</div>
@@ -142,20 +142,20 @@
               <div class="feed-content">
                 <span class="feed-text">{{ post.content }}</span>
                 <div v-if="post.images && post.images.length > 0" class="feed-images" :class="'images-' + post.images.length">
-                  <img class="feed-image" v-for="(img, imgIndex) in post.images" :key="imgIndex" :src="img" @click="previewImage(post.images, imgIndex)" />
+                  <img class="feed-image" v-for="(img, imgIndex) in post.images" :key="imgIndex" :src="img" @click.stop="previewImage(post.images, imgIndex)" />
                 </div>
               </div>
 
               <div class="feed-actions">
-                <div class="feed-action" :class="{ liked: post.is_liked }" @click="handleLikePost(post)">
+                <div class="feed-action" :class="{ liked: post.is_liked }" @click.stop="handleLikePost(post)">
                   <span class="action-icon" :class="{ 'heart-beat': post.is_liked }">{{ post.is_liked ? '❤️' : '🤍' }}</span>
                   <span class="action-count">{{ post.like_count || 0 }}</span>
                 </div>
-                <div class="feed-action" @click="showComments(post)">
+                <div class="feed-action" @click.stop="showComments(post)">
                   <span class="action-icon">💬</span>
                   <span class="action-count">{{ post.comment_count || 0 }}</span>
                 </div>
-                <div class="feed-action" @click="sharePost(post)">
+                <div class="feed-action" @click.stop="sharePost(post)">
                   <span class="action-icon">🔗</span>
                   <span class="action-count">分享</span>
                 </div>
@@ -230,7 +230,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { activitiesApi, tasksApi, healthApi, type Post, type Comment, type Activity } from '../../utils/api'
+import type { Post, Comment, Activity } from '../../types/models'
+import { activityService } from '../../services/activityService'
+import { taskService } from '../../services/taskService'
+import { healthService } from '../../services/healthService'
 import { useAuth } from '../../store'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
@@ -301,7 +304,7 @@ const helpBadge = ref('')
 async function loadQuickBadges() {
   try {
     if (isLoggedIn.value) {
-      const res = await healthApi.getRecords()
+      const res = await healthService.getRecords()
       const records = (res && res.items) || []
       const today = new Date()
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
@@ -315,7 +318,7 @@ async function loadQuickBadges() {
   }
 
   try {
-    const res: any = await tasksApi.getTasks()
+    const res: any = await taskService.getTasks()
     const items: any[] = (res && res.items) || (Array.isArray(res) ? (res as any) : [])
     const pendingCount = items.filter((t: any) => {
       const s = (t.status || '').toLowerCase()
@@ -333,7 +336,7 @@ const recentActivities = ref<Activity[]>([])
 
 async function fetchActivities() {
   try {
-    const response = await activitiesApi.getActivities({ limit: 20 })
+    const response = await activityService.getActivities({ limit: 20 })
     activities.value = response.items
 
     hotActivities.value = [...activities.value]
@@ -582,6 +585,10 @@ function handleQuickAction(action: any) {
 
 function goToActivityDetail(id: string) {
   navigateTo(`/pages/activities/detail?id=${id}`)
+}
+
+function goToPostDetail(post: Post) {
+  navigateTo(`/pages/post/detail?id=${post.id}`)
 }
 
 function goToActivities() {

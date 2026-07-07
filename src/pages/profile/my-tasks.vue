@@ -35,17 +35,17 @@
         >
           全部
         </div>
-        <div 
-          class="filter-item" 
-          :class="{ active: statusFilter === 'open' }"
-          @click="statusFilter = 'open'"
+        <div
+          class="filter-item"
+          :class="{ active: statusFilter === 'pending' }"
+          @click="statusFilter = 'pending'"
         >
           待接单
         </div>
-        <div 
-          class="filter-item" 
-          :class="{ active: statusFilter === 'ongoing' }"
-          @click="statusFilter = 'ongoing'"
+        <div
+          class="filter-item"
+          :class="{ active: statusFilter === 'in_progress' }"
+          @click="statusFilter = 'in_progress'"
         >
           进行中
         </div>
@@ -95,7 +95,7 @@
           </div>
           
           <!-- 接单人的操作按钮 -->
-          <div class="task-actions" v-if="currentTab === 'accepted' && task.status === 'ongoing'">
+          <div class="task-actions" v-if="currentTab === 'accepted' && task.status === 'in_progress'">
             <div class="action-btn complete-btn" @click.stop="completeTask(task)">
               <span>🎯</span> 确认完成
             </div>
@@ -125,6 +125,7 @@ import { ref, computed, onMounted } from 'vue'
 import { navigateTo, navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { taskService } from '../../services/taskService'
+import { getTaskStatusLabel, normalizeTaskStatus } from '../../constants/status'
 
 const statusBarHeight = ref(20)
 const currentTab = ref('published')
@@ -148,13 +149,7 @@ function mapTask(t: any): any {
 }
 
 function normalizeStatus(status: string): string {
-  if (!status) return 'open'
-  const s = String(status).toLowerCase()
-  if (s === 'open' || s === 'pending') return 'open'
-  if (s === 'in_progress' || s === 'ongoing') return 'ongoing'
-  if (s === 'completed' || s === 'done') return 'completed'
-  if (s === 'cancelled' || s === 'canceled') return 'cancelled'
-  return status
+  return normalizeTaskStatus(status)
 }
 
 async function loadTasks() {
@@ -201,16 +196,7 @@ const getCategoryName = (category: string) => {
   return map[category] || '其他'
 }
 
-const getStatusName = (status: string) => {
-  const map: Record<string, string> = {
-    open: '待接单',
-    ongoing: '进行中',
-    pending_confirm: '待确认',
-    completed: '已完成',
-    cancelled: '已取消'
-  }
-  return map[status] || status
-}
+const getStatusName = (status: string) => getTaskStatusLabel(status)
 
 const switchTab = (tab: string) => {
   currentTab.value = tab
@@ -446,12 +432,12 @@ onMounted(async () => {
   border-radius: var(--radius-full);
 }
 
-.status-open {
+.status-pending {
   background: #E3F2FD;
   color: #1976D2;
 }
 
-.status-ongoing {
+.status-in_progress {
   background: #FFF3E0;
   color: #FF9800;
 }
@@ -464,6 +450,11 @@ onMounted(async () => {
 .status-completed {
   background: #E8F5E9;
   color: #4CAF50;
+}
+
+.status-cancelled {
+  background: #ECEFF1;
+  color: #607D8B;
 }
 
 .task-title {

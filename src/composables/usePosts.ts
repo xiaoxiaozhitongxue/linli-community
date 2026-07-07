@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
-import { postsApi, type Post, type Comment } from '../utils/api'
+import { postService } from '../services/postService'
+import type { Post, Comment } from '../types/models'
 import { toastError, toastSuccess } from '../utils/toast'
 
 export function usePosts() {
@@ -17,7 +18,7 @@ export function usePosts() {
     loading.value = true
 
     try {
-      const response = await postsApi.getPosts({ page, limit: 10 })
+      const response = await postService.getPosts({ page, limit: 10 })
 
       if (isRefresh) {
         posts.value = response.items
@@ -59,7 +60,7 @@ export function usePosts() {
     posts.value[index].like_count = originalCount + (!originalLiked ? 1 : -1)
 
     try {
-      const response = await postsApi.likePost(post.id)
+      const response = await postService.likePost(post.id)
       posts.value[index].is_liked = response.liked
       posts.value[index].like_count = response.like_count
     } catch (err) {
@@ -71,7 +72,7 @@ export function usePosts() {
 
   async function loadComments(postId: string): Promise<Comment[]> {
     try {
-      const response = await postsApi.getComments(postId, { limit: 50 })
+      const response = await postService.getComments(postId, { limit: 50 })
       return response.items
     } catch (err) {
       toastError('加载评论失败')
@@ -83,7 +84,7 @@ export function usePosts() {
     if (!content.trim()) return null
 
     try {
-      const newComment = await postsApi.createComment(postId, {
+      const newComment = await postService.createComment(postId, {
         content: content.trim()
       })
 

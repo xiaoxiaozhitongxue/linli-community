@@ -164,7 +164,6 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { activityService } from '../../services/activityService'
-import { userApi } from '../../utils/api'
 import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, showToast } from '../../utils/toast'
 import { useAuth } from '../../store'

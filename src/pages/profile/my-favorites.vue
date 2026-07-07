@@ -92,12 +92,23 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { navigateBackSmart } from '../../utils/router'
+import { request } from '../../utils/request'
+import { useAuth } from '../../store'
+import { localStore } from '../../services/localStore'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
 const favorites = ref<any[]>([])
 const hasMore = ref(true)
 const scrollRef = ref<HTMLElement | null>(null)
+
+const { isLoggedIn, getCurrentPhone } = useAuth()
+
+/** 未登录 / 接口异常时读取本地收藏 */
+const loadLocalFavorites = (): any[] => {
+  const phone = getCurrentPhone() || undefined
+  return localStore.getArray('favorites', [], phone)
+}
 
 onMounted(() => {
   statusBarHeight.value = 20
@@ -110,50 +121,31 @@ const goBack = () => {
 
 const loadFavorites = async () => {
   if (loading.value) return
+  loading.value = true
   try {
-    loading.value = true
-    favorites.value = getMockFavorites()
+    if (isLoggedIn.value) {
+      const res = await request<{ items: any[] }>({
+        url: '/api/user/favorites',
+        method: 'GET',
+        data: { page: 1, limit: 50 },
+        showError: false
+      })
+      favorites.value = (res?.data?.items || []).map((it: any) => ({
+        id: it.id,
+        target_type: it.target_type,
+        created_at: it.created_at,
+        target: it.target || null
+      }))
+    } else {
+      favorites.value = loadLocalFavorites()
+    }
     hasMore.value = false
+  } catch {
+    // 接口异常时降级为本地收藏，保证页面可用
+    favorites.value = loadLocalFavorites()
   } finally {
     loading.value = false
   }
-}
-
-function getMockFavorites() {
-  return [
-    {
-      id: '1',
-      target_type: 'post',
-      created_at: Math.floor(Date.now() / 1000) - 3600,
-      target: {
-        content: '今天天气真好，带孩子在社区花园散步，发现花园里的花都开了！',
-        images: ['https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400&h=400&fit=crop'],
-        like_count: 42,
-        comment_count: 8
-      }
-    },
-    {
-      id: '2',
-      target_type: 'post',
-      created_at: Math.floor(Date.now() / 1000) - 86400,
-      target: {
-        content: '我的社区咖啡店新品试营业啦！本周六周日全场8折，欢迎邻居们来品尝！',
-        like_count: 89,
-        comment_count: 23
-      }
-    },
-    {
-      id: '3',
-      target_type: 'activity',
-      created_at: Math.floor(Date.now() / 1000) - 86400 * 2,
-      target: {
-        title: '周末亲子烘焙活动',
-        location: '阳光社区活动中心',
-        category: 'other',
-        images: []
-      }
-    }
-  ]
 }
 
 const onScroll = () => {

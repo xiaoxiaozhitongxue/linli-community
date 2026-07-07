@@ -231,18 +231,19 @@ import { ref, computed } from 'vue'
 import { navigateTo } from '../../utils/router'
 import { toastInfo, toastSuccess } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
+import { useAuth } from '../../store'
+import { localStore } from '../../services/localStore'
+import { INITIAL_ORDERS, DEFAULT_SHOP, type ShopOrder } from '../../constants/businessData'
 
-const hasShop = ref(true)
+const { getCurrentPhone } = useAuth()
+const bizPhone = computed(() => getCurrentPhone() || undefined)
+
+// 开店状态本地持久化（默认已开通，与改造前展示一致）
+const hasShop = ref(localStore.getObject('business_shop_state', { hasShop: true }, bizPhone.value).hasShop)
 const selectedCategory = ref('all')
 
-const shop = ref({
-  name: '小红的烘焙坊',
-  emoji: '🧁',
-  bgColor: '#FFE0B2',
-  products: 12,
-  orders: 89,
-  rating: 4.9
-})
+// 店铺信息本地持久化（编辑小店页可修改）
+const shop = ref(localStore.getObject('business_shop', { ...DEFAULT_SHOP }, bizPhone.value))
 
 const hotProducts = ref([
   {
@@ -396,13 +397,8 @@ const nearbyShops = ref([
   }
 ])
 
-const recentOrders = ref([
-  { id: '1', productName: '柠檬磅蛋糕 x2', buyerName: '李邻居', price: 76, date: '今天 10:30', status: 'paid' },
-  { id: '2', productName: '手工编织包 x1', buyerName: '赵女士', price: 128, date: '昨天 14:20', status: 'shipped' },
-  { id: '3', productName: '私房红烧肉 x1', buyerName: '周先生', price: 68, date: '昨天 18:00', status: 'completed' },
-  { id: '4', productName: '鲜榨果汁 x3', buyerName: '吴阿姨', price: 54, date: '前天 09:00', status: 'completed' },
-  { id: '5', productName: '雪花酥礼盒 x1', buyerName: '郑邻居', price: 48, date: '3天前', status: 'completed' }
-])
+// 订单数据本地持久化：首次以 INITIAL_ORDERS 为种子，之后读取用户维度数据
+const recentOrders = ref(localStore.getArray<ShopOrder>('business_orders', INITIAL_ORDERS, bizPhone.value))
 
 const successStories = ref([
   {
@@ -460,6 +456,8 @@ const openShop = () => {
     success: (res: any) => {
       if (res.confirm) {
         hasShop.value = true
+        // 真实持久化开店状态（本地），而非仅内存变量
+        localStore.setObject('business_shop_state', { hasShop: true, openedAt: Date.now() }, bizPhone.value)
         toastSuccess('小店开通成功！')
       }
     }

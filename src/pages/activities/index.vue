@@ -157,6 +157,7 @@ import { toastSuccess, toastError } from '../../utils/toast'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import ErrorBoundary from '../../components/ErrorBoundary.vue'
+import { getActivityStatusLabel } from '../../constants/status'
 
 const loading = ref(false)
 const loadingMore = ref(false)
@@ -221,15 +222,7 @@ const getCategoryLabel = (category: string) => {
   return map[category] || '其他'
 }
 
-const getStatusText = (status: string) => {
-  const map: Record<string, string> = {
-    upcoming: '即将开始',
-    ongoing: '进行中',
-    completed: '已结束',
-    cancelled: '已取消'
-  }
-  return map[status] || ''
-}
+const getStatusText = (status: string) => getActivityStatusLabel(status)
 
 const getButtonText = (activity: Activity) => {
   if (activity.status === 'completed' || activity.status === 'cancelled') {

@@ -151,9 +151,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { navigateBack, navigateTo, getUserStorageKey } from '../../utils/router'
+import { navigateBack, navigateTo } from '../../utils/router'
 import { useAuth } from '../../store'
 import { toastInfo } from '../../utils/toast'
+import { localStore } from '../../services/localStore'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 
@@ -189,7 +190,7 @@ const taskNotifications = ref<TaskNotification[]>([])
 const privateMessages = ref<Message[]>([])
 const groupChats = ref<Message[]>([])
 
-const { isLoggedIn } = useAuth()
+const { isLoggedIn, getCurrentPhone } = useAuth()
 
 const taskUnread = computed(() => taskNotifications.value.filter(n => n.unread).length)
 const privateUnread = computed(() => privateMessages.value.reduce((sum, m) => sum + m.unread, 0))
@@ -240,58 +241,38 @@ const goToLogin = () => {
 
 const loadMessages = () => {
   loading.value = true
-  
-  // 检查是否已登录
+
+  // 未登录：直接展示空态
   if (!isLoggedIn.value) {
-    setTimeout(() => {
-      loading.value = false
-    }, 500)
+    loading.value = false
     return
   }
-  
-  setTimeout(() => {
-    try {
-      const userNotifKey = getUserStorageKey('linli_task_notifications')
-      const storedNotifications = localStorage.getItem(userNotifKey)
-      if (storedNotifications) {
-        taskNotifications.value = JSON.parse(storedNotifications)
-      } else {
-        taskNotifications.value = []
-        saveTaskNotifications()
-      }
 
-      const userMsgKey = getUserStorageKey('linli_messages')
-      const stored = localStorage.getItem(userMsgKey)
-      if (stored) {
-        const data = JSON.parse(stored)
-        privateMessages.value = data.private || []
-        groupChats.value = data.group || []
-      } else {
-        privateMessages.value = []
-        groupChats.value = []
-        saveMessages()
-      }
-    } catch {
-      taskNotifications.value = []
-      privateMessages.value = []
-      groupChats.value = []
-    } finally {
-      loading.value = false
-    }
-  }, 800)
+  const phone = getCurrentPhone() || undefined
+  taskNotifications.value = localStore.getArray<TaskNotification>('task_notifications', [], phone)
+
+  const msgData = localStore.getObject<{ private: Message[]; group: Message[] }>(
+    'messages',
+    { private: [], group: [] },
+    phone
+  )
+  privateMessages.value = msgData.private || []
+  groupChats.value = msgData.group || []
+  loading.value = false
 }
 
 const saveTaskNotifications = () => {
-  const userNotifKey = getUserStorageKey('linli_task_notifications')
-  localStorage.setItem(userNotifKey, JSON.stringify(taskNotifications.value))
+  const phone = getCurrentPhone() || undefined
+  localStore.setArray('task_notifications', taskNotifications.value, phone)
 }
 
 const saveMessages = () => {
-  const userMsgKey = getUserStorageKey('linli_messages')
-  localStorage.setItem(userMsgKey, JSON.stringify({
-    private: privateMessages.value,
-    group: groupChats.value
-  }))
+  const phone = getCurrentPhone() || undefined
+  localStore.setObject(
+    'messages',
+    { private: privateMessages.value, group: groupChats.value },
+    phone
+  )
 }
 
 const handleTaskNotification = (item: TaskNotification) => {

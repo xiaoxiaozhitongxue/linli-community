@@ -140,20 +140,14 @@ import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { navigateTo, switchTab, redirectTo } from '../../utils/router'
 import { showLoading, hideLoading } from '../../utils/ui'
 import { useAuth } from '../../store'
-import { authApi } from '../../utils/api'
+import { authService } from '../../services/authService'
 import { getAndClearLoginRedirect } from '../../utils/auth'
+import { COMMUNITY_NAMES } from '../../constants/communities'
 
 const { setUser } = useAuth()
 
-// 社区列表
-const communities = [
-  '阳光社区',
-  '幸福社区',
-  '花园社区',
-  '和平社区',
-  '东风社区',
-  '向日葵小镇'
-]
+// 社区列表（单一数据源，见 src/constants/communities.ts）
+const communities = COMMUNITY_NAMES
 
 // 表单数据
 const phone = ref('')
@@ -351,7 +345,7 @@ const handleRegister = async () => {
     isLoading.value = true
     showLoading('注册中...')
     
-    const result: any = await authApi.register({ 
+    const result: any = await authService.register({ 
       phone: phone.value, 
       password: password.value,
       nickname: nickname.value,
@@ -374,7 +368,7 @@ const handleRegister = async () => {
   } catch (error: any) {
     hideLoading()
     isLoading.value = false
-    const errMsg = error?.response?.data?.message || error?.message || '注册失败，请重试'
+    const errMsg = error?.message || '注册失败，请重试'
     showGlobalError(errMsg)
     console.error('Register error:', error)
   }

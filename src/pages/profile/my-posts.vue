@@ -25,7 +25,7 @@
 
       <!-- 动态列表 -->
       <div v-else class="post-list">
-        <div class="post-card" v-for="post in posts" :key="post.id">
+        <div class="post-card" v-for="post in posts" :key="post.id" @click="goToPostDetail(post)">
           <div class="post-header">
             <div class="avatar-wrap" v-if="post.user?.avatar">
               <img class="post-avatar" :src="post.user?.avatar" alt="头像" />
@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { postService } from '../../services/postService'
+import { userService } from '../../services/userService'
 import { navigateBackSmart, navigateTo } from '../../utils/router'
 
 const statusBarHeight = ref(20)
@@ -99,12 +99,15 @@ const loading = ref(false)
 const posts = ref<any[]>([])
 const hasMore = ref(true)
 const scrollRef = ref<HTMLElement | null>(null)
-
 const refreshing = ref(false)
+
+// B9: 真实分页参数，替代原先 limit:200 全量拉取 + 前端过滤
+const page = ref(1)
+const PAGE_SIZE = 10
 
 onMounted(async () => {
   statusBarHeight.value = 20
-  await loadPosts()
+  await loadPosts(false)
 })
 
 const goBack = () => {
@@ -115,30 +118,29 @@ const goPublish = () => {
   navigateTo('/pages/post/create')
 }
 
-const loadPosts = async (isRefresh = false) => {
+const goToPostDetail = (post: any) => {
+  navigateTo(`/pages/post/detail?id=${post.id}`)
+}
+
+const loadPosts = async (append = false) => {
   if (loading.value) return
   try {
     loading.value = true
-    if (isRefresh) {
-      refreshing.value = true
-    }
-    const res = await postService.getPosts({ page: 1, limit: 200 })
+    const nextPage = append ? page.value + 1 : 1
+    // 直接使用后端「我的动态」分页接口，按当前登录用户过滤
+    const res = await userService.getMyPosts({ page: nextPage, limit: PAGE_SIZE })
     const items: any[] = (res && (res as any).items) || []
-    const userPhone = localStorage.getItem('userInfo')
-      ? (JSON.parse(localStorage.getItem('userInfo') || '{}').phone || null)
-      : null
-    if (userPhone) {
-      posts.value = items.filter((p: any) =>
-        p.user_phone === userPhone ||
-        (p.user && p.user.phone === userPhone) ||
-        (p.user_id && (p.user_id === userPhone))
-      )
+    if (append) {
+      posts.value = [...posts.value, ...items]
     } else {
       posts.value = items
     }
-    hasMore.value = items.length >= 200
+    page.value = nextPage
+    // 依据后端返回的 total 判断是否还有更多
+    const total = (res && (res as any).total) || 0
+    hasMore.value = posts.value.length < total && items.length === PAGE_SIZE
   } catch {
-    posts.value = []
+    if (!append) posts.value = []
   } finally {
     loading.value = false
     refreshing.value = false
@@ -146,7 +148,9 @@ const loadPosts = async (isRefresh = false) => {
 }
 
 const onRefresh = async () => {
-  await loadPosts(true)
+  refreshing.value = true
+  // 下拉刷新：回到第 1 页
+  await loadPosts(false)
   scrollRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -156,8 +160,9 @@ const onScroll = () => {
   if (el.scrollTop <= -60 && !refreshing.value) {
     onRefresh()
   }
-  if (el.scrollHeight - el.scrollTop - el.clientHeight < 100 && !loading.value) {
-    loadPosts()
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 100 && !loading.value && hasMore.value) {
+    // 上拉加载更多：追加下一页（修复原先重复加载第 1 页的 bug）
+    loadPosts(true)
   }
 }
 

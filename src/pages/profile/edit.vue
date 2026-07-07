@@ -102,7 +102,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuth } from '../../store/index'
-import { userApi } from '../../utils/api'
+import { userService } from '../../services/userService'
 import type { User } from '../../types/models'
 import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
@@ -192,7 +192,7 @@ const saveProfile = async () => {
 
   try {
     saving.value = true
-    const updatedUser = await userApi.updateProfile(form.value as Partial<User>)
+    const updatedUser = await userService.updateProfile(form.value as Partial<User>)
     updateUser(updatedUser)
     toastSuccess('保存成功')
     setTimeout(() => {

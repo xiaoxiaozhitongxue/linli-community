@@ -159,115 +159,18 @@ import { ref } from 'vue'
 import { navigateTo } from '../../utils/router'
 import { toastInfo, toastSuccess } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
+import { useAuth } from '../../store'
+import { localStore } from '../../services/localStore'
+import { CARE_TIPS, INITIAL_RECORDS, SERVICE_TYPES, type CareRecord } from '../../constants/elderlyData'
 
-const services = ref([
-  {
-    id: '1',
-    name: '帮买菜',
-    icon: '🛒',
-    desc: '代购生活用品',
-    bgColor: '#E8F5E9'
-  },
-  {
-    id: '2',
-    name: '陪诊服务',
-    icon: '🏥',
-    desc: '陪同就医',
-    bgColor: '#E3F2FD'
-  },
-  {
-    id: '3',
-    name: '暖心陪聊',
-    icon: '💬',
-    desc: '视频/语音陪伴',
-    bgColor: '#FFF3E0'
-  },
-  {
-    id: '4',
-    name: '家政服务',
-    icon: '🧹',
-    desc: '打扫卫生',
-    bgColor: '#FCE4EC'
-  },
-  {
-    id: '5',
-    name: '代取快递',
-    icon: '📦',
-    desc: '帮忙取件',
-    bgColor: '#F3E5F5'
-  },
-  {
-    id: '6',
-    name: '维修服务',
-    icon: '🔧',
-    desc: '小修小补',
-    bgColor: '#E0F2F1'
-  },
-  {
-    id: '7',
-    name: '代缴水电',
-    icon: '💡',
-    desc: '生活缴费',
-    bgColor: '#FFF9C4'
-  },
-  {
-    id: '8',
-    name: '理发服务',
-    icon: '💇',
-    desc: '上门理发',
-    bgColor: '#FFE0B2'
-  },
-  {
-    id: '9',
-    name: '送餐服务',
-    icon: '🍱',
-    desc: '爱心送餐',
-    bgColor: '#F8BBD0'
-  }
-])
+const { getCurrentPhone } = useAuth()
 
-const recentRecords = ref([
-  {
-    id: '1',
-    type: '帮买菜',
-    icon: '🛒',
-    date: '今天 10:30',
-    status: 'completed',
-    bgColor: '#E8F5E9'
-  },
-  {
-    id: '2',
-    type: '陪诊服务',
-    icon: '🏥',
-    date: '昨天 14:00',
-    status: 'completed',
-    bgColor: '#E3F2FD'
-  },
-  {
-    id: '3',
-    type: '定期探访',
-    icon: '👵',
-    date: '3天前',
-    status: 'completed',
-    bgColor: '#FFF3E0'
-  },
-  {
-    id: '4',
-    type: '家政服务',
-    icon: '🧹',
-    date: '本周一',
-    status: 'ongoing',
-    bgColor: '#FCE4EC'
-  },
-  {
-    id: '5',
-    type: '代取快递',
-    icon: '📦',
-    date: '6月3日',
-    status: 'pending',
-    bgColor: '#F3E5F5'
-  }
-])
+const services = ref(SERVICE_TYPES)
+
+// 帮扶记录：优先读取本地持久化数据，首次进入以 INITIAL_RECORDS 作为种子
+const recentRecords = ref(
+  localStore.getArray<CareRecord>('elderly_records', INITIAL_RECORDS, getCurrentPhone() || undefined)
+)
 
 const volunteerStats = ref({
   volunteers: 89,
@@ -290,36 +193,7 @@ const visitSchedule = ref([
   { title: '健康检查', date: '6月15日', completed: false }
 ])
 
-const careTips = ref([
-  {
-    id: '1',
-    title: '如何与老人有效沟通',
-    desc: '倾听、耐心、尊重是沟通的关键...',
-    icon: '💡',
-    bgColor: '#FFF9C4'
-  },
-  {
-    id: '2',
-    title: '老人心理关怀要点',
-    desc: '关注情绪变化，及时疏导...',
-    icon: '🧠',
-    bgColor: '#E1BEE7'
-  },
-  {
-    id: '3',
-    title: '急救知识科普',
-    desc: '心肺复苏、海姆立克急救法...',
-    icon: '🏥',
-    bgColor: '#FFCCBC'
-  },
-  {
-    id: '4',
-    title: '老人防跌倒指南',
-    desc: '居家安全改造、防滑措施...',
-    icon: '🦯',
-    bgColor: '#C8E6C9'
-  }
-])
+const careTips = ref(CARE_TIPS)
 
 const topVolunteers = ref([
   {
@@ -359,6 +233,17 @@ const triggerEmergency = () => {
     confirmText: '确认求助',
     success: (res: any) => {
       if (res.confirm) {
+        // 真实写入一条帮扶记录（本地持久化），而非仅弹 toast
+        const phone = getCurrentPhone() || undefined
+        const newRecord = {
+          id: 'e' + Date.now(),
+          type: '紧急求助',
+          icon: '🆘',
+          date: '刚刚',
+          status: 'pending',
+          bgColor: '#FFCDD2'
+        }
+        recentRecords.value = localStore.append('elderly_records', newRecord, phone)
         toastSuccess('已通知志愿者，请保持电话畅通')
       }
     }

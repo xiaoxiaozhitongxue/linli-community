@@ -94,6 +94,7 @@
 import { ref, onMounted } from 'vue'
 import { activityService } from '../../services/activityService'
 import { navigateBackSmart } from '../../utils/router'
+import { getActivityStatusLabel } from '../../constants/status'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
@@ -175,15 +176,7 @@ const getCategoryText = (category: string) => {
   return map[category] || '其他'
 }
 
-const getStatusText = (status: string) => {
-  const map: Record<string, string> = {
-    upcoming: '即将开始',
-    ongoing: '进行中',
-    completed: '已结束',
-    cancelled: '已取消'
-  }
-  return map[status] || '即将开始'
-}
+const getStatusText = (status: string) => getActivityStatusLabel(status)
 </script>
 
 <style scoped>

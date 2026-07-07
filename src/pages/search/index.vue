@@ -33,6 +33,23 @@
         </div>
       </div>
 
+      <div v-if="!hasSearched && searchHistory.length > 0" class="history-section">
+        <div class="section-title-row">
+          <span class="section-title">🕘 最近搜索</span>
+          <span class="history-clear" @click="clearHistory">清空</span>
+        </div>
+        <div class="hot-search-tags">
+          <span
+            class="hot-search-tag"
+            v-for="(tag, i) in searchHistory"
+            :key="i"
+            @click="searchTag(tag)"
+          >
+            {{ tag }}
+          </span>
+        </div>
+      </div>
+
       <SkeletonLoader v-if="searching" type="list" :count="5" />
 
       <EmptyState v-else-if="hasSearched && !searching && resultActivities.length === 0 && resultTasks.length === 0 && resultPosts.length === 0" icon="🔍" title="没有找到相关内容" />
@@ -97,13 +114,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { postService } from '../../services/postService'
-import { activityService } from '../../services/activityService'
-import { taskService } from '../../services/taskService'
 import { navigateTo } from '../../utils/router'
 import { toastInfo } from '../../utils/toast'
+import { request } from '../../utils/request'
 import EmptyState from '../../components/EmptyState.vue'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
+
+const HISTORY_KEY = 'linli_search_history'
 
 const searchText = ref('')
 const hasSearched = ref(false)
@@ -111,10 +128,41 @@ const searching = ref(false)
 const searchInput = ref<HTMLInputElement>()
 
 const hotSearches = ref(['邻里集市', '志愿者', '老人关怀', '社区活动', '健身'])
+const searchHistory = ref<string[]>([])
 
 const resultActivities = ref<any[]>([])
 const resultTasks = ref<any[]>([])
 const resultPosts = ref<any[]>([])
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY)
+    searchHistory.value = raw ? JSON.parse(raw) : []
+  } catch {
+    searchHistory.value = []
+  }
+}
+
+function saveHistory(keyword: string) {
+  const k = keyword.trim()
+  if (!k) return
+  const next = [k, ...searchHistory.value.filter((h) => h !== k)].slice(0, 10)
+  searchHistory.value = next
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+  } catch {
+    /* 忽略 */
+  }
+}
+
+function clearHistory() {
+  searchHistory.value = []
+  try {
+    localStorage.removeItem(HISTORY_KEY)
+  } catch {
+    /* 忽略 */
+  }
+}
 
 function goBack() {
   window.history.back()
@@ -137,59 +185,34 @@ function searchTag(tag: string) {
 }
 
 async function doSearch() {
-  if (!searchText.value.trim()) {
+  const keyword = searchText.value.trim()
+  if (!keyword) {
     toastInfo('请输入搜索内容')
     return
   }
   hasSearched.value = true
   searching.value = true
   try {
-    await Promise.all([searchActivities(), searchTasks(), searchPosts()])
-  } catch {
-    // 静默处理搜索失败
+    // B4: 统一调用后端 /api/search 聚合查询，取代此前 3 次独立拉取 + 前端过滤
+    const res = await request({
+      url: '/api/search',
+      method: 'GET',
+      data: { q: keyword },
+      showLoading: false,
+      showError: true
+    })
+    const data = (res.data as any) || {}
+    resultActivities.value = data.activities || []
+    resultTasks.value = data.tasks || []
+    resultPosts.value = (data.posts || []).map((p: any) => ({
+      ...p,
+      user: { nickname: p.author, avatar: p.author_avatar }
+    }))
+    saveHistory(keyword)
+  } catch (e: any) {
+    toastInfo(e?.message || '搜索失败，请重试')
   } finally {
     searching.value = false
-  }
-}
-
-async function searchActivities() {
-  try {
-    const response = await activityService.getActivities({ limit: 20 })
-    const items = (response as any).items || []
-    const keyword = searchText.value.toLowerCase()
-    resultActivities.value = items.filter((activity: any) =>
-      activity.title?.toLowerCase().includes(keyword)
-    )
-  } catch {
-    resultActivities.value = []
-  }
-}
-
-async function searchTasks() {
-  try {
-    const response = await taskService.getTasks({ limit: 20 })
-    const items = (response as any).items || []
-    const keyword = searchText.value.toLowerCase()
-    resultTasks.value = items.filter((task: any) =>
-      task.title?.toLowerCase().includes(keyword) ||
-      task.category?.toLowerCase().includes(keyword)
-    )
-  } catch {
-    resultTasks.value = []
-  }
-}
-
-async function searchPosts() {
-  try {
-    const response = await postService.getPosts({ limit: 50 })
-    const items = (response as any).items || []
-    const keyword = searchText.value.toLowerCase()
-    resultPosts.value = items.filter((post: any) =>
-      post.content?.toLowerCase().includes(keyword) ||
-      (post.user?.nickname && post.user.nickname.toLowerCase().includes(keyword))
-    )
-  } catch {
-    resultPosts.value = []
   }
 }
 
@@ -202,7 +225,7 @@ function goToTask(id: string) {
 }
 
 function goToPost(post: any) {
-  toastInfo('查看详情功能开发中')
+  navigateTo('/pages/post/detail?id=' + post.id)
 }
 
 function formatShortTime(timestamp: number) {
@@ -238,6 +261,7 @@ onMounted(() => {
   if (searchInput.value) {
     searchInput.value.focus()
   }
+  loadHistory()
 })
 </script>
 
@@ -346,6 +370,23 @@ onMounted(() => {
   background: var(--color-primary-soft);
   color: var(--color-primary);
   border-color: var(--color-primary);
+}
+
+.history-section {
+  margin-bottom: 20px;
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.history-clear {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  cursor: pointer;
 }
 
 .search-empty {

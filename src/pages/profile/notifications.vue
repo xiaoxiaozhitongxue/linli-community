@@ -100,19 +100,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { toastSuccess } from '../../utils/toast'
 import { navigateBackSmart } from '../../utils/router'
+import { localStore } from '../../services/localStore'
 
 const statusBarHeight = ref(20)
 
-const settings = ref({
+const DEFAULT_SETTINGS = {
   taskMessage: true,
   systemNotice: true,
   activityNotice: true,
   interactiveNotice: false,
   sound: true,
   vibrate: true
+}
+
+const settings = ref({ ...DEFAULT_SETTINGS })
+
+onMounted(() => {
+  statusBarHeight.value = 20
+  // 读取已保存设置，未保存过则使用默认项，保证不出现空状态/崩溃
+  settings.value = localStore.getObject('notification_settings', { ...DEFAULT_SETTINGS })
 })
 
 const goBack = () => {
@@ -120,6 +129,7 @@ const goBack = () => {
 }
 
 const saveSettings = () => {
+  localStore.setObject('notification_settings', settings.value)
   toastSuccess('设置已保存')
   setTimeout(() => {
     goBack()

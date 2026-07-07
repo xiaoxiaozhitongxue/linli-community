@@ -38,3 +38,9 @@ coverage/
 *.local
 .wrangler/
 .cache/
+
+# WorkBuddy local memory / runtime
+.workbuddy/
+
+# Vite temp build artifacts
+*.timestamp-*.mjs

@@ -1,5 +1,6 @@
 import { ref } from 'vue'
-import { tasksApi, type Task } from '../utils/api'
+import { taskService } from '../services/taskService'
+import type { Task } from '../types/models'
 
 export function useTasks() {
   const tasks = ref<Task[]>([])
@@ -16,7 +17,7 @@ export function useTasks() {
     loading.value = true
 
     try {
-      const response = await tasksApi.getTasks({ page, limit: 10 })
+      const response = await taskService.getTasks({ page, limit: 10 })
 
       if (isRefresh) {
         tasks.value = response.items

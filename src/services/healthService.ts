@@ -9,8 +9,8 @@ import type {
 
 export const healthService = {
   getRecords: (params?: GetHealthRecordsParams) =>
-    get<HealthRecordsResponse>('/api/health/records', params),
+    get<HealthRecordsResponse>('/api/health/records', params).then((r) => r.data),
 
   addRecord: (data?: AddHealthRecordRequest) =>
-    post<AddHealthRecordResponse>('/api/health/records', data || {}, { showError: true })
+    post<AddHealthRecordResponse>('/api/health/records', data || {}, { showError: true }).then((r) => r.data)
 }

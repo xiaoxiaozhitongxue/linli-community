@@ -1,10 +1,9 @@
 import { toastError } from './toast'
-import { navigateTo } from './router'
 import { showLoading as uiShowLoading, hideLoading as uiHideLoading } from './ui'
 
 const BASE_URL = ''
 
-interface RequestConfig {
+export interface RequestConfig {
   url: string
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   data?: any
@@ -12,9 +11,15 @@ interface RequestConfig {
   showLoading?: boolean
   showError?: boolean
   timeout?: number
+  /**
+   * B2: 可选自定义 401 行为。
+   * 当后端返回 401 时，默认不再清除登录态、也不再自动跳转登录页，
+   * 仅 reject 错误；若提供 on401，则交由调用方自行处理（如弹出登录引导）。
+   */
+  on401?: (response: ResponseData<any>) => void
 }
 
-interface ResponseData<T = any> {
+export interface ResponseData<T = any> {
   success: boolean
   message: string
   data: T
@@ -53,7 +58,13 @@ function buildQueryString(params: any): string {
   return query ? `?${query}` : ''
 }
 
-export function request<T = any>(config: RequestConfig): Promise<T> {
+/**
+ * 统一请求封装。
+ * - 成功：resolve 完整响应对象 { success, message, data, ... }（B8：service 可访问外层字段）
+ * - 业务失败（success:false）：reject(new Error(message))，并在错误对象上挂载 response/status
+ * - 401：仅 reject，不清除登录态、不自动跳转（B2）
+ */
+export function request<T = any>(config: RequestConfig): Promise<ResponseData<T>> {
   const {
     url,
     method = 'GET',
@@ -72,7 +83,7 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
 
   const abortController = new AbortController()
 
-  const promise: Promise<T> = new Promise((resolve, reject) => {
+  const promise: Promise<ResponseData<T>> = new Promise((resolve, reject) => {
     if (needLoading) {
       uiShowLoading()
     }
@@ -131,7 +142,8 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
         }
 
         if (response.success) {
-          resolve(response.data)
+          // B8: 返回完整响应对象，由 service 层解包 data
+          resolve(response)
         } else {
           const errorMessage =
             response.error?.message ||
@@ -142,17 +154,17 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
             showError(errorMessage)
           }
 
+          // B2: 401 不再清除登录态 / 自动跳转，交由调用方处理
           if (response.error?.code === 401) {
-            try {
-              localStorage.removeItem('token')
-              localStorage.removeItem('userInfo')
-            } catch (e) {
-              console.error('清除用户信息失败', e)
+            if (typeof config.on401 === 'function') {
+              config.on401(response)
             }
-            navigateTo('/pages/login/index')
           }
 
-          reject(new Error(errorMessage))
+          const err: any = new Error(errorMessage)
+          err.response = response
+          err.status = response.error?.code
+          reject(err)
         }
       })
       .catch((err) => {
@@ -183,6 +195,11 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
   }
 
   return promise
+}
+
+/** 解包响应 data 字段（service 层统一使用） */
+export function unwrap<T>(response: ResponseData<T>): T {
+  return response.data
 }
 
 export function get<T = any>(url: string, data?: any, config?: Partial<RequestConfig>) {

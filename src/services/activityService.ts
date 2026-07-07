@@ -9,10 +9,9 @@ import type {
 
 export const activityService = {
   getActivities: (params?: GetActivitiesParams) =>
-    get<PaginatedResponse<Activity>>('/api/activities', params),
+    get<PaginatedResponse<Activity>>('/api/activities', params).then((r) => r.data),
 
-  getActivity: (id: string) =>
-    get<Activity>(`/api/activities/${id}`),
+  getActivity: (id: string) => get<Activity>(`/api/activities/${id}`).then((r) => r.data),
 
   createActivity: (data: CreateActivityRequest) =>
     post<Activity>('/api/activities', {
@@ -24,17 +23,17 @@ export const activityService = {
       end_time: data.end_time,
       max_participants: data.max_participants,
       images: data.images || []
-    }, { showError: true }),
+    }, { showError: true }).then((r) => r.data),
 
   joinActivity: (id: string) =>
-    post<ActivityActionResponse>(`/api/activities/${id}/join`, {}, { showError: true }),
+    post<ActivityActionResponse>(`/api/activities/${id}/join`, {}, { showError: true }).then((r) => r.data),
 
   leaveActivity: (id: string) =>
-    del<ActivityActionResponse>(`/api/activities/${id}/leave`, {}, { showError: true }),
+    del<ActivityActionResponse>(`/api/activities/${id}/leave`, {}, { showError: true }).then((r) => r.data),
 
   updateActivity: (id: string, data: UpdateActivityRequest) =>
-    put<Activity>(`/api/activities/${id}`, data, { showError: true }),
+    put<Activity>(`/api/activities/${id}`, data, { showError: true }).then((r) => r.data),
 
   deleteActivity: (id: string) =>
-    del<ActivityActionResponse>(`/api/activities/${id}`, {}, { showError: true })
+    del<ActivityActionResponse>(`/api/activities/${id}`, {}, { showError: true }).then((r) => r.data)
 }

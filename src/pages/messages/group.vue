@@ -84,6 +84,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { navigateBack } from '../../utils/router'
 import { useRoute } from 'vue-router'
+import { localStore } from '../../services/localStore'
 
 interface GroupMessage {
   id: string
@@ -135,23 +136,23 @@ const scrollToBottom = () => {
   })
 }
 
-const getGroupKey = () => `linli_group_${groupInfo.value.id}`
+const groupId = ref('')
+const getGroupKey = () => `group_${groupId.value}`
 
 const loadGroupChat = () => {
-  const groupId = route.query.id as string
+  groupId.value = (route.query.id as string) || ''
   groupInfo.value = {
-    id: groupId,
-    name: decodeURIComponent(route.query.name as string || '群聊'),
-    avatar: decodeURIComponent(route.query.avatar as string || ''),
+    id: groupId.value,
+    name: decodeURIComponent((route.query.name as string) || '群聊'),
+    avatar: decodeURIComponent((route.query.avatar as string) || ''),
     memberCount: parseInt(route.query.members as string) || 0
   }
 
   // 加载我的信息
-  const storedUser = localStorage.getItem('linli_user')
+  const storedUser = localStore.getObject<{ avatar?: string; nickname?: string }>('user', {})
   if (storedUser) {
-    const user = JSON.parse(storedUser)
-    myAvatar.value = user.avatar || myAvatar.value
-    myName.value = user.nickname || '我'
+    if (storedUser.avatar) myAvatar.value = storedUser.avatar
+    if (storedUser.nickname) myName.value = storedUser.nickname
   }
 
   // 加载群成员
@@ -163,11 +164,11 @@ const loadGroupChat = () => {
     { id: '5', name: '赵妹', avatar: '' }
   ]
 
-  const stored = localStorage.getItem(getGroupKey())
-  if (stored) {
-    messages.value = JSON.parse(stored)
+  const stored = localStore.getArray<GroupMessage>(getGroupKey(), [])
+  if (stored.length > 0) {
+    messages.value = stored
   } else {
-    // Mock 初始消息
+    // 初始示例消息
     const now = Date.now()
     messages.value = [
       {
@@ -217,11 +218,12 @@ const loadGroupChat = () => {
         isSelf: false
       }
     ]
+    localStore.setArray(getGroupKey(), messages.value)
   }
 }
 
 const saveMessages = () => {
-  localStorage.setItem(getGroupKey(), JSON.stringify(messages.value))
+  localStore.setArray(getGroupKey(), messages.value)
 }
 
 const sendMessage = () => {
@@ -242,28 +244,6 @@ const sendMessage = () => {
   inputText.value = ''
   saveMessages()
   scrollToBottom()
-
-  // 模拟其他群成员回复
-  setTimeout(() => {
-    const replies = [
-      { name: '王阿姨', avatar: '', content: '收到！' },
-      { name: '李姐', avatar: '', content: '好的，明白了' },
-      { name: '刘叔', avatar: '', content: '没问题' }
-    ]
-    const reply = replies[Math.floor(Math.random() * replies.length)]
-    const replyMsg: GroupMessage = {
-      id: (Date.now() + 1).toString(),
-      senderId: 'other',
-      senderName: reply.name,
-      avatar: reply.avatar,
-      content: reply.content,
-      time: new Date().toISOString(),
-      isSelf: false
-    }
-    messages.value.push(replyMsg)
-    saveMessages()
-    scrollToBottom()
-  }, 1500 + Math.random() * 1000)
 }
 
 const goBack = () => {

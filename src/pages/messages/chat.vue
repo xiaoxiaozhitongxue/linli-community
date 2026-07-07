@@ -62,6 +62,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { navigateBack } from '../../utils/router'
 import { useRoute } from 'vue-router'
+import { localStore } from '../../services/localStore'
 
 interface ChatMessage {
   id: string
@@ -98,28 +99,28 @@ const scrollToBottom = () => {
   })
 }
 
-const getChatKey = () => `linli_chat_${chatUser.value.id}`
+const chatId = ref('')
+const getChatKey = () => `chat_${chatId.value}`
 
 const loadMessages = () => {
-  const chatId = route.query.id as string
+  chatId.value = (route.query.id as string) || ''
   chatUser.value = {
-    id: chatId,
-    name: decodeURIComponent(route.query.name as string || '未知用户'),
-    avatar: decodeURIComponent(route.query.avatar as string || '')
+    id: chatId.value,
+    name: decodeURIComponent((route.query.name as string) || '未知用户'),
+    avatar: decodeURIComponent((route.query.avatar as string) || '')
   }
 
   // 加载我的头像
-  const storedUser = localStorage.getItem('linli_user')
-  if (storedUser) {
-    const user = JSON.parse(storedUser)
-    myAvatar.value = user.avatar || myAvatar.value
+  const storedUser = localStore.getObject<{ avatar?: string }>('user', {})
+  if (storedUser && storedUser.avatar) {
+    myAvatar.value = storedUser.avatar
   }
 
-  const stored = localStorage.getItem(getChatKey())
-  if (stored) {
-    messages.value = JSON.parse(stored)
+  const stored = localStore.getArray<ChatMessage>(getChatKey(), [])
+  if (stored.length > 0) {
+    messages.value = stored
   } else {
-    // Mock 初始消息
+    // 初始示例消息
     messages.value = [
       {
         id: '1',
@@ -140,11 +141,12 @@ const loadMessages = () => {
         isSelf: false
       }
     ]
+    localStore.setArray(getChatKey(), messages.value)
   }
 }
 
 const saveMessages = () => {
-  localStorage.setItem(getChatKey(), JSON.stringify(messages.value))
+  localStore.setArray(getChatKey(), messages.value)
 }
 
 const sendMessage = () => {
@@ -162,26 +164,6 @@ const sendMessage = () => {
   inputText.value = ''
   saveMessages()
   scrollToBottom()
-
-  // 模拟对方回复
-  setTimeout(() => {
-    const replies = [
-      '好的，收到！',
-      '嗯嗯，明白了',
-      '哈哈，太有趣了',
-      '没问题！',
-      '太好了！'
-    ]
-    const replyMsg: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      content: replies[Math.floor(Math.random() * replies.length)],
-      time: new Date().toISOString(),
-      isSelf: false
-    }
-    messages.value.push(replyMsg)
-    saveMessages()
-    scrollToBottom()
-  }, 1000 + Math.random() * 1000)
 }
 
 const goBack = () => {

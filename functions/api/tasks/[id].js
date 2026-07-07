@@ -186,79 +186,13 @@ export async function onRequestDelete(context) {
 }
 
 export async function onRequestPost(context) {
-  try {
-    const authError = await requireAuth(context)
-    if (authError) {
-      return authError
-    }
-
-    const { id } = context.params
-    const user = context.user
-    const db = getDb(context)
-    const body = await context.request.json()
-    const { action } = body
-
-    const task = await getTaskById(db, id)
-
-    if (!task) {
-      return createErrorResponse(404, '任务不存在')
-    }
-
-    if (action === 'accept') {
-      if (task.user_id === user.id) {
-        return createErrorResponse(400, '不能接自己发布的任务')
-      }
-
-      if (task.status !== 'pending') {
-        return createErrorResponse(400, '任务状态不允许接单')
-      }
-
-      await db.run(`
-        UPDATE tasks 
-        SET helper_id = ?, status = 'in_progress', updated_at = ?
-        WHERE id = ?
-      `, [user.id, now(), id])
-
-    } else if (action === 'complete') {
-      if (task.user_id !== user.id && task.helper_id !== user.id) {
-        return createErrorResponse(403, '无权操作此任务')
-      }
-
-      if (task.status !== 'in_progress') {
-        return createErrorResponse(400, '任务状态不允许完成')
-      }
-
-      await db.run(`
-        UPDATE tasks 
-        SET status = 'completed', updated_at = ?
-        WHERE id = ?
-      `, [now(), id])
-
-    } else if (action === 'cancel') {
-      if (task.user_id !== user.id) {
-        return createErrorResponse(403, '只有发布者才能取消任务')
-      }
-
-      if (task.status === 'completed') {
-        return createErrorResponse(400, '已完成的任务不能取消')
-      }
-
-      await db.run(`
-        UPDATE tasks 
-        SET status = 'cancelled', updated_at = ?
-        WHERE id = ?
-      `, [now(), id])
-
-    } else {
-      return createErrorResponse(400, '无效的操作类型')
-    }
-
-    const updatedTask = await getTaskById(db, id)
-    return createResponse(formatTask(updatedTask), '操作成功')
-  } catch (error) {
-    console.error('Task action error:', error)
-    return createErrorResponse(500, '操作失败', error.message)
-  }
+  // 注：接单/完成/取消已拆分为独立的 /api/tasks/[id]/accept、/complete、/cancel 路由，
+  // 前端 taskService 也只调用这三个独立路由，因此此处不再保留 action 分支（避免逻辑重复）。
+  // 保留 POST 入口仅用于向前兼容提示，避免外部直接 POST 到本资源时静默失败。
+  return createErrorResponse(
+    405,
+    '该接口不支持通用的 action 操作，请使用 /api/tasks/[id]/accept、/complete、/cancel'
+  )
 }
 
 export function onRequestOptions() {

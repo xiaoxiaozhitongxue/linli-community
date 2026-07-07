@@ -252,7 +252,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuth } from '../../store/index'
-import { userApi } from '../../utils/api'
+import { userService } from '../../services/userService'
 import { taskService } from '../../services/taskService'
 import { navigateTo } from '../../utils/router'
 import { toastInfo } from '../../utils/toast'
@@ -292,7 +292,7 @@ const loadUserProfile = async () => {
   if (!isLoggedIn.value) return
   try {
     loading.value = true
-    const profile = await userApi.getProfile()
+    const profile = await userService.getProfile()
     updateUser(profile)
     await loadTaskStats()
   } catch {

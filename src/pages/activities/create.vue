@@ -358,16 +358,36 @@ const selectCategory = (value: string) => {
 }
 
 const chooseImage = () => {
-  // 模拟图片选择 - 使用随机图片URL
-  const mockImages = [
-    'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400',
-    'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400',
-    'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400',
-    'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400'
-  ]
-  const randomImg = mockImages[Math.floor(Math.random() * mockImages.length)]
-  form.value.images.push(randomImg)
-  toastSuccess('图片已添加（模拟）')
+  // 本地选图：使用 FileReader 读取为 base64 dataURL 作为预览，避免依赖远程模拟图
+  const remaining = 6 - form.value.images.length
+  if (remaining <= 0) {
+    toastError('最多上传6张图片')
+    return
+  }
+
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.multiple = true
+  input.onchange = () => {
+    const files = Array.from(input.files || [])
+    const toAdd = files.slice(0, remaining)
+    toAdd.forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          form.value.images.push(reader.result)
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+    if (files.length > remaining) {
+      toastError('最多上传6张图片，已忽略多余图片')
+    } else {
+      toastSuccess('图片已添加')
+    }
+  }
+  input.click()
 }
 
 const removeImage = (index: number) => {

@@ -89,8 +89,8 @@
             <div class="status-filters">
               <div
                 class="status-filter-btn"
-                :class="{ active: statusFilter === 'open' }"
-                @click="setStatusFilter('open')"
+                :class="{ active: statusFilter === 'pending' }"
+                @click="setStatusFilter('pending')"
               >
                 <span class="status-dot open-dot"></span>
                 待接单
@@ -178,13 +178,13 @@
                 </div>
               </div>
 
-              <div class="task-action-bar" v-if="task.status === 'open'">
+              <div class="task-action-bar" v-if="task.status === 'pending'">
                 <div class="respond-btn" @click.stop="respondToTask(task, $event)">
                   <span class="btn-icon">🤝</span>
                   <span>我来帮忙</span>
                 </div>
               </div>
-              <div class="task-action-bar disabled" v-else-if="task.status === 'ongoing'">
+              <div class="task-action-bar disabled" v-else-if="task.status === 'in_progress'">
                 <div class="respond-btn ongoing">
                   <span class="btn-icon">⏳</span>
                   <span>进行中</span>
@@ -225,19 +225,23 @@ import type { Task } from '../../types/models'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import ErrorBoundary from '../../components/ErrorBoundary.vue'
+import {
+  getTaskStatusLabel,
+  normalizeTaskStatus
+} from '../../constants/status'
 
 const selectedCategory = ref<string>('all')
-const statusFilter = ref<string>('open')
+const statusFilter = ref<string>('pending')
 
 const { tasks: apiTasks, loading, error, refreshTasks } = useTasks()
 
+/**
+ * 归一化任务状态到标准 key（pending / pending_confirm / in_progress / completed / cancelled）。
+ * 统一委托给 constants/status.ts，消除此前 open/pending 命名不一致的问题。
+ * 注意：DB 的 pending 表示「待接单」，归一到标准 key pending。
+ */
 function normalizeStatus(status: string): string {
-  if (!status) return 'open'
-  const s = String(status).toLowerCase()
-  if (s === 'open' || s === 'pending') return 'open'
-  if (s === 'in_progress' || s === 'ongoing' || s === 'accepted') return 'ongoing'
-  if (s === 'completed' || s === 'done') return 'completed'
-  return 'open'
+  return normalizeTaskStatus(status)
 }
 
 function mapTaskToDisplay(t: Task) {
@@ -281,12 +285,12 @@ const displayTasks = computed(() => {
 })
 
 const openTaskCount = computed(() => {
-  return displayTasks.value.filter(t => t.status === 'open').length
+  return displayTasks.value.filter(t => t.status === 'pending').length
 })
 
 const todayCount = computed(() => {
   return displayTasks.value.filter(t => {
-    return t.status === 'open' || t.status === 'ongoing'
+    return t.status === 'pending' || t.status === 'in_progress'
   }).length
 })
 
@@ -307,7 +311,7 @@ const getCategoryOpenCount = (category: string) => {
     return openTaskCount.value
   }
   return displayTasks.value.filter(t =>
-    t.type === category && t.status === 'open'
+    t.type === category && t.status === 'pending'
   ).length
 }
 
@@ -347,15 +351,7 @@ const getTypeName = (type: string) => {
   return map[type] || type
 }
 
-const getStatusName = (status: string) => {
-  const map: Record<string, string> = {
-    open: '待接单',
-    ongoing: '进行中',
-    pending_confirm: '待确认',
-    completed: '已完成'
-  }
-  return map[status] || status
-}
+const getStatusName = (status: string): string => getTaskStatusLabel(status)
 
 onMounted(async () => {
   await refreshTasks()
@@ -663,23 +659,32 @@ onMounted(async () => {
   border-radius: 50%;
 }
 
-.status-open {
+.status-pending {
   background: var(--color-info-soft);
   color: var(--color-info);
 }
 
-.status-open .status-dot {
+.status-pending .status-dot {
   background: var(--color-info);
   animation: blink 1.5s infinite;
 }
 
-.status-ongoing {
+.status-in_progress {
   background: var(--color-warning-soft);
   color: var(--color-warning);
 }
 
-.status-ongoing .status-dot {
+.status-in_progress .status-dot {
   background: var(--color-warning);
+}
+
+.status-cancelled {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+}
+
+.status-cancelled .status-dot {
+  background: var(--color-text-muted);
 }
 
 .status-pending_confirm {

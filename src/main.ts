@@ -4,6 +4,37 @@ import App from './App.vue'
 import './styles/base.css'
 import { setRouterInstance } from './utils/router'
 
+/**
+ * 全局错误兜底提示：渲染/逻辑异常时不再白屏，直接以原生 DOM 弹出 toast。
+ * 使用原生 DOM 而非组件 toast，确保即便 Vue 渲染链路异常也能正常显示。
+ */
+function showGlobalErrorToast(message: string): void {
+  try {
+    const container = document.createElement('div')
+    container.style.cssText = [
+      'position:fixed',
+      'left:50%',
+      'bottom:80px',
+      'transform:translateX(-50%)',
+      'max-width:80%',
+      'background:rgba(0,0,0,0.8)',
+      'color:#fff',
+      'padding:10px 16px',
+      'border-radius:8px',
+      'font-size:14px',
+      'z-index:99999',
+      'box-shadow:0 4px 12px rgba(0,0,0,0.3)'
+    ].join(';')
+    container.textContent = '出错了：' + (message || '未知错误')
+    document.body.appendChild(container)
+    window.setTimeout(() => {
+      if (container.parentNode) container.parentNode.removeChild(container)
+    }, 4000)
+  } catch {
+    // 兜底中的兜底，避免二次异常
+  }
+}
+
 // 路由配置
 const router = createRouter({
   history: createWebHashHistory(),
@@ -147,6 +178,84 @@ const router = createRouter({
       component: () => import('./pages/search/index.vue'),
       meta: { title: '搜索', tabBar: false }
     },
+    // ===================== 养老服务子页面（B3：修复导航死链）=====================
+    {
+      path: '/pages/elderly/service-request',
+      component: () => import('./pages/elderly/service-request.vue'),
+      meta: { title: '服务申请', tabBar: false }
+    },
+    {
+      path: '/pages/elderly/become-volunteer',
+      component: () => import('./pages/elderly/become-volunteer.vue'),
+      meta: { title: '成为志愿者', tabBar: false }
+    },
+    {
+      path: '/pages/elderly/tip-detail',
+      component: () => import('./pages/elderly/tip-detail.vue'),
+      meta: { title: '关怀技巧', tabBar: false }
+    },
+    {
+      path: '/pages/elderly/all-records',
+      component: () => import('./pages/elderly/all-records.vue'),
+      meta: { title: '帮扶记录', tabBar: false }
+    },
+    // ===================== 社区创业子页面（B3：修复导航死链）=====================
+    {
+      path: '/pages/business/edit-shop',
+      component: () => import('./pages/business/edit-shop.vue'),
+      meta: { title: '编辑小店', tabBar: false }
+    },
+    {
+      path: '/pages/business/manage-products',
+      component: () => import('./pages/business/manage-products.vue'),
+      meta: { title: '商品管理', tabBar: false }
+    },
+    {
+      path: '/pages/business/publish',
+      component: () => import('./pages/business/publish.vue'),
+      meta: { title: '发布商品', tabBar: false }
+    },
+    {
+      path: '/pages/business/orders',
+      component: () => import('./pages/business/orders.vue'),
+      meta: { title: '我的订单', tabBar: false }
+    },
+    {
+      path: '/pages/business/analytics',
+      component: () => import('./pages/business/analytics.vue'),
+      meta: { title: '数据统计', tabBar: false }
+    },
+    {
+      path: '/pages/business/guide',
+      component: () => import('./pages/business/guide.vue'),
+      meta: { title: '创业指南', tabBar: false }
+    },
+    {
+      path: '/pages/business/all-products',
+      component: () => import('./pages/business/all-products.vue'),
+      meta: { title: '全部商品', tabBar: false }
+    },
+    {
+      path: '/pages/business/product',
+      component: () => import('./pages/business/product.vue'),
+      meta: { title: '商品详情', tabBar: false }
+    },
+    {
+      path: '/pages/business/shop-detail',
+      component: () => import('./pages/business/shop-detail.vue'),
+      meta: { title: '店铺详情', tabBar: false }
+    },
+    {
+      path: '/pages/business/story',
+      component: () => import('./pages/business/story.vue'),
+      meta: { title: '创业故事', tabBar: false }
+    },
+    // ===================== 帖子详情（B4）=====================
+    {
+      path: '/pages/post/detail',
+      component: () => import('./pages/post/detail.vue'),
+      meta: { title: '帖子详情', tabBar: false }
+    },
     {
       path: '/:pathMatch(.*)*',
       redirect: '/pages/index/index'
@@ -172,4 +281,12 @@ setRouterInstance(router)
 // 创建应用
 const app = createApp(App)
 app.use(router)
+
+// 全局错误处理器：捕获渲染与逻辑错误，弹出提示而非白屏
+app.config.errorHandler = (err: unknown, _instance: unknown, info: string) => {
+  console.error('[GlobalError]', err, info)
+  const message = err instanceof Error ? err.message : String(err)
+  showGlobalErrorToast(message)
+}
+
 app.mount('#app')

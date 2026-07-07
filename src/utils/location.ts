@@ -19,6 +19,13 @@ const AMAP_KEY: string = (import.meta as any).env?.VITE_AMAP_KEY || ''
 const AMAP_SECURITY: string = (import.meta as any).env?.VITE_AMAP_SECURITY || ''
 const BAIDU_KEY: string = (import.meta as any).env?.VITE_BAIDU_KEY || ''
 
+// 是否允许发起外部逆地理编码请求（Nominatim / 高德 / 百度）。
+// 仅在已配置任一地图 key，或显式开启了 VITE_ENABLE_EXTERNAL_GEOCODE 时才允许；
+// 否则完全走本地社区坐标兜底，避免「未配置 key 却静默向外部服务发请求」。
+const ALLOW_EXTERNAL_GEOCODE: boolean =
+  !!(AMAP_KEY || BAIDU_KEY) ||
+  (import.meta as any).env?.VITE_ENABLE_EXTERNAL_GEOCODE === 'true'
+
 // 引擎优先级：高德 > 百度 > 浏览器
 type Engine = 'amap' | 'baidu' | 'browser'
 
@@ -39,28 +46,12 @@ export interface LocationResult {
   provider: Engine      // 实际使用的定位引擎
 }
 
-// ======= 本地社区列表（按城市+区域做关键词匹配兜底）=======================
-export interface CommunityPreset {
-  name: string
-  lat: number
-  lng: number
-  city?: string
-  district?: string
-  keywords?: string[]   // 用于和逆地理编码结果做模糊匹配
-}
+// ======= 本地社区列表（单一数据源，见 src/constants/communities.ts）=======
+// 此前社区列表在 location.ts 与 register/index.vue 各维护一份、内容不一致；
+// 现统一由 constants/communities.ts 维护，本文件仅引用并再导出。
+import { COMMUNITIES, type CommunityPreset } from '../constants/communities'
 
-export const COMMUNITIES: CommunityPreset[] = [
-  { name: '阳光社区', lat: 31.2304, lng: 121.4737, city: '上海', district: '浦东新区', keywords: ['浦东', '陆家嘴', '黄浦'] },
-  { name: '幸福家园', lat: 31.2345, lng: 121.4821, city: '上海', district: '黄浦区', keywords: ['黄浦', '人民广场', '南京东路'] },
-  { name: '和谐里', lat: 31.2289, lng: 121.4654, city: '上海', district: '静安区', keywords: ['静安', '南京路', '曹家渡'] },
-  { name: '温馨苑', lat: 31.2387, lng: 121.4912, city: '上海', district: '虹口区', keywords: ['虹口', '四川北路'] },
-  { name: '美好社区', lat: 31.2412, lng: 121.4589, city: '上海', district: '普陀区', keywords: ['普陀', '长寿路'] },
-  { name: '康乐家园', lat: 31.2256, lng: 121.4798, city: '上海', district: '徐汇区', keywords: ['徐汇', '漕河泾'] },
-  { name: '朝阳社区', lat: 39.9219, lng: 116.4439, city: '北京', district: '朝阳区', keywords: ['朝阳', '国贸', '三里屯'] },
-  { name: '海淀家园', lat: 39.9590, lng: 116.2980, city: '北京', district: '海淀区', keywords: ['海淀', '中关村', '五道口'] },
-  { name: '天河里', lat: 23.1291, lng: 113.2644, city: '广州', district: '天河区', keywords: ['天河', '珠江新城'] },
-  { name: '南山社区', lat: 22.5431, lng: 113.9344, city: '深圳', district: '南山区', keywords: ['南山', '科技园', '蛇口'] },
-]
+export { COMMUNITIES, type CommunityPreset }
 
 // ======= 脚本懒加载工具（避免在 index.html 中写死 script 标签）============
 let scriptInjected: { [k: string]: Promise<any> } = {}
@@ -361,9 +352,13 @@ async function locateByBaidu(): Promise<LocationResult> {
 async function locateByBrowser(): Promise<LocationResult> {
   const coords = await browserGetCoords()
 
-  // 先调 Nominatim 免费逆地理编码获取真实城市/区域
-  const regeo = await nominatimReverseGeocode(coords.latitude, coords.longitude)
-  console.log('[location][browser] 原始坐标 + Nominatim 结果:', regeo, coords)
+  // 仅在允许外部 geocode 时才调用 Nominatim；否则直接走本地社区坐标兜底，
+  // 避免「未配置 key 却静默向外部服务发请求」。
+  let regeo = { city: '', district: '', address: '' }
+  if (ALLOW_EXTERNAL_GEOCODE) {
+    regeo = await nominatimReverseGeocode(coords.latitude, coords.longitude)
+  }
+  console.log('[location][browser] 原始坐标 + 逆地理结果:', regeo, coords)
 
   if (regeo.city || regeo.district) {
     // 成功拿到真实地址
