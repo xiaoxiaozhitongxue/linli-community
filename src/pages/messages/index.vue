@@ -674,7 +674,7 @@ watch(isLoggedIn, (newVal, oldVal) => {
   margin-bottom: 12px;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-smooth);
+  transition: all var(--transition-fast);
   border: 1px solid transparent;
   position: relative;
   overflow: hidden;
@@ -999,7 +999,7 @@ watch(isLoggedIn, (newVal, oldVal) => {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all var(--transition-smooth);
+  transition: all var(--transition-fast);
   box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
 }
 

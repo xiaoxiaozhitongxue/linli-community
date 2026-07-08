@@ -453,7 +453,7 @@ onMounted(() => {
   align-items: flex-start;
   background: var(--color-bg-secondary);
   border-radius: var(--radius-xl);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
   box-shadow: var(--shadow-md);
   margin-bottom: var(--spacing-md);
   cursor: pointer;
@@ -466,7 +466,7 @@ onMounted(() => {
 }
 
 .profile-main:active {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 
 .profile-avatar {
@@ -572,7 +572,7 @@ onMounted(() => {
 }
 
 .stat-item:active {
-  transform: scale(0.96);
+  transform: scale(0.99);
 }
 
 .stat-value {
@@ -601,7 +601,7 @@ onMounted(() => {
 .menu-section {
   background: var(--color-bg-secondary);
   border-radius: var(--radius-xl);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
 }
@@ -683,7 +683,7 @@ onMounted(() => {
 }
 
 .task-stat-item:active {
-  transform: scale(0.96);
+  transform: scale(0.99);
 }
 
 .task-stat-num {
@@ -746,7 +746,7 @@ onMounted(() => {
 .task-action-card {
   display: flex;
   align-items: center;
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   border-radius: var(--radius-lg);
   background: var(--color-bg-tertiary);
   cursor: pointer;
@@ -760,7 +760,7 @@ onMounted(() => {
 }
 
 .task-action-card:active {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 
 .task-action-card.my-tasks {
@@ -947,7 +947,7 @@ onMounted(() => {
 
 .logout-btn {
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
+  border-radius: 12px;
   padding: var(--spacing-md);
   text-align: center;
   color: var(--color-error);
@@ -990,7 +990,7 @@ onMounted(() => {
 
 .btn {
   padding: 12px 32px;
-  border-radius: var(--radius-full);
+  border-radius: 12px;
   font-size: var(--font-size-sm);
   cursor: pointer;
   transition: all var(--transition-smooth);

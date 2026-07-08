@@ -611,7 +611,7 @@ const goToStoryDetail = (story: any) => {
 
 .shop-btn {
   padding: 6px 16px;
-  border-radius: 20px;
+  border-radius: 12px;
   font-size: 13px;
   cursor: pointer;
 }
@@ -665,7 +665,7 @@ const goToStoryDetail = (story: any) => {
   background: var(--color-primary-gradient);
   color: white;
   padding: var(--spacing-md) var(--spacing-xxl);
-  border-radius: 25px;
+  border-radius: 12px;
   font-weight: 500;
   display: inline-block;
   cursor: pointer;
@@ -687,6 +687,11 @@ const goToStoryDetail = (story: any) => {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.action-item:active {
+  transform: scale(0.99);
 }
 
 .action-icon {
@@ -739,7 +744,7 @@ const goToStoryDetail = (story: any) => {
 
 /* 区块 */
 .section {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
 .section-header {
@@ -774,15 +779,15 @@ const goToStoryDetail = (story: any) => {
 
 .product-card {
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .product-card:active {
-  transform: scale(0.97);
+  transform: scale(0.99);
 }
 
 .product-cover {
@@ -864,15 +869,16 @@ const goToStoryDetail = (story: any) => {
 .shop-item {
   background: var(--color-bg-secondary);
   padding: var(--spacing-lg);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   cursor: pointer;
-  transition: transform 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
 }
 
 .shop-item:active {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 
 .shop-avatar {
@@ -932,12 +938,13 @@ const goToStoryDetail = (story: any) => {
 
 .order-item {
   background: var(--color-bg-secondary);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
 }
 
 .order-left {
@@ -1005,15 +1012,16 @@ const goToStoryDetail = (story: any) => {
 
 .story-card {
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   cursor: pointer;
-  transition: transform 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
 }
 
 .story-card:active {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 
 .story-cover {

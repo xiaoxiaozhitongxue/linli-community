@@ -506,7 +506,7 @@ onMounted(async () => {
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-sm);
 }
 
 .section-count {
@@ -539,9 +539,9 @@ onMounted(async () => {
   background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: all var(--transition-smooth);
+  transition: all var(--transition-fast);
   scroll-snap-align: start;
   flex-shrink: 0;
   border: 1px solid rgba(0, 0, 0, 0.02);
@@ -631,9 +631,9 @@ onMounted(async () => {
   background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: all var(--transition-smooth);
+  transition: all var(--transition-fast);
   border: 1px solid rgba(0, 0, 0, 0.02);
   position: relative;
 }

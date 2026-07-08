@@ -46,7 +46,7 @@
 
       <!-- 互动数据 -->
       <div class="post-stats">
-        <span>❤️ {{ post.like_count || 0 }}</span>
+        <span><AppIcon name="heart" :size="16" color="#FF6B35" :filled="true" /> {{ post.like_count || 0 }}</span>
         <span><AppIcon name="message-circle" /> {{ post.comment_count || 0 }} 条评论</span>
       </div>
 

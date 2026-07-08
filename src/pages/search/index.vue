@@ -84,7 +84,7 @@
             <div class="result-icon" :style="{ background: '#E8F5E9' }"><AppIcon name="handshake" :size="24" /></div>
             <div class="result-content">
               <div class="result-title">{{ task.title }}</div>
-              <div class="result-desc">{{ task.category }} · {{ task.reward }}积分</div>
+              <div class="result-desc">{{ getTypeName(task.category) }} · {{ task.reward }}积分</div>
             </div>
           </div>
         </div>
@@ -227,6 +227,19 @@ function goToTask(id: string) {
 
 function goToPost(post: any) {
   navigateTo('/pages/post/detail?id=' + post.id)
+}
+
+function getTypeName(type: string): string {
+  const map: Record<string, string> = {
+    delivery: '快递取送',
+    shopping: '代购',
+    help: '帮忙',
+    companionship: '陪护',
+    pet: '宠物',
+    child: '儿童',
+    other: '其他'
+  }
+  return map[type] || type
 }
 
 function formatShortTime(timestamp: number) {
@@ -431,17 +444,22 @@ onMounted(() => {
 
 .result-card {
   background: var(--color-bg-secondary);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
 }
 
 .result-card:hover {
   background: var(--color-bg-tertiary);
+}
+
+.result-card:active {
+  transform: scale(0.99);
 }
 
 .result-icon {

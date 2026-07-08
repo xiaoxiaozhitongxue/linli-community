@@ -138,7 +138,7 @@ export async function onRequestPost(context) {
       return createErrorResponse(400, '缺少必要参数', { missing })
     }
 
-    const validCategories = ['shopping', 'delivery', 'help', 'companionship', 'other']
+    const validCategories = ['shopping', 'delivery', 'help', 'companionship', 'pet', 'child', 'other']
     if (!validCategories.includes(category)) {
       return createErrorResponse(400, '无效的任务类型')
     }

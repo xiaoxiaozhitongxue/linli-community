@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   helper_id TEXT,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
-  category TEXT NOT NULL DEFAULT 'other' CHECK(category IN ('shopping', 'delivery', 'help', 'companionship', 'other')),
+  category TEXT NOT NULL DEFAULT 'other' CHECK(category IN ('shopping', 'delivery', 'help', 'companionship', 'pet', 'child', 'other')),
   location TEXT NOT NULL,
   reward TEXT,
   deadline INTEGER,
@@ -227,8 +227,8 @@ CREATE TABLE IF NOT EXISTS health_records (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_health_records_user_date ON health_records(user_id, date);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_health_records_user_id ON health_records(user_id);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_health_records_created_at ON health_records(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_health_records_user_id ON health_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_health_records_created_at ON health_records(created_at DESC);
 
 -- ==============================
 -- 消息模块（4a: 会话 + 成员 + 消息）
@@ -244,9 +244,9 @@ CREATE TABLE IF NOT EXISTS conversations (
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversations_created_by ON conversations(created_by);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversations_type ON conversations(type);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversations_created_at ON conversations(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_conversations_created_by ON conversations(created_by);
+CREATE INDEX IF NOT EXISTS idx_conversations_type ON conversations(type);
+CREATE INDEX IF NOT EXISTS idx_conversations_created_at ON conversations(created_at DESC);
 
 -- 会话成员表 (conversation_members)
 CREATE TABLE IF NOT EXISTS conversation_members (
@@ -258,8 +258,8 @@ CREATE TABLE IF NOT EXISTS conversation_members (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversation_members_user_id ON conversation_members(user_id);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversation_members_conversation_id ON conversation_members(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_members_user_id ON conversation_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_members_conversation_id ON conversation_members(conversation_id);
 
 -- 消息表 (messages)
 CREATE TABLE IF NOT EXISTS messages (
@@ -272,9 +272,9 @@ CREATE TABLE IF NOT EXISTS messages (
   FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_messages_created_at ON messages(conversation_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(conversation_id, created_at DESC);
 
 -- ==============================
 -- FTS5 全文搜索（帖子）
