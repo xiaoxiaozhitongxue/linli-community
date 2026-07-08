@@ -2,13 +2,19 @@
   <div class="page">
     <!-- 顶部个人信息 - 酷安风格 -->
     <div class="profile-header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <div class="profile-main" @click="goToEditProfile" v-if="isLoggedIn">
-        <div class="avatar-wrap" v-if="user?.avatar">
+      <div class="profile-main" v-if="isLoggedIn">
+        <div class="avatar-wrap" v-if="user?.avatar" @click="goToEditProfile">
           <img class="profile-avatar" :src="user?.avatar" />
         </div>
-        <div v-else class="profile-avatar avatar-placeholder">{{ (user?.nickname || '邻').charAt(0) }}</div>
+        <div v-else class="profile-avatar avatar-placeholder" @click="goToEditProfile">{{ (user?.nickname || '邻').charAt(0) }}</div>
         <div class="profile-info">
-          <div class="profile-name">{{ user?.nickname || '用户' }}</div>
+          <div class="profile-name-row">
+            <div class="profile-name">{{ user?.nickname || '用户' }}</div>
+            <button class="profile-edit-btn" @click.stop="goToEditProfile">
+              <AppIcon name="edit" :size="14" />
+              <span>编辑</span>
+            </button>
+          </div>
           <span class="profile-desc">{{ user?.bio || '快来完善个人资料吧' }}</span>
           <div class="profile-location">
             {{ user?.community || '未设置' }}
@@ -302,7 +308,6 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-lg);
-  cursor: pointer;
 }
 
 .profile-avatar {
@@ -325,7 +330,38 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 700;
   color: #111111;
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   margin-bottom: 4px;
+}
+
+.profile-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.profile-edit-btn:hover {
+  background: rgba(255, 107, 53, 0.18);
+}
+
+.profile-edit-btn:active {
+  transform: scale(0.95);
 }
 
 .profile-desc {
