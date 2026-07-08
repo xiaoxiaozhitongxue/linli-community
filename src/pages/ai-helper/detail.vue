@@ -88,13 +88,15 @@
     </div>
 
     <div v-if="task" class="bottom-action">
-      <div class="action-buttons">
-        <div
-          class="accept-btn"
-          :class="{ disabled: task.status !== 'open' }"
-          @click="handleAccept"
-        >
-          <span>{{ acceptButtonText }}</span>
+      <div class="action-wrapper">
+        <div class="action-buttons">
+          <div
+            class="accept-btn"
+            :class="{ disabled: task.status !== 'open' }"
+            @click="handleAccept"
+          >
+            <span>{{ acceptButtonText }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -803,10 +805,18 @@ watch(
   left: 0;
   right: 0;
   background: var(--color-bg-secondary);
-  padding: 12px 20px;
+  padding: 12px 0;
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
   z-index: 50;
+}
+
+.action-wrapper {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 
 .action-buttons {
@@ -847,11 +857,9 @@ watch(
     max-width: 900px;
     margin: 0 auto;
   }
-  .bottom-action {
+
+  .action-wrapper {
     max-width: 900px;
-    margin: 0 auto;
-    left: 50%;
-    transform: translateX(-50%);
   }
 }
 
@@ -859,12 +867,14 @@ watch(
   .content {
     max-width: 1100px;
   }
+
   .bottom-action {
     left: var(--nav-sidebar-width, 220px);
-    right: auto;
-    transform: none;
+    right: 0;
+  }
+
+  .action-wrapper {
     max-width: 1100px;
-    margin: 0 auto;
   }
 }
 </style>
