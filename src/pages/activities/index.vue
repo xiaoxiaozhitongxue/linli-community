@@ -942,7 +942,7 @@ onMounted(async () => {
   }
 
   .section {
-    padding: var(--spacing-lg) 0;
+    padding: var(--spacing-lg) var(--spacing-xl);
   }
 
   .activity-grid {
@@ -980,7 +980,7 @@ onMounted(async () => {
   }
 
   .section {
-    padding: var(--spacing-lg) 0;
+    padding: var(--spacing-lg) var(--spacing-xl);
   }
 
   .activity-grid {

@@ -91,35 +91,31 @@
 
           <div v-else class="feed-list">
             <template v-for="(item, index) in unifiedFeed" :key="item.id + '-' + item._type">
-              <!-- 活动卡片（小红书风格） -->
+              <!-- 活动卡片 -->
               <div
                 v-if="item._type === 'activity'"
-                class="feed-card activity-feed-card animate-fadeIn"
-                :style="{ animationDelay: (index * 0.05) + 's', gridColumn: '1 / -1' }"
+                class="feed-card post-feed-card activity-in-feed animate-fadeIn"
+                :style="{ animationDelay: (index * 0.05) + 's' }"
                 @click="goToActivityDetail(item._raw.id)"
               >
-                <div class="activity-feed-deco" :style="{ background: getActivityGradient(item._raw.category) }"></div>
-                <div class="activity-feed-row">
-                  <div class="activity-feed-icon" :style="{ background: getActivityCoverBg(item._raw.category) }">
-                    <AppIcon :name="getActivityIcon(item._raw.category)" :size="22" :color="getActivityIconColor(item._raw.category)" />
+                <!-- 封面：渐变背景 + 分类图标 -->
+                <div class="post-cover" :style="{ background: getActivityGradient(item._raw.category) }">
+                  <div class="activity-in-feed-icon">
+                    <AppIcon :name="getActivityEmoji(item._raw.category)" :size="28" />
                   </div>
-                  <div class="activity-feed-body">
-                    <div class="activity-feed-top">
-                      <span class="feed-type-badge type-activity">活动</span>
-                      <span class="activity-feed-title">{{ item.title }}</span>
-                    </div>
-                    <div class="activity-feed-meta">
-                      <span>{{ formatShortTime(item._raw.start_time) }}</span>
-                      <span class="meta-dot">·</span>
-                      <span>{{ item._raw.current_participants }}人关注</span>
-                      <span v-if="item._raw.location" class="meta-dot">·</span>
-                      <span v-if="item._raw.location">{{ item._raw.location }}</span>
-                    </div>
+                  <div class="activity-in-feed-status">{{ getActivityStatusText(item._raw) }}</div>
+                </div>
+
+                <!-- 内容 -->
+                <div class="post-body">
+                  <p class="post-title">{{ item.title }}</p>
+                  <div class="activity-in-feed-meta">
+                    <span>{{ formatShortTime(item._raw.start_time) }}</span>
+                    <span class="meta-dot">·</span>
+                    <span>{{ item._raw.current_participants }}人关注</span>
                   </div>
                 </div>
               </div>
-              <!-- 活动卡片分隔线 -->
-              <div v-if="item._type === 'activity'" class="activity-feed-divider"></div>
 
               <!-- 动态卡片 · 小红书双列风格 -->
               <div
@@ -621,6 +617,28 @@ function getActivityGradient(category: string): string {
     other: 'linear-gradient(180deg, #2196F3, #64B5F6)'
   }
   return map[category] || 'linear-gradient(180deg, #2196F3, #64B5F6)'
+}
+
+function getActivityStatusText(activity: any): string {
+  const now = Date.now()
+  if (activity.status === 'completed' || activity.status === 'cancelled') {
+    return '已结束'
+  }
+  if (activity.start_time && now < activity.start_time) {
+    return '即将开始'
+  }
+  return '进行中'
+}
+
+function getActivityEmoji(category: string): string {
+  const map: Record<string, string> = {
+    sports: 'activity',
+    culture: 'book-open',
+    charity: 'heart',
+    party: 'star',
+    other: 'megaphone'
+  }
+  return map[category] || 'megaphone'
 }
 
 function getInitial(nickname?: string): string {
@@ -1544,81 +1562,49 @@ onUnmounted(() => {
   animation: heartBeat 0.3s ease;
 }
 
-/* ============ 活动卡片 - 网格风格 ============ */
-.activity-feed-card {
-  padding: 0 !important;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+/* ============ 活动卡片 - Feed内卡片样式 ============ */
 
-.activity-feed-deco {
-  height: 3px;
-  flex-shrink: 0;
-}
-
-.activity-feed-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-}
-
-.activity-feed-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+.activity-in-feed-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  z-index: 1;
 }
 
-.activity-feed-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.activity-feed-top {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.feed-type-badge {
+.activity-in-feed-status {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 20px;
   font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  flex-shrink: 0;
+  font-weight: var(--font-weight-semibold);
+  background: rgba(16, 185, 129, 0.9);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  z-index: 1;
 }
 
-.feed-type-badge.type-activity {
-  background: var(--theme-activity-soft);
-  color: var(--theme-activity);
-}
-
-.activity-feed-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.activity-feed-meta {
+.activity-in-feed-meta {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 2px;
+  font-size: 12px;
   color: var(--color-text-tertiary);
-  flex-wrap: wrap;
+  margin-top: 6px;
 }
 
-.meta-dot {
-  color: var(--color-text-muted);
+.activity-in-feed-meta .meta-dot {
+  color: var(--color-border-light);
 }
 
 .loading-spinner {
@@ -1668,97 +1654,6 @@ onUnmounted(() => {
 
 .feed-filter-btn:active {
   transform: scale(0.95);
-}
-
-/* ---- 活动紧凑卡片 · 小红书视觉化 ---- */
-.activity-feed-card {
-  padding: 0 !important;
-  border-radius: 16px !important;
-  display: flex;
-  align-items: stretch;
-  overflow: hidden;
-}
-
-.activity-feed-deco {
-  width: 6px;
-  flex-shrink: 0;
-  border-radius: 16px 0 0 16px;
-}
-
-.activity-feed-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: 14px 16px;
-  flex: 1;
-  min-width: 0;
-}
-
-.activity-feed-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.activity-feed-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.activity-feed-top {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.feed-type-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  flex-shrink: 0;
-}
-
-.feed-type-badge.type-activity {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
-.activity-feed-title {
-  font-size: 15px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.activity-feed-meta {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.meta-dot {
-  color: var(--color-border-light);
-}
-
-/* ---- 活动卡片分隔线 ---- */
-.activity-feed-divider {
-  grid-column: 1 / -1;
-  height: 1px;
-  background: var(--color-border-light);
-  margin: 2px 0;
 }
 
 /* ---- 加载更多 / 没有更多 ---- */
