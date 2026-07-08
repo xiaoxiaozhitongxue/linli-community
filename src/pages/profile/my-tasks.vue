@@ -45,13 +45,6 @@
         </div>
         <div 
           class="filter-item" 
-          :class="{ active: statusFilter === 'pending_confirm' }"
-          @click="statusFilter = 'pending_confirm'"
-        >
-          待确认
-        </div>
-        <div 
-          class="filter-item" 
           :class="{ active: statusFilter === 'completed' }"
           @click="statusFilter = 'completed'"
         >
@@ -70,19 +63,19 @@
             </span>
           </div>
           <div class="task-title">{{ task.title }}</div>
-          <div class="task-desc">{{ task.description }}</div>
+          <div class="task-desc">{{ task.description || '暂无描述' }}</div>
           <div class="task-footer">
             <div class="task-location">
               <AppIcon name="map-pin" :size="12" /> {{ task.location || '未指定地点' }}
             </div>
-            <div class="task-reward" v-if="task.reward">
+            <div class="task-reward" v-if="task.reward > 0">
               <AppIcon name="activity" class="reward-icon" />
               <span class="reward-text">¥{{ task.reward }}</span>
             </div>
           </div>
           
           <!-- 发布人的操作按钮 -->
-          <div class="task-actions" v-if="currentTab === 'published' && task.status === 'pending_confirm'">
+          <div class="task-actions" v-if="currentTab === 'published' && task.status === 'in_progress'">
             <div class="action-btn confirm-btn" @click.stop="confirmTask(task)">
               <span>✅</span> 确认完成
             </div>
@@ -96,9 +89,14 @@
           </div>
           
           <div class="task-time">
-            <span>{{ task.updateTime || task.createTime || '刚刚' }}</span>
+            <span>{{ task.createTime ? formatTimestamp(task.createTime) : '刚刚' }}</span>
           </div>
         </div>
+      </div>
+
+      <div class="loading-state" v-else-if="loading">
+        <div class="loading-spinner"></div>
+        <span>加载中...</span>
       </div>
 
       <div class="empty-state" v-else>
@@ -140,6 +138,7 @@ function mapTask(t: any): any {
     reward: Number(t.reward) || 0,
     location: t.location || '',
     status: normalizeStatus(t.status),
+    createTime: t.created_at || Date.now(),
     updateTime: t.updated_at || t.created_at || Date.now()
   }
 }
@@ -184,7 +183,9 @@ const getEmptyText = () => {
 const getCategoryName = (category: string) => {
   const map: Record<string, string> = {
     shopping: '代购',
-    delivery: '快递',
+    delivery: '快递取送',
+    help: '帮忙',
+    companionship: '陪护',
     pet: '宠物',
     child: '儿童',
     other: '其他'
@@ -193,6 +194,16 @@ const getCategoryName = (category: string) => {
 }
 
 const getStatusName = (status: string) => getTaskStatusLabel(status)
+
+function formatTimestamp(ts: number): string {
+  const d = new Date(ts > 1e12 ? ts : ts * 1000)
+  const now = new Date()
+  const diff = now.getTime() - d.getTime()
+  if (diff < 60000) return '刚刚'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
+  return `${d.getMonth() + 1}月${d.getDate()}日`
+}
 
 const switchTab = (tab: string) => {
   currentTab.value = tab
@@ -376,6 +387,16 @@ onMounted(async () => {
   color: #9C27B0;
 }
 
+.category-help {
+  background: #FFF3E0;
+  color: #FF9800;
+}
+
+.category-companionship {
+  background: #E8F5E9;
+  color: #4CAF50;
+}
+
 .category-child {
   background: #FCE4EC;
   color: #C2185B;
@@ -524,6 +545,29 @@ onMounted(async () => {
   color: var(--color-text-tertiary);
   margin-bottom: 16px;
   text-align: center;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: 60px 20px;
+  color: var(--color-text-tertiary);
+  font-size: 14px;
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .btn {
