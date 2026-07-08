@@ -54,6 +54,7 @@ import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
 import { messageService } from '../../services/messageService'
 import type { MessageItem } from '../../services/messageService'
+import { toastError } from '../../utils/toast'
 import NavBar from '../../components/NavBar.vue'
 
 interface ChatMessage {
@@ -133,6 +134,7 @@ const loadMessages = async () => {
       }
     } catch (e) {
       // API 失败，回退到本地存储
+      toastError('消息加载失败')
     }
   }
 

@@ -23,7 +23,35 @@ export function showToast(message: string, type: 'success' | 'error' | 'info' = 
   const t = ensureToast()
   if (t) {
     t.show(message, type, duration)
+    return
   }
+
+  // 降级方案：原生 DOM Toast
+  const colorMap: Record<string, string> = {
+    success: '#10b981',
+    error: '#ef4444',
+    info: '#6366f1'
+  }
+  const bgColor = colorMap[type] || '#6366f1'
+
+  const el = document.createElement('div')
+  el.textContent = message
+  el.style.cssText = `
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: ${bgColor}; color: #fff; padding: 12px 24px;
+    border-radius: 8px; font-size: 14px; z-index: 999999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: toastFadeIn 0.2s ease-out;
+    max-width: 80vw; text-align: center;
+    pointer-events: none;
+  `
+  document.body.appendChild(el)
+
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.3s ease'
+    el.style.opacity = '0'
+    setTimeout(() => el.remove(), 300)
+  }, Math.min(duration, 1500))
 }
 
 export function toastSuccess(message: string, duration?: number) {

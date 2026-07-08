@@ -76,7 +76,7 @@
                 全部任务
               </div>
             </div>
-            <div class="filter-hint" v-if="statusFilter === 'open'">
+            <div class="filter-hint" v-if="statusFilter === 'pending'">
               只显示可接的任务
             </div>
           </div>

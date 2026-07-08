@@ -116,7 +116,7 @@ const handleMenuItemClick = (item: { id: string }) => {
 .floating-publish-container {
   position: fixed;
   right: 20px;
-  bottom: calc(68px + var(--spacing-lg));
+  bottom: calc(88px + var(--spacing-lg));
   z-index: var(--z-fab);
   display: flex;
   flex-direction: column;

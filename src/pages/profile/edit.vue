@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="编辑资料" actionText="保存" @action-click="saveProfile" />
+    <NavBar title="编辑资料" :action-text="saving ? '保存中...' : '保存'" @action-click="saveProfile" />
 
     <div class="scroll-content">
       <!-- 头像区域 -->
@@ -175,6 +175,8 @@ const selectRole = (role: 'resident' | 'volunteer' | 'merchant' | 'elderly') => 
 }
 
 const saveProfile = async () => {
+  if (saving.value) return
+
   if (!validateForm()) {
     const firstError = Object.values(formErrors.value)[0]
     if (firstError) toastError(firstError)

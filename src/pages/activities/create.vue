@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="创建活动" :fixed="true" actionText="发布" @action-click="submitActivity" />
+    <NavBar title="创建活动" :fixed="true" :action-text="submitting ? '发布中...' : '发布'" @action-click="submitActivity" />
 
     <div class="content">
       <div class="form-section">
@@ -369,6 +369,8 @@ const goBack = () => {
 }
 
 const submitActivity = async () => {
+  if (submitting.value) return
+
   if (!canSubmit.value) {
     toastError('请完善信息')
     return

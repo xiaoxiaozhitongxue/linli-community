@@ -248,7 +248,7 @@ import type { Post, Comment, Activity } from '../../types/models'
 import { activityService } from '../../services/activityService'
 import { healthService } from '../../services/healthService'
 import { useAuth } from '../../store'
-import { toastSuccess, toastInfo } from '../../utils/toast'
+import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
 import { navigateTo, switchTab } from '../../utils/router'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
 import { usePosts } from '../../composables/usePosts'
@@ -399,7 +399,7 @@ async function fetchActivities() {
       .sort((a, b) => a.start_time - b.start_time)
       .slice(0, 3)
   } catch (err) {
-    // 静默处理
+    toastError('活动加载失败')
   }
 }
 
@@ -488,7 +488,12 @@ async function handleLikePost(post: Post) {
     showLoginGuide()
     return
   }
-  await likePost(post)
+  try {
+    await likePost(post)
+    toastSuccess('已点赞')
+  } catch {
+    toastError('操作失败，请重试')
+  }
 }
 
 async function showComments(post: Post) {
@@ -1011,7 +1016,7 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.5);
   transition: all 0.3s var(--transition-smooth);
   cursor: pointer;
-  padding: 6px;
+  padding: 8px;
   background-clip: content-box;
 }
 
@@ -1549,7 +1554,7 @@ onUnmounted(() => {
   cursor: pointer;
   transition: transform 0.15s, background-color var(--transition-fast);
   border-radius: 8px;
-  min-height: 40px;
+  min-height: 44px;
   font-size: 12px;
   color: var(--color-text-tertiary);
 }
@@ -1615,6 +1620,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
+}
+
+/* 移动端活动卡片高度与帖子对齐 */
+@media (max-width: 767px) {
+  .activity-feed-row {
+    min-height: 140px;
+  }
 }
 
 .activity-feed-icon {

@@ -108,7 +108,7 @@
           </div>
         </div>
         <div class="submit-btn" @click="submitTask" :class="{ disabled: !canSubmit }">
-          {{ canSubmit ? '发布任务' : '请完善信息' }}
+          {{ submitting ? '发布中...' : (canSubmit ? '发布任务' : '请完善信息') }}
         </div>
       </div>
     </div>
@@ -154,12 +154,14 @@ const form = ref({
 const { form: locationForm, getSubmitValue, autoFill } = useLocationForm()
 const locating = ref(false)
 const locationError = ref('')
+const submitting = ref(false)
 
 const canSubmit = computed(() => {
   return form.value.title.trim().length >= 2 &&
          form.value.description.trim().length >= 5 &&
          locationForm.value.province &&
-         locationForm.value.district
+         locationForm.value.district &&
+         !submitting.value
 })
 
 const goBack = () => {
@@ -167,7 +169,7 @@ const goBack = () => {
 }
 
 const submitTask = async () => {
-  if (!canSubmit.value) {
+  if (submitting.value || !canSubmit.value) {
     if (form.value.title.trim().length < 2) {
       toastInfo('请输入任务标题（至少 2 个字）')
     } else if (form.value.description.trim().length < 5) {
@@ -180,6 +182,7 @@ const submitTask = async () => {
     return
   }
 
+  submitting.value = true
   try {
     await taskService.createTask({
       title: form.value.title.trim(),
@@ -195,6 +198,8 @@ const submitTask = async () => {
   } catch (e: any) {
     const msg = e?.message || '发布失败，请稍后重试'
     toastInfo(msg)
+  } finally {
+    submitting.value = false
   }
 }
 

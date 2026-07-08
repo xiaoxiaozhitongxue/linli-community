@@ -87,6 +87,14 @@ export function showModal(options: ModalOptions) {
   modalContent.appendChild(body)
   modalContent.appendChild(buttons)
   modal.appendChild(modalContent)
+
+  // 点击遮罩层关闭弹窗
+  modal.onclick = (e: MouseEvent) => {
+    if (e.target === modal) {
+      modal.remove()
+      success && success({ confirm: false, cancel: true })
+    }
+  }
   
   document.body.appendChild(modal)
 }
