@@ -29,7 +29,7 @@
       :class="{ expanded: isExpanded }"
       @click.stop="toggleMenu"
     >
-      <AppIcon class="main-icon" :name="'plus'" :size="28" :class="{ rotated: isExpanded }" />
+      <AppIcon class="main-icon" :name="'plus'" :size="32" :class="{ rotated: isExpanded }" />
     </div>
   </div>
 </template>
@@ -116,7 +116,7 @@ const handleMenuItemClick = (item: { id: string }) => {
 .floating-publish-container {
   position: fixed;
   right: 20px;
-  bottom: calc(60px + var(--spacing-lg));
+  bottom: calc(68px + var(--spacing-lg));
   z-index: var(--z-fab);
   display: flex;
   flex-direction: column;
@@ -226,8 +226,8 @@ const handleMenuItemClick = (item: { id: string }) => {
 }
 
 .main-button {
-  width: var(--fab-size);
-  height: var(--fab-size);
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: var(--color-primary-gradient);
   display: flex;
