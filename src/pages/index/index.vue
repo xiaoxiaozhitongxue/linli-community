@@ -91,65 +91,85 @@
 
           <div v-else class="feed-list">
             <template v-for="(item, index) in unifiedFeed" :key="item.id + '-' + item._type">
-              <!-- 活动卡片 -->
+              <!-- 活动卡片·酷安风格 -->
               <div
                 v-if="item._type === 'activity'"
-                class="feed-card post-feed-card activity-in-feed animate-fadeIn"
-                :style="{ animationDelay: (index * 0.05) + 's' }"
+                class="feed-card coolapk-activity-card animate-fadeIn"
+                :style="{ animationDelay: (index * 0.05) + 's', gridColumn: '1 / -1' }"
                 @click="goToActivityDetail(item._raw.id)"
               >
-                <!-- 封面：渐变背景 + 分类图标 -->
-                <div class="post-cover" :style="{ background: getActivityGradient(item._raw.category) }">
-                  <div class="activity-in-feed-icon">
-                    <AppIcon :name="getActivityEmoji(item._raw.category)" :size="28" />
+                <div class="activity-feed-deco" :style="{ background: getActivityGradient(item._raw.category) }"></div>
+                <div class="activity-feed-row">
+                  <div class="activity-feed-icon" :style="{ background: getActivityCoverBg(item._raw.category) }">
+                    <AppIcon :name="getActivityIcon(item._raw.category)" :size="22" :color="getActivityIconColor(item._raw.category)" />
                   </div>
-                  <div class="activity-in-feed-status">{{ getActivityStatusText(item._raw) }}</div>
-                </div>
-
-                <!-- 内容 -->
-                <div class="post-body">
-                  <p class="post-title">{{ item.title }}</p>
-                  <div class="activity-in-feed-meta">
-                    <span>{{ formatShortTime(item._raw.start_time) }}</span>
-                    <span class="meta-dot">·</span>
-                    <span>{{ item._raw.current_participants }}人关注</span>
+                  <div class="activity-feed-body">
+                    <div class="activity-feed-top">
+                      <span class="feed-type-badge type-activity">活动</span>
+                      <span class="activity-feed-title">{{ item.title }}</span>
+                    </div>
+                    <div class="activity-feed-meta">
+                      <span>{{ formatShortTime(item._raw.start_time) }}</span>
+                      <span class="meta-dot">·</span>
+                      <span>{{ item._raw.current_participants }}人关注</span>
+                      <span v-if="item._raw.location" class="meta-dot">·</span>
+                      <span v-if="item._raw.location">{{ item._raw.location }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- 动态卡片 · 小红书双列风格 -->
+              <!-- 动态卡片·酷安风格 -->
               <div
                 v-else
-                class="feed-card post-feed-card animate-fadeIn"
+                class="feed-card coolapk-post-card animate-fadeIn"
                 :class="{ 'no-image': !item._raw.images || item._raw.images.length === 0 }"
                 :style="{ animationDelay: (index * 0.05) + 's' }"
                 @click="goToPostDetail(item._raw)"
               >
-                <!-- 封面图（有图时） -->
-                <div v-if="item._raw.images && item._raw.images.length > 0" class="post-cover" @click.stop="previewImage(item._raw.images, 0)">
-                  <img class="post-cover-img" :src="item._raw.images[0]" />
-                  <span v-if="item._raw.images.length > 1" class="post-cover-count">
-                    <AppIcon name="image" :size="10" /> {{ item._raw.images.length }}
-                  </span>
-                </div>
-                <div v-else class="post-cover post-cover-placeholder">
-                  <p class="post-cover-text-preview">{{ item._raw.content }}</p>
-                </div>
+                <!-- 无图帖子左侧装饰竖条 -->
+                <div v-if="!item._raw.images || item._raw.images.length === 0" class="post-deco-bar"></div>
 
-                <!-- 文字内容 -->
-                <div class="post-body">
-                  <p class="post-title">{{ item._raw.content }}</p>
-
-                  <!-- 底部：作者+互动 -->
-                  <div class="post-footer">
-                    <div class="post-author">
-                      <img v-if="item._raw.user?.avatar" class="post-author-avatar" :src="item._raw.user.avatar" @error="onAvatarError" />
-                      <div v-else class="post-author-avatar post-author-placeholder">{{ getInitial(item._raw.user?.nickname) }}</div>
-                      <span class="post-author-name">{{ item._raw.user?.nickname || '邻居' }}</span>
+                <div class="post-card-inner">
+                  <!-- 头部：头像+信息+缩略图 -->
+                  <div class="feed-header">
+                    <img v-if="item._raw.user?.avatar" class="feed-avatar" :src="item._raw.user.avatar" @error="onAvatarError" />
+                    <div v-else class="feed-avatar feed-avatar-placeholder">{{ getInitial(item._raw.user?.nickname) }}</div>
+                    <div class="feed-user-info">
+                      <span class="feed-username">{{ item._raw.user?.nickname || '邻居' }}</span>
+                      <div class="feed-meta">
+                        <span class="feed-time">{{ formatTime(item._raw.created_at) }}</span>
+                        <span v-if="item._raw.location" class="feed-location">· {{ item._raw.location }}</span>
+                      </div>
                     </div>
-                    <div class="post-like" :class="{ liked: item._raw.is_liked }" @click.stop="handleLikePost(item._raw)">
-                      <AppIcon class="post-like-icon" :class="{ 'heart-beat': item._raw.is_liked }" name="heart" :size="12" :filled="item._raw.is_liked" />
-                      <span>{{ item._raw.like_count || 0 }}</span>
+                    <!-- 图片缩略图（有图时放右上角） -->
+                    <div v-if="item._raw.images && item._raw.images.length > 0" class="post-thumb-wrap" @click.stop="previewImage(item._raw.images, 0)">
+                      <img class="post-thumb" :src="item._raw.images[0]" />
+                      <span v-if="item._raw.images.length > 1" class="post-thumb-count">{{ item._raw.images.length }}</span>
+                    </div>
+                  </div>
+
+                  <!-- 文字内容（折叠） -->
+                  <div class="post-text-wrap">
+                    <p class="post-text-clamp">{{ item._raw.content }}</p>
+                  </div>
+
+                  <!-- 操作栏 -->
+                  <div class="feed-actions">
+                    <div class="feed-action" :class="{ liked: item._raw.is_liked }" @click.stop="handleLikePost(item._raw)">
+                      <AppIcon class="action-icon" :class="{ 'heart-beat': item._raw.is_liked }" name="heart" :size="18" :filled="item._raw.is_liked" />
+                      <span class="action-count">{{ item._raw.like_count || 0 }}</span>
+                    </div>
+                    <div class="feed-action" @click.stop="showComments(item._raw)">
+                      <AppIcon class="action-icon" name="comment" :size="18" />
+                      <span class="action-count">{{ item._raw.comment_count || 0 }}</span>
+                    </div>
+                    <div class="feed-action" @click.stop>
+                      <AppIcon class="action-icon" name="eye" :size="18" />
+                      <span class="action-count">{{ item._raw.view_count || 0 }}</span>
+                    </div>
+                    <div class="feed-action feed-action-share" @click.stop="sharePost(item._raw)">
+                      <AppIcon class="action-icon" name="share" :size="18" />
                     </div>
                   </div>
                 </div>
@@ -1364,247 +1384,307 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
-/* ---- 统一 Feed 卡片 · 小红书风格 ---- */
-
+/* ============ 酷安风格Feed ============ */
 .feed-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 0 var(--spacing-lg);
   box-sizing: border-box;
-  align-items: start;
 }
 
-/* 桌面端中等屏幕：2列居中 */
-@media (min-width: 768px) and (max-width: 1199px) {
-  .feed-list {
-    max-width: 700px;
-    margin: 0 auto;
-    gap: 14px;
-  }
+/* 无图帖子左侧装饰竖条 */
+.post-deco-bar {
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--color-primary-soft);
 }
 
-/* 桌面端大屏幕：3列居中 */
-@media (min-width: 1200px) {
-  .feed-list {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-}
-
-/* ============ 基础卡片 ============ */
-.feed-card {
-  background: var(--color-bg-secondary);
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
-  overflow: hidden;
+.coolapk-post-card {
   position: relative;
-}
-
-.feed-card:hover {
-  box-shadow: 0 4px 20px rgba(0,0,0,0.10);
-  transform: translateY(-2px);
-}
-
-.feed-card:active {
-  transform: scale(0.99);
-}
-
-/* ============ 帖子卡片 ============ */
-.post-feed-card {
-  padding: 12px 0 0 0;
-}
-
-/* ============ 帖子卡片 - 小红书双列风格 ============ */
-.post-feed-card {
   padding: 0;
   overflow: hidden;
-  break-inside: avoid;
 }
 
-/* 封面图 */
-.post-cover {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  background: var(--color-bg-tertiary);
+.no-image .post-card-inner {
+  padding-left: 16px;
 }
 
-.post-cover-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  cursor: pointer;
-  transition: transform 0.3s ease;
+.post-card-inner {
+  padding: 0 16px;
 }
 
-.post-feed-card:hover .post-cover-img {
-  transform: scale(1.04);
-}
-
-.post-cover-count {
-  position: absolute;
-  bottom: 6px;
-  right: 6px;
-  background: rgba(0,0,0,0.55);
-  color: #fff;
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 8px;
+/* 头部 */
+.feed-header {
   display: flex;
   align-items: center;
-  gap: 3px;
+  padding: 12px 0;
+  margin-bottom: 6px;
 }
 
-/* 无图占位 - 文字预览 */
-.post-cover-placeholder {
-  display: flex;
-  align-items: flex-start;
-  padding: 12px;
-  min-height: 80px;
-  color: var(--color-text-secondary);
-  background: linear-gradient(135deg, #f8f9fa 0%, #eef0f5 100%);
-}
-
-.post-cover-text-preview {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--color-text-secondary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin: 0;
-  word-break: break-word;
-}
-
-/* 文本区 */
-.post-body {
-  padding: 10px 12px 12px;
-}
-
-.post-title {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--color-text-primary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin: 0 0 10px 0;
-}
-
-/* 底部栏 */
-.post-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.post-author {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
-}
-
-.post-author-avatar {
-  width: 22px;
-  height: 22px;
+.feed-avatar {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
+  margin-right: 10px;
+  background: var(--color-bg-tertiary);
   object-fit: cover;
   flex-shrink: 0;
-  background: var(--color-bg-tertiary);
 }
 
-.post-author-placeholder {
+.feed-avatar-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
 
-.post-author-name {
-  font-size: 11px;
+.feed-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.feed-username {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 1px;
+}
+
+.feed-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.feed-time,
+.feed-location {
+  font-size: 12px;
   color: var(--color-text-tertiary);
+}
+
+/* 缩略图（右上角） */
+.post-thumb-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-bg-tertiary);
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.post-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.post-thumb-wrap:hover .post-thumb {
+  transform: scale(1.08);
+}
+
+.post-thumb-count {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  line-height: 16px;
+}
+
+/* 文字内容 */
+.post-text-wrap {
+  margin-bottom: 8px;
+}
+
+.post-text-clamp {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  display: -webkit-inline-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+/* 操作栏 */
+.feed-actions {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--color-border-light);
+  padding: 6px 0;
+  gap: 0;
+}
+
+.feed-action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 0;
+  cursor: pointer;
+  transition: transform 0.15s, background-color var(--transition-fast);
+  border-radius: 8px;
+  min-height: 40px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.feed-action:hover {
+  background-color: var(--color-primary-soft);
+}
+
+.feed-action:active {
+  transform: scale(0.92);
+}
+
+.feed-action.liked .action-icon {
+  color: var(--color-error);
+}
+
+.feed-action.liked .action-count {
+  color: var(--color-error);
+}
+
+.feed-action-share {
+  flex: 0 0 auto;
+  width: 40px;
+}
+
+.action-icon {
+  font-size: 18px;
+  color: var(--color-text-tertiary);
+  transition: transform 0.3s var(--transition-spring);
+}
+
+.action-icon.heart-beat {
+  animation: heartBeat 0.4s ease;
+}
+
+.action-count {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.3); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* ============ 活动卡片（酷安） ============ */
+.coolapk-activity-card {
+  padding: 0 !important;
+  overflow: hidden;
+  grid-column: 1 / -1;
+}
+
+.activity-feed-deco {
+  height: 3px;
+  flex-shrink: 0;
+}
+
+.activity-feed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.activity-feed-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activity-feed-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-feed-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.feed-type-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.feed-type-badge.type-activity {
+  background: var(--theme-activity-soft);
+  color: var(--theme-activity);
+}
+
+.activity-feed-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.post-like {
+.activity-feed-meta {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   font-size: 11px;
   color: var(--color-text-tertiary);
-  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.meta-dot {
+  color: var(--color-text-muted);
+}
+
+/* 基础卡片 */
+.feed-card {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  border: 1px solid var(--color-border-light);
 }
 
-.post-like.liked {
-  color: var(--color-error);
+.feed-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
-.post-like-icon {
-  line-height: 1;
-}
-
-.heart-beat {
-  animation: heartBeat 0.3s ease;
-}
-
-/* ============ 活动卡片 - Feed内卡片样式 ============ */
-
-.activity-in-feed-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-}
-
-.activity-in-feed-status {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 10px;
-  font-weight: var(--font-weight-semibold);
-  background: rgba(16, 185, 129, 0.9);
-  color: #fff;
-  backdrop-filter: blur(6px);
-  z-index: 1;
-}
-
-.activity-in-feed-meta {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-  margin-top: 6px;
-}
-
-.activity-in-feed-meta .meta-dot {
-  color: var(--color-border-light);
+.feed-card:active {
+  transform: scale(0.99);
 }
 
 .loading-spinner {
