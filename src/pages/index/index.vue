@@ -228,7 +228,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Post, Comment, Activity } from '../../types/models'
 import { activityService } from '../../services/activityService'
-import { taskService } from '../../services/taskService'
 import { healthService } from '../../services/healthService'
 import { useAuth } from '../../store'
 import { toastSuccess, toastInfo } from '../../utils/toast'
@@ -297,11 +296,10 @@ const banners = ref([
 
 const quickActions = ref([
   { id: 'health', name: '健康打卡', icon: 'heart', path: '/pages/health/index', hint: '记录每日状态', badge: '未打卡' },
-  { id: 'help', name: '邻里互助', icon: 'handshake', path: '/pages/ai-helper/index', hint: '发布/接单', badge: '' }
+  { id: 'activity', name: '活动大厅', icon: 'calendar', path: '/pages/activities/index', hint: '发现精彩活动', badge: '' }
 ])
 
 const healthBadge = ref('未打卡')
-const helpBadge = ref('')
 async function loadQuickBadges() {
   try {
     if (isLoggedIn.value) {
@@ -316,18 +314,6 @@ async function loadQuickBadges() {
     }
   } catch (e) {
     healthBadge.value = '去打卡'
-  }
-
-  try {
-    const res: any = await taskService.getTasks()
-    const items: any[] = (res && res.items) || (Array.isArray(res) ? (res as any) : [])
-    const pendingCount = items.filter((t: any) => {
-      const s = (t.status || '').toLowerCase()
-      return s === 'open' || s === 'pending'
-    }).length
-    helpBadge.value = pendingCount > 0 ? `${pendingCount}单待接` : ''
-  } catch (e) {
-    helpBadge.value = ''
   }
 }
 
@@ -347,16 +333,20 @@ const unifiedFeed = computed(() => {
     sortTime: number
   }> = []
 
-  // 添加活动项（用 hotActivities 作为活动数据源）
+  // 添加活动项（仅展示进行中的活动）
   if (feedFilter.value === 'all' || feedFilter.value === 'activity') {
+    const now = Date.now()
     for (const act of hotActivities.value) {
-      items.push({
-        id: 'act-' + act.id,
-        _type: 'activity',
-        _raw: act,
-        title: act.title,
-        sortTime: -(act.current_participants * 100000 + (act.start_time || 0))
-      })
+      // 只展示今天在活动时间范围内的活动
+      if (act.start_time && now >= act.start_time && (!act.end_time || now <= act.end_time)) {
+        items.push({
+          id: 'act-' + act.id,
+          _type: 'activity',
+          _raw: act,
+          title: act.title,
+          sortTime: -(act.current_participants * 100000 + (act.start_time || 0))
+        })
+      }
     }
   }
 
@@ -645,11 +635,7 @@ function goToSearch() {
 }
 
 function handleQuickAction(action: any) {
-  if (action.path === '/pages/health/index') {
-    navigateTo(action.path)
-  } else {
-    switchTab(action.path)
-  }
+  navigateTo(action.path)
 }
 
 function goToActivityDetail(id: string) {
@@ -1025,8 +1011,8 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%);
 }
 
-.quick-help {
-  background: linear-gradient(135deg, #FFFFFF 0%, #FFF7ED 100%);
+.quick-activity {
+  background: linear-gradient(135deg, #FFFFFF 0%, #ECFDF5 100%);
 }
 
 .quick-card-inner {
