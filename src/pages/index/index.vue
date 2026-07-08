@@ -1022,7 +1022,7 @@ onUnmounted(() => {
 }
 
 .banner-section {
-  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
 .banner-swiper {
@@ -1114,7 +1114,8 @@ onUnmounted(() => {
 .quick-card {
   background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-md);
+  width: calc(50% - 6px);
+  padding: var(--spacing-lg);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
@@ -1139,14 +1140,14 @@ onUnmounted(() => {
 .quick-card-inner {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   flex: 1;
 }
 
 .quick-card-head {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 8px;
 }
 
 .quick-icon {
@@ -1185,7 +1186,7 @@ onUnmounted(() => {
 }
 
 .section {
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
 .section:first-of-type {
@@ -1243,12 +1244,13 @@ onUnmounted(() => {
 
 .activity-card {
   display: inline-block;
-  width: 160px;
+  width: 200px;
   margin-right: var(--spacing-lg);
   background: var(--color-bg-secondary);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  padding: 0 0 var(--spacing-md);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
   scroll-snap-align: start;
@@ -1265,7 +1267,7 @@ onUnmounted(() => {
 }
 
 .activity-cover {
-  height: 90px;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1294,6 +1296,8 @@ onUnmounted(() => {
 .activity-meta {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
 }
 
 .activity-time {
@@ -1326,9 +1330,9 @@ onUnmounted(() => {
   flex-shrink: 0;
   width: 220px;
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
   scroll-snap-align: start;
@@ -1459,7 +1463,8 @@ onUnmounted(() => {
 .feed-card {
   background: var(--color-bg-secondary);
   border-radius: var(--radius-xl);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  margin-bottom: 16px;
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--transition-normal), transform var(--transition-normal);
 }
@@ -1469,18 +1474,18 @@ onUnmounted(() => {
 }
 
 .feed-card:active {
-  transform: scale(0.995);
+  transform: scale(0.99);
 }
 
 .feed-header {
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: 12px;
 }
 
 .feed-avatar {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   margin-right: var(--spacing-md);
   background: var(--color-bg-tertiary);
@@ -1502,11 +1507,11 @@ onUnmounted(() => {
 }
 
 .feed-username {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .feed-meta {
@@ -1526,11 +1531,11 @@ onUnmounted(() => {
 }
 
 .feed-content {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 12px;
 }
 
 .feed-text {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--color-text-primary);
   line-height: 1.6;
 }
@@ -1579,8 +1584,9 @@ onUnmounted(() => {
 
 .feed-actions {
   display: flex;
+  gap: 24px;
   border-top: 1px solid var(--color-border-light);
-  padding-top: var(--spacing-md);
+  padding-top: 12px;
 }
 
 .feed-action {
@@ -1594,6 +1600,7 @@ onUnmounted(() => {
   transition: transform 0.15s, background-color var(--transition-fast);
   border-radius: var(--radius-md);
   min-height: var(--touch-min-size);
+  font-size: 12px;
 }
 
 .feed-action:hover {

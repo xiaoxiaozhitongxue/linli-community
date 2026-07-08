@@ -201,12 +201,12 @@ function mapApiTaskToLocal(apiTask: Task): TaskDetail {
 
 function getTypeName(type: string): string {
   const map: Record<string, string> = {
-    delivery: '配送',
-    shopping: '购物',
-    pet: '宠物',
-    child: '育儿',
+    delivery: '快递取送',
+    shopping: '代购',
     help: '帮忙',
-    companionship: '陪伴',
+    companionship: '陪护',
+    pet: '宠物',
+    child: '儿童',
     other: '其他'
   }
   return map[type] || '其他'

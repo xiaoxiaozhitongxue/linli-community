@@ -42,44 +42,14 @@
                 <span class="category-name">全部</span>
               </div>
               <div
+                v-for="cat in categories"
+                :key="cat.value"
                 class="category-item"
-                :class="{ active: selectedCategory === 'delivery' }"
-                @click="selectCategory('delivery')"
+                :class="{ active: selectedCategory === cat.value }"
+                @click="selectCategory(cat.value)"
               >
-                <AppIcon class="category-icon" name="bookmark" :size="18" />
-                <span class="category-name">取快递</span>
-              </div>
-              <div
-                class="category-item"
-                :class="{ active: selectedCategory === 'shopping' }"
-                @click="selectCategory('shopping')"
-              >
-                <AppIcon class="category-icon" name="activity" :size="18" />
-                <span class="category-name">买菜</span>
-              </div>
-              <div
-                class="category-item"
-                :class="{ active: selectedCategory === 'pet' }"
-                @click="selectCategory('pet')"
-              >
-                <AppIcon class="category-icon" name="users" :size="18" />
-                <span class="category-name">遛狗</span>
-              </div>
-              <div
-                class="category-item"
-                :class="{ active: selectedCategory === 'child' }"
-                @click="selectCategory('child')"
-              >
-                <AppIcon class="category-icon" name="user" :size="18" />
-                <span class="category-name">接孩子</span>
-              </div>
-              <div
-                class="category-item"
-                :class="{ active: selectedCategory === 'other' }"
-                @click="selectCategory('other')"
-              >
-                <AppIcon class="category-icon" name="edit" :size="18" />
-                <span class="category-name">其他</span>
+                <AppIcon class="category-icon" :name="cat.icon" :size="18" />
+                <span class="category-name">{{ cat.label }}</span>
               </div>
             </div>
           </div>
@@ -206,6 +176,16 @@ function normalizeStatus(status: string): string {
   return normalizeTaskStatus(status)
 }
 
+const categories = [
+  { value: 'delivery', label: '快递取送', icon: 'bookmark' },
+  { value: 'shopping', label: '代购', icon: 'activity' },
+  { value: 'help', label: '帮忙', icon: 'handshake' },
+  { value: 'companionship', label: '陪护', icon: 'users' },
+  { value: 'pet', label: '宠物', icon: 'gift' },
+  { value: 'child', label: '儿童', icon: 'user' },
+  { value: 'other', label: '其他', icon: 'edit' }
+]
+
 function mapTaskToDisplay(t: Task) {
   return {
     id: t.id,
@@ -304,10 +284,12 @@ const respondToTask = async (task: any, event: Event) => {
 
 const getTypeName = (type: string) => {
   const map: Record<string, string> = {
-    delivery: '取快递',
-    shopping: '买菜',
-    pet: '遛狗',
-    child: '接孩子',
+    delivery: '快递取送',
+    shopping: '代购',
+    help: '帮忙',
+    companionship: '陪护',
+    pet: '宠物',
+    child: '儿童',
     other: '其他'
   }
   return map[type] || type
@@ -315,11 +297,13 @@ const getTypeName = (type: string) => {
 
 const getTypeIcon = (type: string) => {
   const map: Record<string, string> = {
-    delivery: 'package',
+    delivery: 'bookmark',
     shopping: 'activity',
-    pet: 'users',
+    help: 'handshake',
+    companionship: 'users',
+    pet: 'gift',
     child: 'user',
-    other: 'bookmark'
+    other: 'edit'
   }
   return map[type] || 'bookmark'
 }
@@ -602,6 +586,10 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+.task-card:active {
+  transform: scale(0.99);
+}
+
 .task-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
@@ -614,7 +602,7 @@ onMounted(async () => {
 .task-card-row {
   display: flex;
   align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-lg);
   gap: var(--spacing-md);
   min-height: 60px;
 }
@@ -718,7 +706,7 @@ onMounted(async () => {
   padding: 6px 14px;
   background: var(--color-primary-gradient);
   color: var(--color-text-white);
-  border-radius: var(--radius-full);
+  border-radius: 12px;
   font-size: 13px;
   font-weight: var(--font-weight-semibold);
   cursor: pointer;

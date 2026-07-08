@@ -644,7 +644,7 @@ watch(isLoggedIn, (newVal, oldVal) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-lg);
   background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   margin-bottom: var(--spacing-md);
@@ -671,7 +671,7 @@ watch(isLoggedIn, (newVal, oldVal) => {
   padding: var(--spacing-lg);
   background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 12px;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-smooth);
@@ -703,7 +703,7 @@ watch(isLoggedIn, (newVal, oldVal) => {
 }
 
 .message-item:active {
-  transform: translateY(0);
+  transform: scale(0.99);
   box-shadow: var(--shadow-sm);
 }
 
@@ -995,7 +995,7 @@ watch(isLoggedIn, (newVal, oldVal) => {
   background: var(--color-primary-gradient);
   color: white;
   padding: var(--spacing-md) var(--spacing-xl);
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
@@ -1117,7 +1117,7 @@ watch(isLoggedIn, (newVal, oldVal) => {
 
 .dialog-btn {
   padding: 10px 20px;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;

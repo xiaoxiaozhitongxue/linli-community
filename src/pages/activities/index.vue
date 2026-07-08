@@ -487,7 +487,8 @@ onMounted(async () => {
 }
 
 .section {
-  margin-bottom: var(--spacing-2xl);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: 12px;
 }
 
 .section-header {
@@ -569,7 +570,7 @@ onMounted(async () => {
 }
 
 .hot-activity-card:active {
-  transform: scale(0.97);
+  transform: scale(0.99);
 }
 
 .hot-activity-cover {
@@ -584,7 +585,7 @@ onMounted(async () => {
 }
 
 .hot-activity-info {
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
 }
 
 .hot-activity-name {
@@ -622,7 +623,7 @@ onMounted(async () => {
 .recent-activity-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: 12px;
   padding: 0 var(--spacing-lg);
 }
 
@@ -659,7 +660,7 @@ onMounted(async () => {
 }
 
 .recent-activity-card:active {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 
 .recent-activity-cover {
@@ -809,7 +810,7 @@ onMounted(async () => {
   color: var(--color-text-white);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  border-radius: var(--radius-full);
+  border-radius: 12px;
   transition: all var(--transition-smooth);
   box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
   border: none;
