@@ -290,13 +290,8 @@ const handleTouchEnd = () => {
 
 /* 小屏设备 (≤374px) */
 @media (max-width: 374px) {
-  .tab-bar-inner {
-    height: 52px;
-  }
-  
   .tab-item {
     padding: 4px 8px;
-    min-height: 52px;
   }
   
   .tab-icon-wrap {

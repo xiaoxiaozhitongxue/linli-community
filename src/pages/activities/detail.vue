@@ -79,7 +79,7 @@
             </div>
             <div class="info-item">
               <span class="info-icon"><AppIcon name="users" :size="14" /></span>
-              <span class="info-text">{{ activity.current_participants }}人已报名{{ activity.max_participants ? ' / 限' + activity.max_participants + '人' : '' }}</span>
+              <span class="info-text">{{ activity.current_participants }}人参与</span>
             </div>
           </div>
         </div>
@@ -103,21 +103,7 @@
           </div>
         </div>
 
-        <!-- 参与者列表 -->
-        <div class="participants-section" v-if="participants.length > 0">
-          <div class="section-title">
-            <span>已报名邻居</span>
-            <span class="section-count">{{ participants.length }}人</span>
-          </div>
-          <div class="participants-list">
-            <div class="participant-item" v-for="p in participants" :key="p.id">
-              <img class="participant-avatar" :src="p.avatar || '/static/default-avatar.png'" alt="avatar" />
-              <span class="participant-name">{{ p.nickname }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="safe-area-bottom"></div>
+      <div class="safe-area-bottom"></div>
       </div>
 
     </div>
@@ -132,19 +118,7 @@
           <span class="bar-icon"><AppIcon name="share" :size="18" /></span>
         </div>
       </div>
-      <div class="bar-right">
-        <div 
-          class="join-btn"
-          :class="{ 
-            joined: activity.is_participant, 
-            full: activity.max_participants && activity.current_participants >= activity.max_participants,
-            ended: activity.status === 'completed' || activity.status === 'cancelled'
-          }"
-          @click="toggleJoin"
-        >
-          {{ getButtonText() }}
-        </div>
-      </div>
+      <div class="bar-right"></div>
     </div>
 
   </div>
@@ -175,7 +149,6 @@ const activity = ref<any>(null)
 const loading = ref(false)
 const error = ref(false)
 const isFavorited = ref(false)
-const participants = ref<any[]>([])
 
 const getCategoryLabel = (category: string) => {
   const map: Record<string, string> = {
@@ -222,18 +195,6 @@ const formatTime = (timestamp: number) => {
   return `${hours}:${minutes}`
 }
 
-const getButtonText = () => {
-  if (activity.value.status === 'completed' || activity.value.status === 'cancelled') {
-    return '活动已结束'
-  }
-  if (activity.value.is_participant) {
-    return '已报名'
-  }
-  if (activity.value.max_participants && activity.value.current_participants >= activity.value.max_participants) {
-    return '名额已满'
-  }
-  return '立即报名'
-}
 
 const loadActivity = async () => {
   loading.value = true
@@ -242,13 +203,6 @@ const loadActivity = async () => {
     const data = await activityService.getActivity(activityId.value)
     activity.value = data
     
-    participants.value = [
-      { id: '1', nickname: '王阿姨', avatar: '' },
-      { id: '2', nickname: '小李', avatar: '' },
-      { id: '3', nickname: '美食小红', avatar: '' },
-      { id: '4', nickname: '运动达人', avatar: '' },
-      { id: '5', nickname: '老张', avatar: '' }
-    ]
   } catch {
     // 如果API失败，尝试从活动列表中获取
     try {
@@ -277,11 +231,6 @@ const loadActivity = async () => {
         }
       }
       
-      participants.value = [
-        { id: '1', nickname: '王阿姨', avatar: '' },
-        { id: '2', nickname: '小李', avatar: '' },
-        { id: '3', nickname: '美食小红', avatar: '' }
-      ]
     } catch {
       error.value = true
       showToast('加载活动失败，请重试', 'error')
@@ -294,48 +243,6 @@ const loadActivity = async () => {
 const retry = () => {
   error.value = false
   loadActivity()
-}
-
-const toggleJoin = async () => {
-  if (activity.value.status === 'completed' || activity.value.status === 'cancelled') {
-    return
-  }
-  
-  // 添加登录验证
-  if (!isLoggedIn.value) {
-    setLoginRedirect(window.location.hash.replace('#', '') || '/pages/activities/detail')
-    showLoginGuide()
-    return
-  }
-  
-  if (activity.value.is_participant) {
-    try {
-      await activityService.leaveActivity(activity.value.id)
-      activity.value.is_participant = false
-      activity.value.current_participants = Math.max(0, activity.value.current_participants - 1)
-      toastSuccess('已取消报名')
-    } catch {
-      activity.value.is_participant = false
-      activity.value.current_participants = Math.max(0, activity.value.current_participants - 1)
-      toastSuccess('已取消报名')
-    }
-  } else {
-    if (activity.value.max_participants && activity.value.current_participants >= activity.value.max_participants) {
-      showToast('名额已满', 'info')
-      return
-    }
-    
-    try {
-      await activityService.joinActivity(activity.value.id)
-      activity.value.is_participant = true
-      activity.value.current_participants += 1
-      toastSuccess('报名成功')
-    } catch {
-      activity.value.is_participant = true
-      activity.value.current_participants += 1
-      toastSuccess('报名成功')
-    }
-  }
 }
 
 const toggleFavorite = () => {
@@ -588,19 +495,8 @@ onMounted(() => {
 
 .desc-section,
 .creator-section,
-.participants-section {
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-md);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(0, 0, 0, 0.02);
-  transition: all var(--transition-smooth);
-}
-
 .desc-section:hover,
-.creator-section:hover,
-.participants-section:hover {
+.creator-section:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
@@ -682,27 +578,9 @@ onMounted(() => {
   transform: translateX(4px);
 }
 
-.participants-list {
-  display: flex;
-  overflow-x: auto;
-  gap: 20px;
-  padding-bottom: 6px;
-  padding-right: 4px;
-}
 
-.participants-list::-webkit-scrollbar {
-  height: 4px;
-}
 
-.participants-list::-webkit-scrollbar-track {
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-full);
-}
 
-.participants-list::-webkit-scrollbar-thumb {
-  background: var(--color-text-muted);
-  border-radius: var(--radius-full);
-}
 
 .participant-item {
   display: flex;

@@ -210,6 +210,14 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
+  /* 移动端增强 */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* 防止 iOS 输入框自动缩放 */
+input, textarea, select {
+  font-size: 16px;
 }
 
 html, body {
@@ -1048,6 +1056,29 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 触摸反馈：轻按缩放 */
+.touch-feedback {
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.touch-feedback:active {
+  transform: scale(0.95);
+}
+
+/* 列表项触摸反馈 */
+.list-touch {
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.list-touch:active {
+  background: var(--hover-bg-active, rgba(0, 0, 0, 0.04));
 }
 
 .safe-area-top {

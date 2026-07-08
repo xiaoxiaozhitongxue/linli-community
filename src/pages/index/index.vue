@@ -83,6 +83,8 @@
 
           <ErrorBoundary v-else-if="error && unifiedFeed.length === 0" :message="error" @retry="handleRefresh" />
 
+          <EmptyState v-else-if="!loading && unifiedFeed.length === 0" icon="book-open" title="暂无动态" description="社区还没有动态，快来发第一条吧" />
+
           <div v-else class="feed-list">
             <template v-for="(item, index) in unifiedFeed" :key="item.id + '-' + item._type">
               <!-- 活动卡片（紧凑） -->
@@ -516,8 +518,11 @@ async function handleSubmitComment() {
 
 function formatTime(timestamp: number | string): string {
   const now = Date.now()
-  const date = typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime()
-  const diff = now - date
+  // 后端时间戳为秒（<1e12），前端 Date.now() 为毫秒，统一转毫秒比较
+  const ms = typeof timestamp === 'number'
+    ? (timestamp > 1e12 ? timestamp : timestamp * 1000)
+    : new Date(timestamp).getTime()
+  const diff = now - ms
 
   const minute = 60 * 1000
   const hour = 60 * minute
@@ -541,7 +546,7 @@ function formatTime(timestamp: number | string): string {
 }
 
 function formatShortTime(timestamp: number) {
-  const date = new Date(timestamp)
+  const date = new Date(timestamp > 1e12 ? timestamp : timestamp * 1000)
   const now = new Date()
   const diff = date.getTime() - now.getTime()
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
@@ -567,7 +572,7 @@ function formatShortTime(timestamp: number) {
 }
 
 function formatFullDate(timestamp: number) {
-  const date = new Date(timestamp)
+  const date = new Date(timestamp > 1e12 ? timestamp : timestamp * 1000)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -890,6 +895,7 @@ onUnmounted(() => {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  overscroll-behavior: contain;
   width: 100%;
   padding-top: calc(52px + env(safe-area-inset-top));
 }

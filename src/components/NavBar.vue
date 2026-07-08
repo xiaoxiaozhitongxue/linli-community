@@ -174,6 +174,18 @@ function handleBack() {
   cursor: pointer;
   transition: all var(--transition-fast, 150ms);
   color: var(--color-text-primary);
+  position: relative;
+}
+
+/* 扩展触摸区域至 44px */
+.navbar-back::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
 }
 
 .navbar-back:hover {
