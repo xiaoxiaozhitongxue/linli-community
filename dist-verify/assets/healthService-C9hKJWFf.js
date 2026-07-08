@@ -1,0 +1,1 @@
+import{p as t,g as a}from"./request-BQWMnX5e.js";const h={getRecords:e=>a("/api/health/records",e).then(r=>r.data),addRecord:e=>t("/api/health/records",e||{},{showError:!0}).then(r=>r.data)};export{h};

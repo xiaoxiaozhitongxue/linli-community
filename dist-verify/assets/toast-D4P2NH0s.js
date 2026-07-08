@@ -1,0 +1,1 @@
+function r(){const o=window.$toast;return o||(console.warn("Toast 实例未初始化，请确保 App.vue 中已引入 Toast 组件"),null)}function s(o,t="info",a=2e3){const n=r();n&&n.show(o,t,a)}function c(o,t){s(o,"success",t)}function u(o,t){s(o,"error",t)}function e(o,t){s(o,"info",t)}export{c as a,e as b,s,u as t};

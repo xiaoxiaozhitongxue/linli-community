@@ -1,0 +1,1 @@
+import{p as e}from"./request-BQWMnX5e.js";const s={login:r=>e("/api/auth/login",r,{showError:!0}).then(t=>t.data),logout:()=>Promise.resolve({success:!0}),register:r=>e("/api/auth/register",r,{showError:!0}).then(t=>t.data)};export{s as a};

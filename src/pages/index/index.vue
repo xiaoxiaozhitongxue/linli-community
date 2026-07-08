@@ -30,6 +30,9 @@
                 <span class="banner-title">{{ banner.title }}</span>
                 <span class="banner-desc">{{ banner.desc }}</span>
               </div>
+              <div class="banner-deco">
+                <AppIcon :name="banner.icon" :size="48" color="rgba(255,255,255,0.2)" />
+              </div>
             </div>
             <div class="banner-dots">
               <div v-for="(banner, index) in banners" :key="index" class="banner-dot" :class="{ active: currentBanner === index }" @click.stop="goToBanner(index)"></div>
@@ -286,9 +289,9 @@ let imagePreviewTouchStartX = 0
 let imagePreviewTouchMoveX = 0
 
 const banners = ref([
-  { title: '周末邻里集市', desc: '欢迎来摆摊、淘宝、串门', bgColor: 'linear-gradient(135deg, #FF8C42, #FFB380)' },
-  { title: '老人关怀计划', desc: '志愿者招募中，邀请您加入', bgColor: 'linear-gradient(135deg, #4CAF50, #81C784)' },
-  { title: '社区创业沙龙', desc: '把兴趣变成生意，邻居先成为客户', bgColor: 'linear-gradient(135deg, #2196F3, #64B5F6)' }
+  { title: '周末邻里集市', desc: '欢迎来摆摊、淘宝、串门', bgColor: 'linear-gradient(135deg, #FF8C42, #FFB380)', icon: 'activity' },
+  { title: '老人关怀计划', desc: '志愿者招募中，邀请您加入', bgColor: 'linear-gradient(135deg, #4CAF50, #81C784)', icon: 'heart' },
+  { title: '社区创业沙龙', desc: '把兴趣变成生意，邻居先成为客户', bgColor: 'linear-gradient(135deg, #2196F3, #64B5F6)', icon: 'star' }
 ])
 
 const quickActions = ref([
@@ -906,14 +909,14 @@ onUnmounted(() => {
 }
 
 .banner-section {
-  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-sm);
 }
 
 .banner-swiper {
-  height: 140px;
-  border-radius: var(--radius-xl);
+  height: 120px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   position: relative;
 }
 
@@ -922,33 +925,47 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   width: 100%;
-  height: 140px;
-  padding: var(--spacing-xl);
+  height: 120px;
+  padding: var(--spacing-md) var(--spacing-lg);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   transition: transform 0.4s var(--transition-spring);
 }
 
 .banner-content {
   display: flex;
   flex-direction: column;
+  z-index: 2;
+}
+
+.banner-deco {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .banner-title {
   color: var(--color-text-white);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: var(--font-weight-bold);
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 4px;
 }
 
 .banner-desc {
   color: rgba(255, 255, 255, 0.9);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .banner-dots {
   position: absolute;
-  bottom: 10px;
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -963,23 +980,11 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.5);
   transition: all 0.3s var(--transition-smooth);
   cursor: pointer;
-  min-height: 44px;
-  min-width: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 6px;
+  background-clip: content-box;
 }
 
-.banner-dot::after {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
-  transition: all 0.3s var(--transition-smooth);
-}
-
-.banner-dot.active::after {
+.banner-dot.active {
   width: 18px;
   border-radius: var(--radius-full);
   background: var(--color-text-white);
@@ -988,19 +993,19 @@ onUnmounted(() => {
 .quick-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   padding: 0 var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
 }
 
 .quick-card {
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  min-height: 96px;
+  min-height: 72px;
   display: flex;
   align-items: center;
 }
@@ -1021,7 +1026,7 @@ onUnmounted(() => {
 .quick-card-inner {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 2px;
   flex: 1;
 }
 
@@ -1067,7 +1072,7 @@ onUnmounted(() => {
 }
 
 .section {
-  padding: var(--spacing-lg) var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-lg);
 }
 
 .section:first-of-type {
@@ -1963,35 +1968,35 @@ onUnmounted(() => {
   }
 
   .banner-section {
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-xl);
   }
 
   .banner-swiper {
-    height: 160px;
+    height: 140px;
     border-radius: var(--radius-xl);
   }
 
   .banner-item {
-    height: 160px;
-    padding: var(--spacing-2xl);
+    height: 140px;
+    padding: var(--spacing-lg) var(--spacing-xl);
   }
 
   .banner-title {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .banner-desc {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .quick-actions {
     max-width: 600px;
-    margin: 0 auto var(--spacing-xl);
+    margin: 0 auto var(--spacing-lg);
   }
 
   .quick-card {
-    min-height: 108px;
-    padding: var(--spacing-xl);
+    min-height: 80px;
+    padding: var(--spacing-lg);
   }
 
   .quick-name {
