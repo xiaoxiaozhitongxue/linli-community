@@ -46,7 +46,7 @@
               @input="onPasswordInput"
             />
             <span class="password-toggle" @click="showPassword = !showPassword">
-              <AppIcon :name="showPassword ? 'close' : 'close'" class="password-toggle" />
+              <AppIcon :name="showPassword ? 'eye' : 'eye-off'" class="password-toggle" />
             </span>
           </div>
           <div class="error-text" v-if="passwordError">{{ passwordError }}</div>

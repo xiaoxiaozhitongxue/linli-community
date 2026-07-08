@@ -1014,7 +1014,6 @@ onUnmounted(() => {
   scroll-behavior: smooth;
   overscroll-behavior: contain;
   width: 100%;
-  padding-top: calc(52px + env(safe-area-inset-top));
 }
 
 .page-wrapper {

@@ -22,7 +22,7 @@
           :class="{ 'navbar-back--light': type === 'gradient' }"
           @click="handleBack"
         >
-          <AppIcon name="close" :size="20" />
+          <AppIcon name="chevron-left" :size="20" />
         </div>
       </div>
 
@@ -141,7 +141,7 @@ function handleBack() {
 .navbar-inner--custom {
   height: auto;
   min-height: 52px;
-  padding-top: env(safe-area-inset-top, 0px);
+  padding: env(safe-area-inset-top, 0px) var(--spacing-lg, 16px) 4px;
 }
 
 .navbar--left .navbar-title {

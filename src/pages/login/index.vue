@@ -89,7 +89,7 @@
                     class="toggle-password" 
                     @click="loginForm.showPassword = !loginForm.showPassword"
                   >
-                  <AppIcon :name="loginForm.showPassword ? 'close' : 'close'" class="toggle-password" />
+                  <AppIcon :name="loginForm.showPassword ? 'eye' : 'eye-off'" class="toggle-password" />
                   </span>
                 </div>
                 <span v-if="loginForm.passwordError" class="error-hint">{{ loginForm.passwordError }}</span>

@@ -6,7 +6,7 @@
         v-for="tab in tabs"
         :key="tab.path"
         class="tab-item"
-        :class="{ active: currentPath === tab.path || currentPath.startsWith(tab.path + '/') }"
+        :class="{ active: isActive(tab.path) }"
         @click="switchTab(tab.path)"
         @touchstart.passive="handleTouchStart(tab.path)"
         @touchend="handleTouchEnd"
@@ -16,9 +16,9 @@
       >
         <div class="tab-icon-wrap">
           <div class="tab-icon-bg"></div>
-          <AppIcon class="tab-icon" :name="tab.icon" :size="26" />
+          <AppIcon class="tab-icon" :name="tab.icon" :size="26" :filled="isActive(tab.path)" />
           <div class="ripple-effect" v-if="pressedTab === tab.path"></div>
-          <div class="icon-glow" v-if="currentPath === tab.path || currentPath.startsWith(tab.path + '/')"></div>
+          <div class="icon-glow" v-if="isActive(tab.path)"></div>
         </div>
         <span class="tab-label">{{ tab.name }}</span>
 
@@ -38,6 +38,8 @@ const route = useRoute()
 const pressedTab = ref<string | null>(null)
 
 const currentPath = computed(() => route.path)
+
+const isActive = (path: string) => currentPath.value === path || currentPath.value.startsWith(path + '/')
 
 const tabs = [
   {
@@ -165,8 +167,8 @@ const handleTouchEnd = () => {
 }
 
 .tab-item.active .tab-icon-bg {
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.18) 0%, rgba(255, 140, 66, 0.12) 100%);
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.12);
+  background: rgba(255, 107, 53, 0.08);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.08);
 }
 
 .tab-icon {
