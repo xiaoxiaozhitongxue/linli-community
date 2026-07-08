@@ -279,6 +279,7 @@ import { getAndClearLoginRedirect } from '../../utils/auth'
 // B11：社区列表统一引用单一数据源，避免与注册页下拉项不一致
 import { COMMUNITY_NAMES } from '../../constants/communities'
 import AppIcon from '../../components/AppIcon.vue'
+import { navigateTo } from '../../utils/router'
 
 const { setUser } = useAuth()
 
@@ -324,9 +325,9 @@ const registerForm = reactive({
   isLoading: false
 })
 
-// 忘记密码 - 功能暂未开放
+// 忘记密码 - 跳转到忘记密码页
 const handleForgotPassword = () => {
-  toastInfo('密码重置功能开发中，请联系管理员处理')
+  navigateTo('/pages/login/forgot')
 }
 
 // 验证状态

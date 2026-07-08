@@ -27,8 +27,7 @@
       </div>
 
       <div class="actions">
-        <div class="act-btn contact" @click="contact">联系店主</div>
-        <div class="act-btn buy" @click="buy">立即购买</div>
+        <div class="act-btn contact" @click="contact" style="width:100%;">联系店主</div>
       </div>
     </div>
 
@@ -65,7 +64,6 @@ const goShop = () => {
   toastInfo(shop ? `来自「${shop}」` : '店铺信息暂未收录')
 }
 const contact = () => toastInfo('已为您转接店主，请稍候~')
-const buy = () => toastInfo('下单功能开发中，敬请期待')
 
 onMounted(() => {
   myProducts.value = localStore.getArray('business_my_products', [], phone.value)
@@ -91,6 +89,5 @@ onMounted(() => {
 .actions { display: flex; gap: var(--spacing-md); margin-top: var(--spacing-xl); }
 .act-btn { flex: 1; text-align: center; padding: var(--spacing-md); border-radius: var(--radius-md); font-weight: 600; cursor: pointer; }
 .contact { background: var(--color-bg-tertiary); color: var(--color-text-secondary); }
-.buy { background: var(--color-primary-gradient); color: #fff; }
 .empty { text-align: center; color: var(--color-text-muted); padding-top: 60px; }
 </style>

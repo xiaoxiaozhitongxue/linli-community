@@ -21,13 +21,6 @@
             </div>
             <span class="menu-item-arrow">›</span>
           </div>
-          <div class="menu-item" @click="showSecurity">
-            <div class="menu-item-left">
-              <AppIcon name="lock" class="menu-item-icon" />
-              <span class="menu-item-text">安全设置</span>
-            </div>
-            <span class="menu-item-arrow">›</span>
-          </div>
         </div>
       </div>
 
@@ -100,13 +93,6 @@
             <div class="menu-item-left">
               <AppIcon name="info" class="menu-item-icon" />
               <span class="menu-item-text">关于我们</span>
-            </div>
-            <span class="menu-item-arrow">›</span>
-          </div>
-          <div class="menu-item" @click="showFeedback">
-            <div class="menu-item-left">
-              <AppIcon name="info" class="menu-item-icon" />
-              <span class="menu-item-text">意见反馈</span>
             </div>
             <span class="menu-item-arrow">›</span>
           </div>
@@ -232,10 +218,6 @@ const showPrivacy = () => {
   navigateTo('/pages/profile/privacy')
 }
 
-const showSecurity = () => {
-  toastInfo('安全设置即将上线')
-}
-
 const showThemeSelector = () => {
   showThemeModal.value = true
 }
@@ -262,10 +244,6 @@ const clearCache = () => {
 
 const showAbout = () => {
   navigateTo('/pages/profile/about')
-}
-
-const showFeedback = () => {
-  toastInfo('意见反馈即将上线')
 }
 
 const logout = () => {

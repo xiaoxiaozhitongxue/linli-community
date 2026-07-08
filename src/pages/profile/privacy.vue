@@ -111,7 +111,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { toastSuccess, toastInfo } from '../../utils/toast'
-import { navigateBackSmart } from '../../utils/router'
+import { navigateBackSmart, navigateTo } from '../../utils/router'
 import AppIcon from '../../components/AppIcon.vue'
 import NavBar from '../../components/NavBar.vue'
 
@@ -134,7 +134,7 @@ const clearCache = () => {
 }
 
 const goToAccountSecurity = () => {
-  toastInfo('账号安全功能即将上线')
+  navigateTo('/pages/profile/password')
 }
 
 const saveSettings = () => {

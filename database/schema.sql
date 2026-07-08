@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS posts (
   visibility TEXT NOT NULL DEFAULT 'public' CHECK(visibility IN ('public', 'community', 'private')),
   like_count INTEGER NOT NULL DEFAULT 0,
   comment_count INTEGER NOT NULL DEFAULT 0,
+  view_count INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
   updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

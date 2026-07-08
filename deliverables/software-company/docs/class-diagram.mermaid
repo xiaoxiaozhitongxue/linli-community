@@ -1,0 +1,76 @@
+classDiagram
+    class LocationResult {
+        <<external (from utils/location)>>
+        +number longitude
+        +number latitude
+        +string city
+        +string district
+        +string address
+        +string community
+        +string provider
+    }
+
+    class LocationForm {
+        +string country
+        +string province
+        +string city
+        +string district
+        +string address
+    }
+
+    class RegionNode {
+        +string name
+        +RegionNode[] children
+    }
+
+    class useLocationForm {
+        +Ref~LocationForm~ form
+        +ComputedRef~string[]~ provinces
+        +ComputedRef~string[]~ cities
+        +ComputedRef~string[]~ districts
+        +ComputedRef~boolean~ isRegionComplete
+        +ComputedRef~string~ formattedLocation
+        +autoFill(LocationResult) void
+        +reset() void
+        +getSubmitValue() string
+    }
+
+    class useLocation {
+        <<existing>>
+        +Ref~string~ communityName
+        +Ref~boolean~ locating
+        +Ref~LocationResult~ locationResult
+        +ComputedRef~string~ cityDistrict  ~~new~~
+        +chooseLocation() Promise~LocationResult~
+        +startAutoLocate() void
+        +cleanup() void
+    }
+
+    class LocationPicker {
+        <<Vue Component>>
+        +Props: modelValue, loading, errorText, locatingText
+        +Emits: update:modelValue, change
+        +depends: useLocationForm
+    }
+
+    class IndexPage {
+        <<Homepage>>
+        +uses: useLocation.cityDistrict
+        +display: "Shanghai-Pudong"
+        -removes: location-picker panel
+    }
+
+    class PublishPages {
+        <<Publish Pages>>
+        +uses: LocationPicker component
+        +submit: getSubmitValue() → string
+    }
+
+    LocationForm <.. LocationPicker : v-model
+    LocationForm <.. useLocationForm : manages
+    RegionNode <.. useLocationForm : consumes
+    LocationResult <.. useLocationForm : autoFill() consumes
+    LocationResult <.. useLocation : manages
+    LocationPicker <.. useLocationForm : composes
+    LocationPicker .. PublishPages : embedded in
+    IndexPage .. useLocation : uses

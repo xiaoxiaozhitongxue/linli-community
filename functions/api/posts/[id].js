@@ -47,6 +47,13 @@ export async function onRequestGet(context) {
       return createErrorResponse(404, '动态不存在')
     }
 
+    // 增加阅读数
+    await db.execute(
+      'UPDATE posts SET view_count = COALESCE(view_count, 0) + 1 WHERE id = ?',
+      [params.id]
+    )
+    post.view_count = (post.view_count || 0) + 1
+
     return createResponse(post)
   } catch (error) {
     console.error('Get post error:', error)

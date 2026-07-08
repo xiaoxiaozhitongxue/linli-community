@@ -136,7 +136,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue'
-import { toastSuccess, toastError, toastInfo } from '../../utils/toast'
+import { toastSuccess, toastError } from '../../utils/toast'
 import { navigateTo, switchTab, redirectTo } from '../../utils/router'
 import { showLoading, hideLoading } from '../../utils/ui'
 import { useAuth } from '../../store'
@@ -376,11 +376,11 @@ const handleRegister = async () => {
 }
 
 const showAgreement = () => {
-  toastInfo('用户协议页面开发中')
+  navigateTo('/pages/agreement/index')
 }
 
 const showPrivacy = () => {
-  toastInfo('隐私政策页面开发中')
+  navigateTo('/pages/privacy-policy/index')
 }
 </script>
 

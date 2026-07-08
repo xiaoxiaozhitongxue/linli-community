@@ -77,13 +77,12 @@
           <div class="section-label">
             <span class="label-text">位置</span>
           </div>
-          <div class="location-input" @click="openLocationInput">
-            <AppIcon name="map-pin" class="location-icon" />
-            <span class="location-text" :class="{ placeholder: !location }">
-              {{ location || '添加位置让更多邻居看到' }}
-            </span>
-            <span class="location-arrow">›</span>
-          </div>
+          <LocationPicker
+            v-model="locationForm"
+            :loading="locating"
+            :error-text="locationError"
+            locating-text="定位中..."
+          />
         </div>
       </div>
 
@@ -96,7 +95,7 @@
           <AppIcon name="camera" class="action-icon" />
           <span class="action-label">图片</span>
         </div>
-        <div class="bottom-action" @click="openLocationInput">
+        <div class="bottom-action" @click="scrollToLocation">
           <AppIcon name="map-pin" class="action-icon" />
           <span class="action-label">位置</span>
         </div>
@@ -111,25 +110,6 @@
           <div class="dot"></div>
           <div class="dot"></div>
           <div class="dot"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 地点输入弹窗 -->
-    <div v-if="showLocationModal" class="modal-overlay" @click.self="showLocationModal = false">
-      <div class="location-modal">
-        <div class="location-modal-header">
-          <span class="modal-cancel" @click="showLocationModal = false">取消</span>
-          <span class="modal-title">输入位置</span>
-          <span class="modal-confirm" @click="confirmLocation">确定</span>
-        </div>
-        <div class="location-modal-body">
-          <input
-            class="location-input-field"
-            v-model="tempLocation"
-            placeholder="请输入位置名称"
-            @keyup.enter="confirmLocation"
-          />
         </div>
       </div>
     </div>
@@ -157,20 +137,25 @@ import { useAuth } from '../../store'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
 import { setLoginRedirect } from '../../utils/auth'
+import { getLocation } from '../../utils/location'
+import { useLocationForm } from '../../composables/useLocationForm'
 import NavBar from '../../components/NavBar.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import LocationPicker from '../../components/LocationPicker.vue'
 
 const router = useRouter()
 const { user, isLoggedIn, initAuth } = useAuth()
 
 const content = ref('')
 const images = ref<string[]>([])
-const location = ref('')
 const selectedCategory = ref('daily')
 const publishing = ref(false)
 const showLoginModal = ref(false)
-const showLocationModal = ref(false)
-const tempLocation = ref('')
+
+// 使用 LocationPicker + useLocationForm
+const { form: locationForm, getSubmitValue, autoFill } = useLocationForm()
+const locating = ref(false)
+const locationError = ref('')
 
 const categories = [
   { id: 'daily', name: '日常', icon: 'home' },
@@ -185,13 +170,28 @@ const canPublish = computed(() => {
   return content.value.trim().length > 0 && !publishing.value
 })
 
-onMounted(() => {
+onMounted(async () => {
   initAuth()
 
   if (!isLoggedIn.value) {
     setLoginRedirect('/pages/post/create')
     showLoginModal.value = true
     return
+  }
+
+  // 自动定位填充
+  locating.value = true
+  locationError.value = ''
+  try {
+    const result = await getLocation({ forceRefresh: false })
+    if (result) {
+      autoFill(result)
+    }
+  } catch (e: any) {
+    console.warn('[createPost] 定位失败:', e)
+    locationError.value = '定位失败，请手动选择'
+  } finally {
+    locating.value = false
   }
 })
 
@@ -217,7 +217,6 @@ function chooseImage() {
     return
   }
 
-  // 本地选图：使用 FileReader 读取为 base64 dataURL 作为预览，避免依赖远程模拟图
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'
@@ -251,14 +250,9 @@ function selectCategory(category: any) {
   selectedCategory.value = category.id
 }
 
-function openLocationInput() {
-  tempLocation.value = location.value
-  showLocationModal.value = true
-}
-
-function confirmLocation() {
-  location.value = tempLocation.value.trim()
-  showLocationModal.value = false
+function scrollToLocation() {
+  const el = document.querySelector('.location-section')
+  if (el) el.scrollIntoView({ behavior: 'smooth' })
 }
 
 async function publishPost() {
@@ -272,7 +266,7 @@ async function publishPost() {
     await postService.createPost({
       content: content.value.trim(),
       images: imageUrls,
-      location: location.value || undefined,
+      location: getSubmitValue() || undefined,
       visibility: 'public'
     })
 
@@ -531,40 +525,6 @@ async function publishPost() {
   transition: box-shadow var(--transition-normal);
 }
 
-.location-input {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-md);
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.location-input:hover {
-  background: var(--color-primary-soft);
-}
-
-.location-icon {
-  font-size: 18px;
-  margin-right: var(--spacing-sm);
-}
-
-.location-text {
-  flex: 1;
-  font-size: 14px;
-  color: var(--color-text-primary);
-}
-
-.location-text.placeholder {
-  color: var(--color-text-placeholder);
-}
-
-.location-arrow {
-  font-size: 20px;
-  color: var(--color-text-muted);
-}
-
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -685,78 +645,6 @@ async function publishPost() {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.location-modal {
-  width: 90%;
-  max-width: 400px;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  animation: fadeInScale var(--transition-smooth) ease;
-  box-shadow: var(--shadow-2xl);
-}
-
-.location-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.modal-cancel {
-  font-size: 15px;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  transition: color var(--transition-fast);
-}
-
-.modal-cancel:hover {
-  color: var(--color-text-secondary);
-}
-
-.modal-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.modal-confirm {
-  font-size: 15px;
-  color: var(--color-primary);
-  font-weight: 500;
-  cursor: pointer;
-  transition: color var(--transition-fast);
-}
-
-.modal-confirm:hover {
-  color: var(--color-primary-dark);
-}
-
-.location-modal-body {
-  padding: 16px;
-}
-
-.location-input-field {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  font-size: 15px;
-  color: var(--color-text-primary);
-  outline: none;
-  background: var(--color-bg-tertiary);
-  transition: all var(--transition-normal);
-}
-
-.location-input-field:focus {
-  border-color: var(--color-primary);
-  background: var(--color-bg-secondary);
-  box-shadow: 0 0 0 3px var(--color-primary-soft);
-}
-
-.location-input-field::placeholder {
-  color: var(--color-text-placeholder);
 }
 
 .confirm-modal {

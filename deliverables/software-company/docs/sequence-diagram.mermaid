@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant User as User
+    participant Index as index.vue
+    participant useLoc as useLocation
+    participant Utils as utils/location.ts
+    participant NavBar as NavBar Area
+
+    Index->>Index: onMounted
+    Index->>useLoc: startAutoLocate(user?.community)
+    useLoc->>useLoc: locating = true
+    useLoc->>Utils: getLocation({ forceRefresh: true })
+    Utils->>Utils: Browser/AMap/Baidu positioning
+    Utils-->>useLoc: LocationResult
+    useLoc->>useLoc: locationResult = result
+    useLoc->>useLoc: communityName = pickDisplayCommunity(result)
+    useLoc-->>Index: locating = false
+    Note over Index: cityDistrict = computed(() => locationResult.city + "-" + locationResult.district)
+    Index->>NavBar: display "Shanghai-Pudong New Area"
+    Note over User,NavBar: User sees "Shanghai-Pudong New Area", no click interaction

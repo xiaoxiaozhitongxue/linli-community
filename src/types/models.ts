@@ -27,6 +27,7 @@ export interface Post {
   visibility: 'public' | 'community' | 'private'
   like_count: number
   comment_count: number
+  view_count?: number
   is_liked?: boolean
   created_at: number
   updated_at: number

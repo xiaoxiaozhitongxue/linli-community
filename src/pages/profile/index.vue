@@ -38,7 +38,7 @@
 
         <!-- 数据统计 -->
         <div class="stats-row" v-if="isLoggedIn">
-          <div class="stat-item" @click="goToMyCredits">
+          <div class="stat-item">
             <span class="stat-value">{{ user?.credit_score || 0 }}</span>
             <span class="stat-label">信用分</span>
           </div>
@@ -94,35 +94,25 @@
           </div>
         </div>
 
-        <!-- 快捷操作 -->
+        <!-- 内容管理入口 -->
         <div class="task-quick-actions">
-          <div class="task-action-card my-tasks" @click="goToMyTasks('all')">
+          <div class="task-action-card my-posts" @click="goToMyPosts">
             <div class="action-icon-wrap">
-              <AppIcon name="bookmark" class="action-icon" />
+              <AppIcon name="list" class="action-icon" />
             </div>
             <div class="action-content">
-              <span class="action-title">我的任务</span>
-              <span class="action-desc">管理已发布和已接受的任务</span>
+              <span class="action-title">我的动态</span>
+              <span class="action-desc">查看和管理你发布过的帖子</span>
             </div>
             <span class="action-arrow">›</span>
           </div>
-          <div class="task-action-card publish" @click="goToPublishTask">
+          <div class="task-action-card my-activities" @click="goToMyActivities">
             <div class="action-icon-wrap">
-              <AppIcon name="edit" class="action-icon" />
+              <AppIcon name="calendar" class="action-icon" />
             </div>
             <div class="action-content">
-              <span class="action-title">发布任务</span>
-              <span class="action-desc">发布互助请求获取帮助</span>
-            </div>
-            <span class="action-arrow">›</span>
-          </div>
-          <div class="task-action-card browse" @click="goToBrowseTasks">
-            <div class="action-icon-wrap">
-              <AppIcon name="search" class="action-icon" />
-            </div>
-            <div class="action-content">
-              <span class="action-title">浏览任务</span>
-              <span class="action-desc">发现社区中的互助任务</span>
+              <span class="action-title">我的活动</span>
+              <span class="action-desc">查看和管理你发布过的活动</span>
             </div>
             <span class="action-arrow">›</span>
           </div>
@@ -165,19 +155,6 @@
             <span class="menu-list-arrow">›</span>
           </div>
           <div class="menu-list-divider"></div>
-          <div class="menu-list-item" @click="goToAddress">
-            <div class="menu-list-left">
-              <div class="menu-icon-wrap address">
-                <AppIcon name="map-pin" class="menu-list-icon" />
-              </div>
-              <div class="menu-list-content">
-                <span class="menu-list-text">收货地址</span>
-                <span class="menu-list-desc">管理常用收货地址</span>
-              </div>
-            </div>
-            <span class="menu-list-arrow">›</span>
-          </div>
-          <div class="menu-list-divider"></div>
           <div class="menu-list-item" @click="goToAbout">
             <div class="menu-list-left">
               <div class="menu-icon-wrap about">
@@ -186,54 +163,6 @@
               <div class="menu-list-content">
                 <span class="menu-list-text">关于我们</span>
                 <span class="menu-list-desc">了解应用信息和版本</span>
-              </div>
-            </div>
-            <span class="menu-list-arrow">›</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 帮助与反馈 -->
-      <div class="menu-section">
-        <div class="section-header">
-          <AppIcon name="help-circle" class="section-icon" />
-          <span class="section-title">帮助与支持</span>
-        </div>
-        <div class="menu-card">
-          <div class="menu-list-item" @click="goToHelp">
-            <div class="menu-list-left">
-              <div class="menu-icon-wrap help">
-                <AppIcon name="help-circle" class="menu-list-icon" />
-              </div>
-              <div class="menu-list-content">
-                <span class="menu-list-text">帮助中心</span>
-                <span class="menu-list-desc">常见问题和使用指南</span>
-              </div>
-            </div>
-            <span class="menu-list-arrow">›</span>
-          </div>
-          <div class="menu-list-divider"></div>
-          <div class="menu-list-item" @click="goToFeedback">
-            <div class="menu-list-left">
-              <div class="menu-icon-wrap feedback">
-                <AppIcon name="message-circle" class="menu-list-icon" />
-              </div>
-              <div class="menu-list-content">
-                <span class="menu-list-text">意见反馈</span>
-                <span class="menu-list-desc">提交建议帮助我们改进</span>
-              </div>
-            </div>
-            <span class="menu-list-arrow">›</span>
-          </div>
-          <div class="menu-list-divider"></div>
-          <div class="menu-list-item" @click="goToDesign">
-            <div class="menu-list-left">
-              <div class="menu-icon-wrap design" style="background: #FFF3ED;">
-                <AppIcon name="star" :size="20" color="#FF6B35" />
-              </div>
-              <div class="menu-list-content">
-                <span class="menu-list-text">设计规范</span>
-                <span class="menu-list-desc">图标集与设计语言展示</span>
               </div>
             </div>
             <span class="menu-list-arrow">›</span>
@@ -346,10 +275,6 @@ const goToEditProfile = () => {
   navigateTo('/pages/profile/edit')
 }
 
-const goToMyCredits = () => {
-  toastInfo('信用分详情即将上线')
-}
-
 const goToPublishedTasks = () => {
   navigateTo('/pages/profile/my-tasks?type=published')
 }
@@ -362,12 +287,12 @@ const goToMyTasks = (status?: string) => {
   navigateTo('/pages/profile/my-tasks' + (status ? '?status=' + status : ''))
 }
 
-const goToPublishTask = () => {
-  navigateTo('/pages/ai-helper/publish')
+const goToMyPosts = () => {
+  navigateTo('/pages/profile/my-posts')
 }
 
-const goToBrowseTasks = () => {
-  navigateTo('/pages/ai-helper/index')
+const goToMyActivities = () => {
+  navigateTo('/pages/profile/my-activities')
 }
 
 const goToMessages = () => {
@@ -378,24 +303,8 @@ const goToPrivacy = () => {
   navigateTo('/pages/profile/privacy')
 }
 
-const goToAddress = () => {
-  toastInfo('收货地址功能即将上线')
-}
-
 const goToAbout = () => {
   navigateTo('/pages/profile/about')
-}
-
-const goToHelp = () => {
-  toastInfo('帮助中心即将上线')
-}
-
-const goToFeedback = () => {
-  toastInfo('意见反馈即将上线')
-}
-
-const goToDesign = () => {
-  navigateTo('/pages/design/index')
 }
 
 const goToLogin = () => {
@@ -763,19 +672,14 @@ onMounted(() => {
   transform: scale(0.99);
 }
 
-.task-action-card.my-tasks {
-  background: var(--color-info-soft);
-  border-left: 3px solid var(--color-info);
+.task-action-card.my-posts {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.04));
+  border-left: 3px solid #6366F1;
 }
 
-.task-action-card.publish {
-  background: var(--color-warning-soft);
-  border-left: 3px solid var(--color-warning);
-}
-
-.task-action-card.browse {
-  background: linear-gradient(135deg, rgba(156, 39, 176, 0.08), rgba(156, 39, 176, 0.04));
-  border-left: 3px solid #9C27B0;
+.task-action-card.my-activities {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.1), rgba(20, 184, 166, 0.04));
+  border-left: 3px solid #14B8A6;
 }
 
 .action-icon-wrap {
@@ -878,20 +782,8 @@ onMounted(() => {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.08));
 }
 
-.menu-icon-wrap.address {
-  background: var(--color-error-soft);
-}
-
 .menu-icon-wrap.about {
   background: linear-gradient(135deg, rgba(20, 184, 166, 0.12), rgba(20, 184, 166, 0.08));
-}
-
-.menu-icon-wrap.help {
-  background: var(--color-warning-soft);
-}
-
-.menu-icon-wrap.feedback {
-  background: linear-gradient(135deg, rgba(156, 39, 176, 0.12), rgba(156, 39, 176, 0.08));
 }
 
 .menu-list-item:hover .menu-icon-wrap {

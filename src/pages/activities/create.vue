@@ -83,13 +83,12 @@
 
         <div class="form-item">
           <div class="form-label">活动地点</div>
-          <div class="form-row" @click="openLocationInput">
-            <span class="row-label">选择位置</span>
-            <span class="row-value" :class="{ placeholder: !form.location }">
-              {{ form.location || '请选择活动地点' }}
-            </span>
-            <span class="row-arrow">›</span>
-          </div>
+          <LocationPicker
+            v-model="locationForm"
+            :loading="locating"
+            :error-text="locationError"
+            locating-text="定位中..."
+          />
         </div>
 
         <div class="form-item">
@@ -186,25 +185,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 地点输入弹窗 -->
-    <div v-if="showLocationModal" class="picker-overlay" @click.self="showLocationModal = false">
-      <div class="location-modal">
-        <div class="location-modal-header">
-          <span class="picker-cancel" @click="showLocationModal = false">取消</span>
-          <span class="picker-title">输入活动地点</span>
-          <span class="picker-confirm" @click="confirmLocation">确定</span>
-        </div>
-        <div class="location-modal-body">
-          <input
-            class="location-input-field"
-            v-model="tempLocation"
-            placeholder="请输入活动地点"
-            @keyup.enter="confirmLocation"
-          />
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -213,8 +193,11 @@ import { ref, computed, onMounted } from 'vue'
 import { activityService } from '../../services/activityService'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
+import { getLocation } from '../../utils/location'
+import { useLocationForm } from '../../composables/useLocationForm'
 import NavBar from '../../components/NavBar.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import LocationPicker from '../../components/LocationPicker.vue'
 
 const form = ref({
   title: '',
@@ -223,9 +206,13 @@ const form = ref({
   description: '',
   startTime: '',
   endTime: '',
-  location: '',
   maxParticipants: 20
 })
+
+// 使用 LocationPicker + useLocationForm
+const { form: locationForm, getSubmitValue, autoFill } = useLocationForm()
+const locating = ref(false)
+const locationError = ref('')
 
 const submitting = ref(false)
 
@@ -241,10 +228,6 @@ const tempPickerMinute = ref(0)
 const yearOptions = ref<string[]>([])
 const tempPickerDays = ref<number[]>([])
 
-// 地点弹窗
-const showLocationModal = ref(false)
-const tempLocation = ref('')
-
 const categories = [
   { value: 'sports', label: '运动健身', icon: 'activity' },
   { value: 'culture', label: '文化艺术', icon: 'book-open' },
@@ -259,7 +242,8 @@ const canSubmit = computed(() => {
     form.value.description.trim().length > 0 &&
     form.value.startTime &&
     form.value.endTime &&
-    form.value.location &&
+    locationForm.value.province &&
+    locationForm.value.district &&
     !submitting.value
   )
 })
@@ -323,16 +307,6 @@ const confirmDateTime = () => {
   showDateTimePicker.value = false
 }
 
-const openLocationInput = () => {
-  tempLocation.value = form.value.location
-  showLocationModal.value = true
-}
-
-const confirmLocation = () => {
-  form.value.location = tempLocation.value.trim()
-  showLocationModal.value = false
-}
-
 const initDateTimeOptions = () => {
   const now = new Date()
   const currentYear = now.getFullYear()
@@ -350,7 +324,6 @@ const selectCategory = (value: string) => {
 }
 
 const chooseImage = () => {
-  // 本地选图：使用 FileReader 读取为 base64 dataURL 作为预览，避免依赖远程模拟图
   const remaining = 6 - form.value.images.length
   if (remaining <= 0) {
     toastError('最多上传6张图片')
@@ -410,7 +383,7 @@ const submitActivity = async () => {
       title: form.value.title,
       description: form.value.description,
       category: form.value.category,
-      location: form.value.location,
+      location: getSubmitValue(),
       start_time: form.value.startTime,
       end_time: form.value.endTime,
       max_participants: form.value.maxParticipants,
@@ -430,8 +403,23 @@ const submitActivity = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   initDateTimeOptions()
+
+  // 自动定位填充
+  locating.value = true
+  locationError.value = ''
+  try {
+    const result = await getLocation({ forceRefresh: false })
+    if (result) {
+      autoFill(result)
+    }
+  } catch (e: any) {
+    console.warn('[createActivity] 定位失败:', e)
+    locationError.value = '定位失败，请手动选择'
+  } finally {
+    locating.value = false
+  }
 })
 </script>
 
@@ -831,49 +819,5 @@ onMounted(() => {
   color: var(--color-primary);
   font-weight: 600;
   background: var(--color-primary-soft);
-}
-
-/* 地点弹窗 */
-.location-modal {
-  width: 100%;
-  max-width: 500px;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  animation: slideUp var(--transition-smooth) ease;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
-}
-
-.location-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.location-modal-body {
-  padding: 16px;
-}
-
-.location-input-field {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  font-size: 15px;
-  color: var(--color-text-primary);
-  outline: none;
-  background: var(--color-bg-tertiary);
-  transition: all var(--transition-normal);
-}
-
-.location-input-field:focus {
-  border-color: var(--color-primary);
-  background: var(--color-bg-secondary);
-  box-shadow: 0 0 0 3px var(--color-primary-soft);
-}
-
-.location-input-field::placeholder {
-  color: var(--color-text-placeholder);
 }
 </style>

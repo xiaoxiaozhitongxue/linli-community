@@ -150,6 +150,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { navigateTo } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
+import { showModal } from '../../utils/ui'
 import { taskService } from '../../services/taskService'
 import { useTasks } from '../../composables/useTasks'
 import type { Task } from '../../types/models'
@@ -271,15 +272,23 @@ const goToTaskDetail = (task: any) => {
 
 const respondToTask = async (task: any, event: Event) => {
   event.stopPropagation()
-  if (!window.confirm('确定要接下这个任务吗？')) return
-  try {
-    await taskService.acceptTask(task.id)
-    toastSuccess('接单成功')
-    await refreshTasks()
-  } catch (e: any) {
-    const msg = e?.message || '接单失败，请稍后重试'
-    toastInfo(msg)
-  }
+  showModal({
+    title: '确认接单',
+    content: '确认接单？\n接单后将与发布者建立联系',
+    confirmText: '确认接单',
+    cancelText: '再想想',
+    success: async (res) => {
+      if (!res.confirm) return
+      try {
+        await taskService.acceptTask(task.id)
+        toastSuccess('接单成功')
+        await refreshTasks()
+      } catch (e: any) {
+        const msg = e?.message || '接单失败，请稍后重试'
+        toastInfo(msg)
+      }
+    }
+  })
 }
 
 const getTypeName = (type: string) => {

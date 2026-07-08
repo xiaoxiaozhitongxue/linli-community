@@ -48,6 +48,7 @@
       <div class="post-stats">
         <span><AppIcon name="heart" :size="16" color="#FF6B35" :filled="true" /> {{ post.like_count || 0 }}</span>
         <span><AppIcon name="message-circle" /> {{ post.comment_count || 0 }} 条评论</span>
+        <span><AppIcon name="eye" :size="16" /> {{ post.view_count || 0 }} 次阅读</span>
       </div>
 
       <!-- 评论区 -->
@@ -104,6 +105,7 @@ interface Post {
   location?: string
   like_count?: number
   comment_count?: number
+  view_count?: number
   created_at?: number
   user?: { nickname?: string; avatar?: string }
 }

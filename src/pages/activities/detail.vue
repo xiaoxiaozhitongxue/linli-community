@@ -93,7 +93,7 @@
         <!-- 发布者信息 -->
         <div class="creator-section">
           <div class="section-title">发布者</div>
-          <div class="creator-info" @click="viewCreator">
+          <div class="creator-info">
             <img class="creator-avatar" :src="activity.user?.avatar || '/static/default-avatar.png'" alt="avatar" />
             <div class="creator-detail">
               <span class="creator-name">{{ activity.user?.nickname }}</span>
@@ -113,9 +113,6 @@
       <div class="bar-left">
         <div class="bar-btn" @click="toggleFavorite">
           <span class="bar-icon"><AppIcon name="heart" :size="18" :filled="isFavorited" /></span>
-        </div>
-        <div class="bar-btn" @click="shareActivity">
-          <span class="bar-icon"><AppIcon name="share" :size="18" /></span>
         </div>
       </div>
       <div class="bar-right"></div>
@@ -253,13 +250,6 @@ const toggleFavorite = () => {
   }
   isFavorited.value = !isFavorited.value
   toastSuccess(isFavorited.value ? '已收藏' : '已取消收藏')
-}
-
-const shareActivity = () => {
-  showToast('分享功能开发中', 'info')
-}
-
-const viewCreator = () => {
 }
 
 const goBack = () => {

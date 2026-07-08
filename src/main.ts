@@ -256,6 +256,28 @@ const router = createRouter({
       component: () => import('./pages/business/story.vue'),
       meta: { title: '创业故事', tabBar: false }
     },
+    // ===================== 用户协议 & 隐私政策 =====================
+    {
+      path: '/pages/agreement/index',
+      component: () => import('./pages/agreement/index.vue'),
+      meta: { title: '用户协议', tabBar: false }
+    },
+    {
+      path: '/pages/privacy-policy/index',
+      component: () => import('./pages/privacy-policy/index.vue'),
+      meta: { title: '隐私政策', tabBar: false }
+    },
+    // ===================== 密码相关 =====================
+    {
+      path: '/pages/profile/password',
+      component: () => import('./pages/profile/password.vue'),
+      meta: { title: '修改密码', requiresAuth: true }
+    },
+    {
+      path: '/pages/login/forgot',
+      component: () => import('./pages/login/forgot.vue'),
+      meta: { title: '忘记密码', tabBar: false }
+    },
     // ===================== 帖子详情（B4）=====================
     {
       path: '/pages/post/detail',

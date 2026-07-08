@@ -55,14 +55,12 @@
 
       <div class="form-section">
         <div class="form-label">服务地点</div>
-        <div class="form-input location-input">
-          <input 
-            type="text" 
-            v-model="form.location" 
-            placeholder="请输入详细地址"
-          />
-          <AppIcon class="location-icon" name="map-pin" :size="18" />
-        </div>
+        <LocationPicker
+          v-model="locationForm"
+          :loading="locating"
+          :error-text="locationError"
+          locating-text="定位中..."
+        />
       </div>
 
       <div class="form-section">
@@ -106,8 +104,8 @@
             <span class="progress-icon">{{ form.description.trim().length >= 5 ? '✓' : '○' }}</span>
             <span>任务描述（至少5字）</span>
           </div>
-          <div class="progress-item" :class="{ completed: form.location.trim().length > 0 }">
-            <span class="progress-icon">{{ form.location.trim().length > 0 ? '✓' : '○' }}</span>
+          <div class="progress-item" :class="{ completed: locationForm.province && locationForm.district }">
+            <span class="progress-icon">{{ locationForm.province && locationForm.district ? '✓' : '○' }}</span>
             <span>服务地点</span>
           </div>
         </div>
@@ -126,8 +124,11 @@ import { toastSuccess, toastInfo } from '../../utils/toast'
 import { taskService } from '../../services/taskService'
 import { useAuth } from '../../store'
 import { setLoginRedirect } from '../../utils/auth'
+import { getLocation } from '../../utils/location'
+import { useLocationForm } from '../../composables/useLocationForm'
 import AppIcon from '../../components/AppIcon.vue'
 import NavBar from '../../components/NavBar.vue'
+import LocationPicker from '../../components/LocationPicker.vue'
 
 const { isLoggedIn, user } = useAuth()
 
@@ -147,15 +148,20 @@ const form = ref({
   title: '',
   description: '',
   category: 'delivery',
-  location: '',
   reward: 0,
   enableAI: true
 })
 
+// 使用 LocationPicker + useLocationForm
+const { form: locationForm, getSubmitValue, autoFill } = useLocationForm()
+const locating = ref(false)
+const locationError = ref('')
+
 const canSubmit = computed(() => {
   return form.value.title.trim().length >= 2 &&
          form.value.description.trim().length >= 5 &&
-         form.value.location.trim().length > 0
+         locationForm.value.province &&
+         locationForm.value.district
 })
 
 const goBack = () => {
@@ -168,8 +174,8 @@ const submitTask = async () => {
       toastInfo('请输入任务标题（至少 2 个字）')
     } else if (form.value.description.trim().length < 5) {
       toastInfo('请详细描述任务内容（至少 5 个字）')
-    } else if (!form.value.location.trim()) {
-      toastInfo('请输入服务地点')
+    } else if (!locationForm.value.province || !locationForm.value.district) {
+      toastInfo('请选择服务地点')
     } else {
       toastInfo('请完善任务信息')
     }
@@ -181,11 +187,10 @@ const submitTask = async () => {
       title: form.value.title.trim(),
       description: form.value.description.trim(),
       category: form.value.category,
-      location: form.value.location.trim(),
+      location: getSubmitValue(),
       reward: Number(form.value.reward) || 0
     })
     toastSuccess('任务发布成功')
-    // 统一走路由返回列表，避免 window.location.href 硬跳转导致整页刷新
     setTimeout(() => {
       navigateTo('/pages/ai-helper/index')
     }, 800)
@@ -195,10 +200,26 @@ const submitTask = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!isLoggedIn.value) {
     setLoginRedirect('/pages/ai-helper/publish')
     navigateTo('/pages/login/index')
+    return
+  }
+
+  // 自动定位填充
+  locating.value = true
+  locationError.value = ''
+  try {
+    const result = await getLocation({ forceRefresh: false })
+    if (result) {
+      autoFill(result)
+    }
+  } catch (e: any) {
+    console.warn('[publish] 定位失败:', e)
+    locationError.value = '定位失败，请手动选择'
+  } finally {
+    locating.value = false
   }
 })
 </script>
@@ -257,15 +278,6 @@ onMounted(() => {
 .reward-unit {
   font-size: 15px;
   color: var(--color-text-secondary);
-}
-
-.location-input {
-  position: relative;
-}
-
-.location-icon {
-  font-size: 18px;
-  color: var(--color-text-tertiary);
 }
 
 .form-textarea {

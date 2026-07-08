@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { getLocation, pickDisplayCommunity, type LocationResult } from '../utils/location'
 
 export function useLocation() {
@@ -8,6 +8,21 @@ export function useLocation() {
 
   let lastAutoLocateAt = 0
   let hardResetTimer: ReturnType<typeof setTimeout> | null = null
+
+  /**
+   * 格式化后的城市-区域字符串
+   * 用于首页 NavBar 展示
+   * 格式: "市-区" 如 "上海市-浦东新区"
+   */
+  const cityDistrict = computed(() => {
+    const result = locationResult.value
+    if (!result) return '定位失败'
+    if (!result.city && !result.district) return '定位失败'
+    if (result.city && result.district) {
+      return `${result.city}-${result.district}`
+    }
+    return result.city || result.district || '定位失败'
+  })
 
   async function chooseLocation(opts: { auto?: boolean; registeredCommunity?: string | null } = {}): Promise<LocationResult | null> {
     if (locating.value) return null
@@ -65,6 +80,7 @@ export function useLocation() {
     communityName,
     locating,
     locationResult,
+    cityDistrict,
     chooseLocation,
     startAutoLocate,
     cleanup

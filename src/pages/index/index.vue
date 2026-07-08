@@ -2,10 +2,9 @@
   <div class="page">
     <NavBar type="gradient" :showBack="false">
       <div class="status-content">
-        <div class="location" @click="openLocationPicker">
+        <div class="location">
           <AppIcon class="location-icon" :name="locating ? 'activity' : 'map-pin'" :size="16" />
-          <span class="location-text" :class="{ locating }">{{ locating ? '定位中' : communityName }}</span>
-          <span class="location-arrow">▼</span>
+          <span class="location-text" :class="{ locating }">{{ locating ? '定位中' : cityDistrict }}</span>
         </div>
         <div class="search-bar" @click="goToSearch">
           <AppIcon class="search-icon" name="search" :size="16" />
@@ -61,7 +60,7 @@
           </div>
         </div>
 
-        <!-- 统一 feed 筛选栏 -->
+        <!-- 统一 feed 筛选栏 · 小红书胶囊风格 -->
         <div class="feed-filter-bar">
           <div
             class="feed-filter-btn"
@@ -90,16 +89,17 @@
 
           <div v-else class="feed-list">
             <template v-for="(item, index) in unifiedFeed" :key="item.id + '-' + item._type">
-              <!-- 活动卡片（紧凑） -->
+              <!-- 活动卡片（小红书风格） -->
               <div
                 v-if="item._type === 'activity'"
                 class="feed-card activity-feed-card animate-fadeIn"
                 :style="{ animationDelay: (index * 0.05) + 's' }"
                 @click="goToActivityDetail(item._raw.id)"
               >
+                <div class="activity-feed-deco" :style="{ background: getActivityGradient(item._raw.category) }"></div>
                 <div class="activity-feed-row">
                   <div class="activity-feed-icon" :style="{ background: getActivityCoverBg(item._raw.category) }">
-                    <AppIcon :name="getActivityIcon(item._raw.category)" :size="24" :color="getActivityIconColor(item._raw.category)" />
+                    <AppIcon :name="getActivityIcon(item._raw.category)" :size="22" :color="getActivityIconColor(item._raw.category)" />
                   </div>
                   <div class="activity-feed-body">
                     <div class="activity-feed-top">
@@ -117,52 +117,73 @@
                 </div>
               </div>
 
-              <!-- 动态卡片 -->
+              <!-- 动态卡片 · 小红书风格 -->
               <div
                 v-else
-                class="feed-card animate-fadeIn"
+                class="feed-card post-feed-card animate-fadeIn"
+                :class="{ 'no-image': !item._raw.images || item._raw.images.length === 0 }"
                 :style="{ animationDelay: (index * 0.05) + 's' }"
                 @click="goToPostDetail(item._raw)"
               >
-                <div class="feed-header">
-                  <img v-if="item._raw.user?.avatar" class="feed-avatar" :src="item._raw.user.avatar" @error="onAvatarError" />
-                  <div v-else class="feed-avatar feed-avatar-placeholder">{{ getInitial(item._raw.user?.nickname) }}</div>
-                  <div class="feed-user-info">
-                    <span class="feed-username">{{ item._raw.user?.nickname || '邻居' }}</span>
-                    <div class="feed-meta">
-                      <span class="feed-time">{{ formatTime(item._raw.created_at) }}</span>
-                      <span v-if="item._raw.location" class="feed-location">• {{ item._raw.location }}</span>
+                <!-- 无图帖子：左侧装饰竖条 -->
+                <div v-if="!item._raw.images || item._raw.images.length === 0" class="post-deco-bar"></div>
+
+                <div class="post-card-inner">
+                  <!-- 头部：头像+昵称 -->
+                  <div class="feed-header">
+                    <img v-if="item._raw.user?.avatar" class="feed-avatar" :src="item._raw.user.avatar" @error="onAvatarError" />
+                    <div v-else class="feed-avatar feed-avatar-placeholder">{{ getInitial(item._raw.user?.nickname) }}</div>
+                    <div class="feed-user-info">
+                      <span class="feed-username">{{ item._raw.user?.nickname || '邻居' }}</span>
+                      <div class="feed-meta">
+                        <span class="feed-time">{{ formatTime(item._raw.created_at) }}</span>
+                        <span v-if="item._raw.location" class="feed-location">• {{ item._raw.location }}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div class="feed-content">
-                  <span class="feed-text">{{ item._raw.content }}</span>
-                  <div v-if="item._raw.images && item._raw.images.length > 0" class="feed-images" :class="'images-' + item._raw.images.length">
-                    <img class="feed-image" v-for="(img, imgIndex) in item._raw.images" :key="imgIndex" :src="img" @click.stop="previewImage(item._raw.images, imgIndex)" />
+                  <!-- 图片区域（有图时优先展示） -->
+                  <div v-if="item._raw.images && item._raw.images.length > 0" class="post-image-area">
+                    <img
+                      class="post-cover-image"
+                      :src="item._raw.images[0]"
+                      @click.stop="previewImage(item._raw.images, 0)"
+                    />
+                    <span v-if="item._raw.images.length > 1" class="post-image-count">
+                      <AppIcon name="image" :size="12" /> {{ item._raw.images.length }}
+                    </span>
                   </div>
-                </div>
 
-                <div class="feed-actions">
-                  <div class="feed-action" :class="{ liked: item._raw.is_liked }" @click.stop="handleLikePost(item._raw)">
-                    <AppIcon class="action-icon" :class="{ 'heart-beat': item._raw.is_liked }" name="heart" :size="20" :filled="item._raw.is_liked" />
-                    <span class="action-count">{{ item._raw.like_count || 0 }}</span>
+                  <!-- 文字内容（折叠） -->
+                  <div class="post-text-wrap">
+                    <p class="post-text-clamp">{{ item._raw.content }}</p>
                   </div>
-                  <div class="feed-action" @click.stop="showComments(item._raw)">
-                    <AppIcon class="action-icon" name="comment" :size="20" />
-                    <span class="action-count">{{ item._raw.comment_count || 0 }}</span>
-                  </div>
-                  <div class="feed-action" @click.stop="sharePost(item._raw)">
-                    <AppIcon class="action-icon" name="share" :size="20" />
-                    <span class="action-count">分享</span>
+
+                  <!-- 操作栏 -->
+                  <div class="feed-actions">
+                    <div class="feed-action" :class="{ liked: item._raw.is_liked }" @click.stop="handleLikePost(item._raw)">
+                      <AppIcon class="action-icon" :class="{ 'heart-beat': item._raw.is_liked }" name="heart" :size="18" :filled="item._raw.is_liked" />
+                      <span class="action-count">{{ item._raw.like_count || 0 }}</span>
+                    </div>
+                    <div class="feed-action" @click.stop="showComments(item._raw)">
+                      <AppIcon class="action-icon" name="comment" :size="18" />
+                      <span class="action-count">{{ item._raw.comment_count || 0 }}</span>
+                    </div>
+                    <div class="feed-action" @click.stop>
+                      <AppIcon class="action-icon" name="eye" :size="18" />
+                      <span class="action-count">{{ item._raw.view_count || 0 }}</span>
+                    </div>
+                    <div class="feed-action feed-action-share" @click.stop="sharePost(item._raw)">
+                      <AppIcon class="action-icon" name="share" :size="18" />
+                    </div>
                   </div>
                 </div>
               </div>
             </template>
           </div>
 
-          <div v-if="hasMore && posts.length > 0" class="load-more">
-            <span v-if="!loadingMore" @click="handleLoadMore">加载更多</span>
+          <div v-if="hasMore && posts.length > 0" class="load-more-wrapper">
+            <span v-if="!loadingMore" class="load-more-btn" @click="handleLoadMore">加载更多</span>
             <div v-else class="loading-more">
               <div class="loading-spinner small"></div>
               <span>加载中...</span>
@@ -170,7 +191,7 @@
           </div>
 
           <div v-if="!hasMore && posts.length > 0 && feedFilter !== 'activity'" class="no-more">
-            <span>— 没有更多了 —</span>
+            <span class="no-more-text">— 没有更多了 —</span>
           </div>
 
           <div class="safe-area-bottom"></div>
@@ -206,67 +227,6 @@
           <div class="comment-submit" :class="{ disabled: !commentText.trim() || !isLoggedIn }" @click="handleSubmitComment">
             <span>发送</span>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 位置选择器 -->
-    <div v-if="showLocationPicker" class="location-picker-mask" @click="closeLocationPicker">
-      <div class="location-picker-panel" @click.stop>
-        <div class="location-picker-header">
-          <span class="location-picker-title">选择位置</span>
-          <span class="location-picker-close" @click="closeLocationPicker"><AppIcon name="close" :size="20" /></span>
-        </div>
-
-        <div class="location-picker-body">
-          <!-- 手动输入 -->
-          <div class="location-input-group">
-            <label class="location-input-label">手动输入地址</label>
-            <div class="location-input-wrapper">
-              <AppIcon name="map-pin" :size="16" color="var(--color-text-placeholder)" />
-              <input
-                class="location-input"
-                v-model="manualAddress"
-                placeholder="输入地址，如：浦东新区张江镇"
-                @input="onManualInput"
-              />
-              <span v-if="manualAddress" class="location-input-clear" @click="manualAddress = ''">
-                <AppIcon name="close" :size="14" color="var(--color-text-placeholder)" />
-              </span>
-            </div>
-          </div>
-
-          <!-- 分隔线 -->
-          <div class="location-divider">
-            <span class="location-divider-line"></span>
-            <span class="location-divider-text">或者</span>
-            <span class="location-divider-line"></span>
-          </div>
-
-          <!-- 自动定位 -->
-          <div class="location-auto-group">
-            <label class="location-input-label">自动定位</label>
-            <div class="location-auto-card" @click="locateAndSelect">
-              <div class="location-auto-left">
-                <div class="location-auto-icon">
-                  <AppIcon :name="locating ? 'activity' : 'map-pin'" :size="20" color="var(--color-primary)" />
-                </div>
-                <div class="location-auto-info">
-                  <span class="location-auto-status">{{ locating ? '正在定位...' : (autoLocatedAddress || '点击获取当前位置') }}</span>
-                  <span v-if="autoLocatedAddress && !locating" class="location-auto-sub">{{ autoLocatedDetail }}</span>
-                </div>
-              </div>
-              <div v-if="locating" class="location-auto-loading">
-                <div class="loading-spinner small"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 确认按钮 -->
-        <div class="location-picker-footer">
-          <div class="location-picker-btn location-picker-btn-cancel" @click="closeLocationPicker">取消</div>
-          <div class="location-picker-btn location-picker-btn-confirm" :class="{ disabled: !selectedAddress }" @click="confirmLocation">确认</div>
         </div>
       </div>
     </div>
@@ -325,60 +285,10 @@ const {
   locating,
   chooseLocation,
   locationResult,
+  cityDistrict,
   startAutoLocate,
   cleanup: cleanupLocation
 } = useLocation()
-
-const showLocationPicker = ref(false)
-const manualAddress = ref('')
-const autoLocatedAddress = ref('')
-const autoLocatedDetail = ref('')
-
-const selectedAddress = computed(() => manualAddress.value.trim() || autoLocatedAddress.value)
-
-function openLocationPicker() {
-  showLocationPicker.value = true
-  manualAddress.value = ''
-  autoLocatedAddress.value = ''
-  autoLocatedDetail.value = ''
-  // 自动开始定位
-  autoLocateForPicker()
-}
-
-function closeLocationPicker() {
-  showLocationPicker.value = false
-}
-
-async function autoLocateForPicker() {
-  locating.value = true
-  try {
-    const result = await getLocation({ forceRefresh: true })
-    if (result) {
-      autoLocatedAddress.value = result.address || result.community
-      autoLocatedDetail.value = result.city && result.district ? `${result.city} ${result.district}` : ''
-    }
-  } catch (e) {
-    console.warn('[locationPicker] 定位失败:', e)
-    autoLocatedAddress.value = '定位失败，请重试'
-  } finally {
-    locating.value = false
-  }
-}
-
-function onManualInput() {
-  // 用户手动输入时，清除自动定位选择
-  if (manualAddress.value.trim()) {
-    // 不做额外操作，selectedAddress会自动切换到手动输入的地址
-  }
-}
-
-function confirmLocation() {
-  const addr = selectedAddress.value
-  if (!addr) return
-  communityName.value = addr
-  showLocationPicker.value = false
-  toastSuccess(`已定位到 ${addr}`)
-}
 
 const statusBarHeight = ref(20)
 let pageHiddenAt = 0
@@ -733,6 +643,17 @@ function getActivityCoverBg(category: string) {
   return map[category] || '#F5F5F0'
 }
 
+function getActivityGradient(category: string): string {
+  const map: Record<string, string> = {
+    sports: 'linear-gradient(180deg, #4CAF50, #81C784)',
+    culture: 'linear-gradient(180deg, #9C27B0, #CE93D8)',
+    charity: 'linear-gradient(180deg, #F44336, #EF9A9A)',
+    party: 'linear-gradient(180deg, #FF9800, #FFB74D)',
+    other: 'linear-gradient(180deg, #2196F3, #64B5F6)'
+  }
+  return map[category] || 'linear-gradient(180deg, #2196F3, #64B5F6)'
+}
+
 function getInitial(nickname?: string): string {
   return (nickname?.[0] || '邻').toUpperCase()
 }
@@ -776,9 +697,7 @@ function sharePost(post: Post) {
   } else {
     navigator.clipboard.writeText(window.location.href).then(() => {
       toastSuccess('链接已复制到剪贴板')
-    }).catch(() => {
-      toastInfo('分享功能开发中')
-    })
+    }).catch(() => {})
   }
 }
 
@@ -805,14 +724,12 @@ function onImagePreviewTouchMove(e: TouchEvent) {
 function onImagePreviewTouchEnd() {
   const diff = imagePreviewTouchStartX - imagePreviewTouchMoveX
   if (Math.abs(diff) > 50) {
-    if (diff > 0) {
-      if (currentPreviewIndex.value < previewImages.value.length - 1) {
-        currentPreviewIndex.value++
-      }
-    } else {
-      if (currentPreviewIndex.value > 0) {
-        currentPreviewIndex.value--
-      }
+    if (currentPreviewIndex.value < previewImages.value.length - 1) {
+      currentPreviewIndex.value++
+    }
+  } else {
+    if (currentPreviewIndex.value > 0) {
+      currentPreviewIndex.value--
     }
   }
 }
@@ -879,7 +796,6 @@ onUnmounted(() => {
   background-color: var(--color-bg-primary);
 }
 
-
 .status-content {
   display: flex;
   flex-direction: column;
@@ -890,14 +806,8 @@ onUnmounted(() => {
 .location {
   display: flex;
   align-items: center;
-  cursor: pointer;
   min-height: 44px;
   padding: 6px 0;
-  transition: opacity var(--transition-fast);
-}
-
-.location:active {
-  opacity: 0.8;
 }
 
 .location-icon {
@@ -918,17 +828,6 @@ onUnmounted(() => {
 @keyframes locatingPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
-}
-
-.location-arrow {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 10px;
-  margin-left: 6px;
-  transition: transform var(--transition-fast);
-}
-
-.location:active .location-arrow {
-  transform: scale(0.9);
 }
 
 .search-bar {
@@ -1466,42 +1365,71 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
+/* ---- 统一 Feed 卡片 · 小红书风格 ---- */
+
 .feed-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: 12px;
   padding: 0 var(--spacing-lg);
   box-sizing: border-box;
 }
 
+/* ============ 基础卡片 ============ */
 .feed-card {
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--spacing-lg);
-  margin-bottom: 16px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+  overflow: hidden;
+  position: relative;
 }
 
 .feed-card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+  transform: translateY(-2px);
 }
 
 .feed-card:active {
   transform: scale(0.99);
 }
 
+/* ============ 帖子卡片 ============ */
+.post-feed-card {
+  padding: 12px 0 0 0;
+}
+
+/* 无图帖子左侧装饰竖条 */
+.post-deco-bar {
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--color-primary-soft);
+}
+
+.post-card-inner {
+  padding: 0 16px 0 16px;
+}
+
+.no-image .post-card-inner {
+  padding-left: 16px;
+}
+
+/* ============ 头部 ============ */
 .feed-header {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .feed-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  margin-right: var(--spacing-md);
+  margin-right: 10px;
   background: var(--color-bg-tertiary);
   object-fit: cover;
   flex-shrink: 0;
@@ -1511,7 +1439,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
@@ -1534,73 +1462,75 @@ onUnmounted(() => {
   gap: 4px;
 }
 
-.feed-time {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-}
-
+.feed-time,
 .feed-location {
   font-size: 12px;
   color: var(--color-text-tertiary);
 }
 
-.feed-content {
-  margin-bottom: 12px;
+/* ============ 图片区域（有图优先） ============ */
+.post-image-area {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  background: var(--color-bg-tertiary);
 }
 
-.feed-text {
+.post-cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.post-cover-image:hover {
+  transform: scale(1.03);
+}
+
+.post-image-count {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(4px);
+}
+
+/* ============ 文字内容（折叠） ============ */
+.post-text-wrap {
+  margin-bottom: 10px;
+}
+
+.post-text-clamp {
   font-size: 14px;
   color: var(--color-text-primary);
   line-height: 1.6;
+  display: -webkit-inline-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
 }
 
-.feed-images {
-  display: grid;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
-}
-
-.feed-images.images-1 {
-  grid-template-columns: 1fr;
-}
-
-.feed-images.images-1 .feed-image {
-  max-height: 300px;
-}
-
-.feed-images.images-2,
-.feed-images.images-4 {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.feed-images.images-3,
-.feed-images.images-5,
-.feed-images.images-6,
-.feed-images.images-7,
-.feed-images.images-8,
-.feed-images.images-9 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.feed-image {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: var(--radius-md);
-  background: var(--color-bg-tertiary);
-  object-fit: cover;
-  cursor: pointer;
-  transition: transform var(--transition-fast);
-}
-
-.feed-image:hover {
-  transform: scale(1.02);
-}
-
+/* ============ 操作栏 ============ */
 .feed-actions {
   display: flex;
-  gap: 24px;
+  align-items: center;
   border-top: 1px solid var(--color-border-light);
-  padding-top: 12px;
+  padding: 8px 0;
+  gap: 0;
 }
 
 .feed-action {
@@ -1608,13 +1538,14 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   padding: 6px 0;
   cursor: pointer;
   transition: transform 0.15s, background-color var(--transition-fast);
-  border-radius: var(--radius-md);
-  min-height: var(--touch-min-size);
+  border-radius: 8px;
+  min-height: 40px;
   font-size: 12px;
+  color: var(--color-text-tertiary);
 }
 
 .feed-action:hover {
@@ -1622,15 +1553,25 @@ onUnmounted(() => {
 }
 
 .feed-action:active {
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
 .feed-action.liked .action-icon {
   color: var(--color-error);
 }
 
+.feed-action.liked .action-count {
+  color: var(--color-error);
+}
+
+.feed-action-share {
+  flex: 0 0 auto;
+  width: 40px;
+}
+
 .action-icon {
   font-size: 18px;
+  color: var(--color-text-tertiary);
   transition: transform 0.3s var(--transition-spring);
 }
 
@@ -1638,17 +1579,17 @@ onUnmounted(() => {
   animation: heartBeat 0.4s ease;
 }
 
+.action-count {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+
 @keyframes heartBeat {
   0% { transform: scale(1); }
   25% { transform: scale(1.3); }
   50% { transform: scale(0.95); }
   100% { transform: scale(1); }
-}
-
-.action-count {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
 }
 
 .loading-spinner {
@@ -1667,53 +1608,67 @@ onUnmounted(() => {
   border-width: 2px;
 }
 
-/* ---- 统一 feed 筛选栏 ---- */
+/* ---- 统一 feed 筛选栏 · 小红书胶囊风格 ---- */
 .feed-filter-bar {
   display: flex;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-lg) 0;
+  gap: 8px;
+  padding: var(--spacing-sm) var(--spacing-lg);
 }
 
 .feed-filter-btn {
-  padding: 6px 16px;
-  border-radius: var(--radius-full);
-  font-size: 14px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-tertiary);
   cursor: pointer;
   transition: all var(--transition-fast);
   min-height: 36px;
   display: flex;
   align-items: center;
-  border: 1px solid var(--color-border-light);
+  border: none;
+  user-select: none;
 }
 
 .feed-filter-btn.active {
   background: var(--color-primary);
   color: var(--color-text-white);
-  border-color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .feed-filter-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
-/* ---- 活动紧凑卡片 ---- */
+/* ---- 活动紧凑卡片 · 小红书视觉化 ---- */
 .activity-feed-card {
-  padding: var(--spacing-md) var(--spacing-lg) !important;
+  padding: 0 !important;
+  border-radius: 16px !important;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.activity-feed-deco {
+  width: 6px;
+  flex-shrink: 0;
+  border-radius: 16px 0 0 16px;
 }
 
 .activity-feed-row {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+  padding: 14px 16px;
+  flex: 1;
+  min-width: 0;
 }
 
 .activity-feed-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-lg);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1748,8 +1703,8 @@ onUnmounted(() => {
 }
 
 .activity-feed-title {
-  font-size: 14px;
-  font-weight: var(--font-weight-semibold);
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1769,31 +1724,45 @@ onUnmounted(() => {
   color: var(--color-border-light);
 }
 
-.load-more,
-.no-more {
+/* ---- 加载更多 / 没有更多 ---- */
+.load-more-wrapper {
   text-align: center;
-  padding: var(--spacing-xl) var(--spacing-lg);
-  color: var(--color-text-tertiary);
-  font-size: 14px;
+  padding: var(--spacing-lg) var(--spacing-lg);
 }
 
-.safe-area-bottom {
-  height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
-  background: transparent;
-}
-
-.load-more span {
-  cursor: pointer;
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-  transition: color var(--transition-fast);
-  min-height: 44px;
+.load-more-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  padding: 8px 24px;
+  border-radius: 20px;
+  background: var(--color-primary-soft);
+  transition: all var(--transition-fast);
+  min-height: 40px;
 }
 
-.load-more span:hover {
-  color: var(--color-primary-dark);
+.load-more-btn:hover {
+  background: var(--color-primary);
+  color: var(--color-text-white);
+}
+
+.load-more-btn:active {
+  transform: scale(0.97);
+}
+
+.no-more {
+  text-align: center;
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-xl);
+}
+
+.no-more-text {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  letter-spacing: 1px;
 }
 
 .loading-more {
@@ -1801,6 +1770,13 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
+
+.safe-area-bottom {
+  height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  background: transparent;
 }
 
 .comment-mask {
@@ -2000,646 +1976,76 @@ onUnmounted(() => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.95);
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .image-preview-container {
-  position: relative;
   width: 100%;
   height: 100%;
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
 .image-preview-close {
   position: absolute;
-  top: 20px;
+  top: max(20px, env(safe-area-inset-top));
   right: 20px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  font-size: 20px;
+  z-index: 10;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  z-index: 1001;
-  transition: background-color 0.3s;
-}
-
-.image-preview-close:hover {
-  background: rgba(255, 255, 255, 0.3);
 }
 
 .image-preview-swiper {
-  width: 100%;
-  height: 80vh;
   overflow: hidden;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .image-preview-wrapper {
   display: flex;
-  height: 100%;
   transition: transform 0.3s ease;
+  width: 100%;
+  height: 100%;
 }
 
 .image-preview-item {
   min-width: 100%;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
   padding: 20px;
   box-sizing: border-box;
 }
 
 .image-preview-img {
   max-width: 100%;
-  max-height: 100%;
+  max-height: 80%;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .image-preview-counter {
   position: absolute;
-  bottom: 30px;
+  bottom: max(20px, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
-  color: white;
-  font-size: 16px;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 8px 16px;
-  border-radius: 20px;
-}
-
-/* ========================================
-   响应式优化
-   ======================================== */
-@media (min-width: 500px) {
-  .page-wrapper {
-    max-width: 500px;
-  }
-
-  .status-content {
-    max-width: 500px;
-  }
-}
-
-@media (min-width: 768px) {
-  .page-wrapper {
-    max-width: 600px;
-  }
-
-  .status-content {
-    max-width: 600px;
-  }
-
-  .banner-section {
-    padding: var(--spacing-md) var(--spacing-xl);
-  }
-
-  .banner-swiper {
-    height: 140px;
-    border-radius: var(--radius-xl);
-  }
-
-  .banner-item {
-    height: 140px;
-    padding: var(--spacing-lg) var(--spacing-xl);
-  }
-
-  .banner-title {
-    font-size: 20px;
-  }
-
-  .banner-desc {
-    font-size: 14px;
-  }
-
-  .quick-actions {
-    max-width: 600px;
-    margin: 0 auto var(--spacing-lg);
-  }
-
-  .quick-card {
-    min-height: 80px;
-    padding: var(--spacing-lg);
-  }
-
-  .quick-name {
-    font-size: 16px;
-  }
-
-  .quick-icon {
-    font-size: 26px;
-  }
-
-  .section-header {
-    padding: 0;
-  }
-
-  .activity-scroll {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-lg);
-    overflow-x: visible;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  .activity-card {
-    width: 100% !important;
-    margin-right: 0 !important;
-  }
-
-  .activity-cover {
-    height: 100px;
-  }
-
-  .activity-emoji {
-    font-size: 44px;
-  }
-
-  .recent-activity-scroll {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-lg);
-    overflow-x: visible;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  .recent-activity-card {
-    width: 100%;
-  }
-
-  .section-title {
-    font-size: 18px;
-  }
-
-  .feed-list {
-    padding: 0;
-  }
-
-  .feed-card {
-    padding: var(--spacing-xl);
-    border-radius: var(--radius-xl);
-  }
-
-  .feed-avatar {
-    width: 48px;
-    height: 48px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .page-wrapper {
-    width: 100%;
-    max-width: 100%;
-    padding: 0 var(--spacing-2xl);
-  }
-
-  .status-content {
-    width: 100%;
-    max-width: 100%;
-    padding: 0 var(--spacing-2xl);
-  }
-
-  .status-bar {
-    left: var(--nav-sidebar-width, 220px);
-    right: 0;
-    width: auto;
-  }
-
-  .banner-section {
-    padding: var(--spacing-2xl) 0;
-  }
-
-  .banner-swiper {
-    height: 280px;
-    width: 100%;
-    max-width: 100%;
-    border-radius: var(--radius-2xl);
-  }
-
-  .banner-item {
-    height: 280px;
-  }
-
-  .banner-title {
-    font-size: 24px;
-  }
-
-  .banner-desc {
-    font-size: 15px;
-  }
-
-  .quick-actions {
-    grid-template-columns: repeat(4, 1fr);
-    width: 100%;
-    max-width: 100%;
-    gap: var(--spacing-xl);
-    padding: 0;
-  }
-
-  .quick-card {
-    min-height: 120px;
-    padding: var(--spacing-xl);
-  }
-
-  .quick-icon {
-    font-size: 28px;
-  }
-
-  .quick-name {
-    font-size: 16px;
-  }
-
-  .section {
-    padding: var(--spacing-2xl) 0;
-  }
-
-  .section-header {
-    width: 100%;
-    max-width: 100%;
-    margin-bottom: var(--spacing-xl);
-  }
-
-  .section-title {
-    font-size: 20px;
-  }
-
-  .section-more {
-    font-size: 15px;
-  }
-
-  .activity-scroll {
-    grid-template-columns: repeat(4, 1fr);
-    width: 100%;
-    max-width: 100%;
-    gap: var(--spacing-xl);
-    padding: 0;
-  }
-
-  .activity-card {
-    width: 100% !important;
-    margin-right: 0 !important;
-  }
-
-  .activity-cover {
-    height: 120px;
-  }
-
-  .activity-emoji {
-    font-size: 48px;
-  }
-
-  .recent-activity-scroll {
-    grid-template-columns: repeat(4, 1fr);
-    width: 100%;
-    max-width: 100%;
-    gap: var(--spacing-xl);
-    padding: 0;
-  }
-
-  .recent-activity-card {
-    width: 100%;
-  }
-
-  .feed-list {
-    width: 100%;
-    max-width: 100%;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-xl);
-  }
-
-  .feed-card {
-    padding: var(--spacing-2xl);
-    border-radius: var(--radius-2xl);
-  }
-
-  .feed-avatar {
-    width: 52px;
-    height: 52px;
-  }
-
-  .feed-username {
-    font-size: 16px;
-  }
-
-  .feed-text {
-    font-size: 15px;
-    line-height: 1.7;
-  }
-
-  .refresh-indicator {
-    left: var(--nav-sidebar-width, 220px);
-    right: 0;
-  }
-}
-
-@media (min-width: 1440px) {
-  .page-wrapper {
-    padding: 0 var(--spacing-3xl);
-  }
-
-  .status-content {
-    padding: 0 var(--spacing-3xl);
-  }
-
-  .banner-section {
-    padding: var(--spacing-2xl) 0;
-  }
-
-  .banner-swiper {
-    height: 340px;
-    border-radius: var(--radius-2xl);
-  }
-
-  .banner-item {
-    height: 340px;
-  }
-
-  .banner-title {
-    font-size: 28px;
-  }
-
-  .quick-actions {
-    grid-template-columns: repeat(6, 1fr);
-    gap: var(--spacing-2xl);
-  }
-
-  .activity-scroll {
-    grid-template-columns: repeat(6, 1fr);
-    gap: var(--spacing-2xl);
-  }
-
-  .recent-activity-scroll {
-    grid-template-columns: repeat(6, 1fr);
-    gap: var(--spacing-2xl);
-  }
-
-  .feed-list {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-2xl);
-  }
-
-  .feed-card {
-    padding: var(--spacing-2xl);
-  }
-}
-
-/* ========== 位置选择器 ========== */
-.location-picker-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  align-items: flex-end;
-  animation: fadeIn 0.2s ease;
-}
-
-.location-picker-panel {
-  width: 100%;
-  max-height: 70vh;
-  background: var(--color-bg-primary);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  display: flex;
-  flex-direction: column;
-  animation: slideUp 0.25s var(--transition-spring);
-  overflow: hidden;
-}
-
-.location-picker-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--color-border);
-  position: relative;
-  flex-shrink: 0;
-}
-
-.location-picker-title {
-  font-size: 16px;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.location-picker-close {
-  position: absolute;
-  right: var(--spacing-md);
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  padding: var(--spacing-xs);
-}
-
-.location-picker-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--spacing-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-
-.location-input-group,
-.location-auto-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.location-input-label {
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
-.location-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  transition: border-color 0.2s;
-}
-
-.location-input-wrapper:focus-within {
-  border-color: var(--color-primary);
-}
-
-.location-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 15px;
-  color: var(--color-text-primary);
-  line-height: 1.4;
-}
-
-.location-input::placeholder {
-  color: var(--color-text-placeholder);
-}
-
-.location-input-clear {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 2px;
-}
-
-.location-divider {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-xs) 0;
-}
-
-.location-divider-line {
-  flex: 1;
-  height: 1px;
-  background: var(--color-border);
-}
-
-.location-divider-text {
-  font-size: 12px;
-  color: var(--color-text-placeholder);
-  flex-shrink: 0;
-}
-
-.location-auto-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.location-auto-card:active {
-  background: var(--color-bg-tertiary);
-}
-
-.location-auto-left {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  flex: 1;
-  min-width: 0;
-}
-
-.location-auto-icon {
-  width: 36px;
-  height: 36px;
-  background: var(--color-primary-bg, rgba(37, 99, 201, 0.1));
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.location-auto-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.location-auto-status {
+  color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.location-auto-sub {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.location-auto-loading {
-  flex-shrink: 0;
-}
-
-.location-picker-footer {
-  display: flex;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  border-top: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-.location-picker-btn {
-  flex: 1;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-lg);
-  font-size: 15px;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.location-picker-btn-cancel {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
-}
-
-.location-picker-btn-confirm {
-  background: var(--color-primary);
-  color: var(--color-text-white);
-}
-
-.location-picker-btn-confirm.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  background: rgba(0, 0, 0, 0.5);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
 }
 </style>
