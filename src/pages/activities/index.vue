@@ -47,7 +47,7 @@
                 <span class="hot-activity-name">{{ activity.title }}</span>
                 <div class="hot-activity-meta">
                   <span class="hot-activity-time">{{ formatShortTime(activity.start_time) }}</span>
-                  <span class="hot-activity-join">{{ activity.current_participants }}人参与</span>
+                  <span class="hot-activity-join">{{ activity.current_participants }}人关注</span>
                 </div>
               </div>
             </div>
@@ -93,7 +93,7 @@
                   </div>
                   <div class="info-item">
                     <span class="info-icon"><AppIcon name="users" :size="14" /></span>
-                    <span class="info-text">{{ activity.current_participants }}人已报名{{ activity.max_participants ? ' / 限' + activity.max_participants + '人' : '' }}</span>
+                    <span class="info-text">{{ activity.current_participants }}人关注</span>
                   </div>
                 </div>
                 

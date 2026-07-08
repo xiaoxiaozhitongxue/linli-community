@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { navigateTo, navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { taskService } from '../../services/taskService'
@@ -247,6 +248,17 @@ const goToHelperPage = () => {
 
 onMounted(async () => {
   statusBarHeight.value = 20
+  const route = useRoute()
+  // 读取URL参数：?type=published|accepted 切换tab
+  const typeParam = route.query.type as string
+  if (typeParam === 'accepted') {
+    currentTab.value = 'accepted'
+  }
+  // 读取URL参数：?status=pending|in_progress|completed 切换筛选
+  const statusParam = route.query.status as string
+  if (['pending', 'in_progress', 'completed'].includes(statusParam)) {
+    statusFilter.value = statusParam
+  }
   await loadTasks()
 })
 </script>

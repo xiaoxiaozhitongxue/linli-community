@@ -1,33 +1,38 @@
-# 全盘审查报告
+# 邻里社区APP - 今日交付总结
 
-## 发现并修复的 Bug
+## 2026-07-08 完成的工作
 
-### 🐛 Bug1: 任务分类 `pet` 和 `child` 被 DB 和后台屏蔽
-- **位置**: `database/schema.sql` L76 + `functions/api/tasks/index.js` L141
-- **问题**: DB CHECK 约束和后台验证列表均只有 5 个分类，缺了 `pet` 和 `child`
-- **影响**: 发布页选"宠物"或"儿童"提交 → 后台报"无效的任务类型" → DB 报 CHECK 违反
-- **修复**: 补齐 7 个分类，云端 D1 重建 tasks 表
+### 1. 🖼️ 首页banner区域空白修复
+- 缩减banner高度 140→120px，缩小间距
+- 添加装饰图标增加视觉填充
+- 简化dots样式，去掉44px大触控区
 
-### 🐛 Bug2: schema.sql 有 10 处 `IF NOT EXISTS IF NOT EXISTS` 语法错误
-- **位置**: `database/schema.sql` L230~277
-- **问题**: 历史全局替换导致的重复关键字
-- **影响**: 重新跑迁移会 SQL 语法错误
-- **修复**: 全局替换去重
+### 2. 📍 位置选择器
+- 点击定位栏弹出底部面板
+- 支持手动输入地址 + 自动定位选地址
 
-### 🐛 Bug3: 搜索页任务分类显示原始值
-- **位置**: `src/pages/search/index.vue` L87
-- **问题**: `{{ task.category }}` 直接输出英文 code（如 "delivery"）
-- **修复**: 加 `getTypeName()` 映射为中文名
+### 3. 📱 移动端UI优化
+- Tab选中图标变实心填充
+- NavBar返回按钮改为 ← 箭头
+- 密码可见切换改为 👁️/👁️‍🗨️ 图标
+- 新增 chevron-left、chevron-up、eye-off 图标
 
-## 逻辑/UI 优化
+### 4. 🏷️ 互助标签统一
+- 发布/筛选/详情三端统一为7个分类
+- 筛选条改为数据驱动(v-for)
 
-| 问题 | 位置 | 处理 |
-|------|------|------|
-| 帖子详情 heart 用 emoji | `post/detail.vue` L49 | 改为 AppIcon `heart` 实心图标 |
-| 死CSS（报名按钮） | `activities/detail.vue` L674~729 | 标记待清理 |
-| 活动 join/leave 端点仍存活 | `functions/api/activities/` | 建议决定是否删除 |
+### 5. 🔍 全盘审查修复
+- **Bug**: 任务分类 pet/child 被DB和后台屏蔽 → 补全
+- **Bug**: schema.sql 10处 IF NOT EXISTS 重复 → 去重
+- **Bug**: 搜索页分类显示英文 code → 改中文
+- **优化**: 帖子详情 heart emoji → AppIcon
 
-## 未修复（优化建议）
+### 6. ⏰ 时间戳修复
+- 互助详情页、搜索页时间显示错误
+- 全站 formatTime 加 >1e12 毫秒/秒兼容
 
-- **图片上传**：Base64 存 DB 不可持续，需配 Cloudflare R2
-- **任务排序**：仅支持时间排序，不支持热度/距离
+### 7. 📋 我的任务页修复
+- 分类补全到7个（缺 help/companionship）
+- 添加加载状态，修复空状态误导
+- 删除不存在的 pending_confirm 过滤
+- 添加时间格式化函数

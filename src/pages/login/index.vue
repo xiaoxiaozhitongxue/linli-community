@@ -110,7 +110,7 @@
 
               <!-- 忘记密码 -->
               <div class="forgot-password">
-                <span @click="showForgotPassword = true">忘记密码？</span>
+                <span @click="handleForgotPassword">忘记密码？</span>
               </div>
             </div>
           </Transition>
@@ -324,8 +324,10 @@ const registerForm = reactive({
   isLoading: false
 })
 
-// 忘记密码弹窗
-const showForgotPassword = ref(false)
+// 忘记密码 - 功能暂未开放
+const handleForgotPassword = () => {
+  toastInfo('密码重置功能开发中，请联系管理员处理')
+}
 
 // 验证状态
 const isLoginPhoneValid = computed(() => loginForm.phone.length === 11 && /^1[3-9]\d{9}$/.test(loginForm.phone))

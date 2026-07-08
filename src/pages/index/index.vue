@@ -109,7 +109,7 @@
                     <div class="activity-feed-meta">
                       <span>{{ formatShortTime(item._raw.start_time) }}</span>
                       <span class="meta-dot">·</span>
-                      <span>{{ item._raw.current_participants }}人参与</span>
+                      <span>{{ item._raw.current_participants }}人关注</span>
                       <span v-if="item._raw.location" class="meta-dot">·</span>
                       <span v-if="item._raw.location">{{ item._raw.location }}</span>
                     </div>

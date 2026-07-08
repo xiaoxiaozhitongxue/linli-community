@@ -79,7 +79,7 @@
             </div>
             <div class="info-item">
               <span class="info-icon"><AppIcon name="users" :size="14" /></span>
-              <span class="info-text">{{ activity.current_participants }}人参与</span>
+              <span class="info-text">{{ activity.current_participants }}人关注</span>
             </div>
           </div>
         </div>

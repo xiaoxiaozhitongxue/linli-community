@@ -78,7 +78,7 @@
               <span class="task-stat-label">待接单</span>
             </div>
             <div class="task-stat-divider"></div>
-            <div class="task-stat-item" @click="goToMyTasks('ongoing')">
+            <div class="task-stat-item" @click="goToMyTasks('in_progress')">
               <div class="task-stat-num in-progress">
                 <span class="task-stat-value">{{ taskStats.published.in_progress }}</span>
               </div>
