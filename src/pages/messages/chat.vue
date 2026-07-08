@@ -17,11 +17,12 @@
 
     <!-- 消息列表 -->
     <div class="chat-list" ref="chatListRef">
+      <div class="load-more" v-if="hasMore" @click="loadMoreMessages">加载更多…</div>
       <div 
         class="message-item"
         :class="{ 'message-self': msg.isSelf, 'message-other': !msg.isSelf }"
         v-for="(msg, index) in messages" 
-        :key="index"
+        :key="msg.id || index"
       >
         <template v-if="!msg.isSystem">
           <div class="avatar-wrap" v-if="msg.isSelf ? myAvatar : chatUser.avatar">
@@ -31,7 +32,7 @@
         </template>
         <div class="message-bubble" :class="{ 'bubble-self': msg.isSelf, 'bubble-other': !msg.isSelf }" v-if="!msg.isSystem">
           <div class="bubble-content">{{ msg.content }}</div>
-          <div class="bubble-time">{{ formatTime(msg.time) }}</div>
+          <div class="bubble-time">{{ formatTime(msg.time || msg.createdAt) }}</div>
         </div>
         <div class="system-message" v-else>
           {{ msg.content }}
@@ -48,7 +49,7 @@
           placeholder="输入消息..."
           @keyup.enter="sendMessage"
         />
-        <button class="send-btn" @click="sendMessage" :disabled="!inputText.trim()">
+        <button class="send-btn" @click="sendMessage" :disabled="!inputText.trim() || sending">
           发送
         </button>
       </div>
@@ -64,11 +65,14 @@ import { navigateBack } from '../../utils/router'
 import { useRoute } from 'vue-router'
 import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
+import { messageService } from '../../services/messageService'
+import type { MessageItem } from '../../services/messageService'
 
 interface ChatMessage {
   id: string
   content: string
-  time: string
+  time: string | number
+  createdAt?: number
   isSelf: boolean
   isSystem?: boolean
 }
@@ -87,9 +91,13 @@ const chatUser = ref({
 const myAvatar = ref('')
 const inputText = ref('')
 const messages = ref<ChatMessage[]>([])
+const sending = ref(false)
+const currentPage = ref(1)
+const hasMore = ref(false)
 
-const formatTime = (timeStr: string) => {
-  const time = new Date(timeStr)
+const formatTime = (timeStr: string | number) => {
+  if (!timeStr) return ''
+  const time = new Date(typeof timeStr === 'number' ? timeStr * 1000 : timeStr)
   return time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
@@ -104,7 +112,7 @@ const scrollToBottom = () => {
 const chatId = ref('')
 const getChatKey = () => `chat_${chatId.value}`
 
-const loadMessages = () => {
+const loadMessages = async () => {
   chatId.value = (route.query.id as string) || ''
   chatUser.value = {
     id: chatId.value,
@@ -112,9 +120,33 @@ const loadMessages = () => {
     avatar: decodeURIComponent((route.query.avatar as string) || '')
   }
 
-  // 加载我的头像（与登录态一致，从 auth store 读取，避免命中错误的 localStorage key）
+  // 加载我的头像（与登录态一致，从 auth store 读取）
   myAvatar.value = user.value?.avatar || ''
 
+  // 优先从后端加载
+  if (chatId.value) {
+    try {
+      const result = await messageService.getMessages(chatId.value, 1, 50)
+      if (result.items && result.items.length > 0) {
+        messages.value = result.items.map((msg: MessageItem) => ({
+          id: msg.id,
+          content: msg.content,
+          time: msg.createdAt,
+          createdAt: msg.createdAt,
+          isSelf: msg.isSelf,
+          isSystem: false
+        }))
+        hasMore.value = result.total > result.items.length
+        currentPage.value = 1
+        scrollToBottom()
+        return
+      }
+    } catch (e) {
+      // API 失败，回退到本地存储
+    }
+  }
+
+  // 回退到 localStorage
   const stored = localStore.getArray<ChatMessage>(getChatKey(), [])
   if (stored.length > 0) {
     messages.value = stored
@@ -142,27 +174,80 @@ const loadMessages = () => {
     ]
     localStore.setArray(getChatKey(), messages.value)
   }
+  scrollToBottom()
+}
+
+const loadMoreMessages = async () => {
+  if (!chatId.value || !hasMore.value) return
+  try {
+    const nextPage = currentPage.value + 1
+    const result = await messageService.getMessages(chatId.value, nextPage, 50)
+    if (result.items && result.items.length > 0) {
+      const olderMessages = result.items.map((msg: MessageItem) => ({
+        id: msg.id,
+        content: msg.content,
+        time: msg.createdAt,
+        createdAt: msg.createdAt,
+        isSelf: msg.isSelf,
+        isSystem: false
+      }))
+      messages.value = [...olderMessages, ...messages.value]
+      currentPage.value = nextPage
+      hasMore.value = result.total > nextPage * result.limit
+    } else {
+      hasMore.value = false
+    }
+  } catch (e) {
+    // ignore
+  }
 }
 
 const saveMessages = () => {
   localStore.setArray(getChatKey(), messages.value)
 }
 
-const sendMessage = () => {
+const sendMessage = async () => {
   const text = inputText.value.trim()
-  if (!text) return
+  if (!text || sending.value) return
 
+  sending.value = true
+
+  // 乐观更新
+  const tempId = Date.now().toString()
   const newMsg: ChatMessage = {
-    id: Date.now().toString(),
+    id: tempId,
     content: text,
     time: new Date().toISOString(),
     isSelf: true
   }
-
   messages.value.push(newMsg)
   inputText.value = ''
-  saveMessages()
   scrollToBottom()
+
+  // 尝试发送到后端
+  if (chatId.value) {
+    try {
+      const sent = await messageService.sendMessage(chatId.value, text)
+      // 用服务器返回的消息替换临时消息
+      const idx = messages.value.findIndex(m => m.id === tempId)
+      if (idx >= 0) {
+        messages.value[idx] = {
+          id: sent.id,
+          content: sent.content,
+          time: sent.createdAt,
+          createdAt: sent.createdAt,
+          isSelf: true
+        }
+      }
+      saveMessages()
+    } catch (e) {
+      // 发送失败但保留本地消息
+      saveMessages()
+    }
+  } else {
+    saveMessages()
+  }
+  sending.value = false
 }
 
 const goBack = () => {
@@ -172,7 +257,6 @@ const goBack = () => {
 onMounted(() => {
   statusBarHeight.value = 20
   loadMessages()
-  scrollToBottom()
 })
 </script>
 
@@ -245,6 +329,18 @@ onMounted(() => {
   padding: 16px;
   overflow-y: auto;
   min-height: 0;
+}
+
+.load-more {
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+}
+
+.load-more:hover {
+  color: var(--color-primary);
 }
 
 .message-item {

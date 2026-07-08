@@ -4,7 +4,7 @@
       <!-- Logo区域 -->
       <div class="logo-section">
         <div class="logo">
-          <span class="logo-emoji">🏘️</span>
+          <AppIcon name="home" class="logo-emoji" />
         </div>
         <span class="app-name">邻里社区</span>
         <span class="app-slogan">连接邻里，共建美好社区</span>
@@ -46,7 +46,7 @@
               @input="onPasswordInput"
             />
             <span class="password-toggle" @click="showPassword = !showPassword">
-              {{ showPassword ? '🙈' : '👁️' }}
+              <AppIcon :name="showPassword ? 'close' : 'close'" class="password-toggle" />
             </span>
           </div>
           <div class="error-text" v-if="passwordError">{{ passwordError }}</div>
@@ -143,6 +143,7 @@ import { useAuth } from '../../store'
 import { authService } from '../../services/authService'
 import { getAndClearLoginRedirect } from '../../utils/auth'
 import { COMMUNITY_NAMES } from '../../constants/communities'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { setUser } = useAuth()
 

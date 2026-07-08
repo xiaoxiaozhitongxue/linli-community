@@ -3,7 +3,7 @@
     <!-- 顶部区域 -->
     <div class="header">
       <div class="header-content">
-        <span class="header-title">💰 社区创业</span>
+        <span class="header-title"><AppIcon name="activity" :size="20" /> 社区创业</span>
         <span class="header-subtitle">把兴趣变成生意，邻居先成为客户</span>
       </div>
     </div>
@@ -13,7 +13,7 @@
       <div class="my-shop" v-if="hasShop">
         <div class="shop-card">
           <div class="shop-cover" :style="{ background: shop.bgColor }">
-            <span class="shop-emoji">{{ shop.emoji }}</span>
+            <AppIcon class="shop-emoji" :name="emojiToIcon(shop.emoji)" :size="36" />
           </div>
           <div class="shop-info">
             <span class="shop-name">{{ shop.name }}</span>
@@ -33,7 +33,7 @@
       <!-- 开通小店 -->
       <div class="open-shop" v-else>
         <div class="open-shop-content">
-          <span class="open-icon">🏪</span>
+          <span class="open-icon"><AppIcon name="home" :size="48" /></span>
           <span class="open-title">还没有开通小店</span>
           <span class="open-desc">把您的兴趣和技能变成邻里间的小生意</span>
           <div class="open-btn" @click="openShop">
@@ -46,25 +46,25 @@
       <div class="quick-actions">
         <div class="action-item" @click="goToPublish">
           <div class="action-icon" style="background: #FFF3E0;">
-            <span>📦</span>
+            <AppIcon name="bookmark" :size="20" />
           </div>
           <span class="action-text">发布商品</span>
         </div>
         <div class="action-item" @click="goToOrders">
           <div class="action-icon" style="background: #E3F2FD;">
-            <span>📋</span>
+            <AppIcon name="bookmark" :size="20" />
           </div>
           <span class="action-text">我的订单</span>
         </div>
         <div class="action-item" @click="goToAnalytics">
           <div class="action-icon" style="background: #F3E5F5;">
-            <span>📊</span>
+            <AppIcon name="activity" :size="20" />
           </div>
           <span class="action-text">数据统计</span>
         </div>
         <div class="action-item" @click="goToGuide">
           <div class="action-icon" style="background: #E8F5E9;">
-            <span>📚</span>
+            <AppIcon name="book-open" :size="20" />
           </div>
           <span class="action-text">创业指南</span>
         </div>
@@ -85,28 +85,28 @@
             :class="{ active: selectedCategory === 'food' }"
             @click="selectCategory('food')"
           >
-            🍰 烘焙
+            <AppIcon name="star" :size="16" /> 烘焙
           </div>
           <div
             class="category-item"
             :class="{ active: selectedCategory === 'cooking' }"
             @click="selectCategory('cooking')"
           >
-            🍳 私房菜
+            <AppIcon name="star" :size="16" /> 私房菜
           </div>
           <div
             class="category-item"
             :class="{ active: selectedCategory === 'handmade' }"
             @click="selectCategory('handmade')"
           >
-            🎨 手工
+            <AppIcon name="settings" :size="16" /> 手工
           </div>
           <div
             class="category-item"
             :class="{ active: selectedCategory === 'service' }"
             @click="selectCategory('service')"
           >
-            🛠️ 服务
+            <AppIcon name="settings" :size="16" /> 服务
           </div>
         </div>
       </div>
@@ -114,7 +114,7 @@
       <!-- 热门商品 -->
       <div class="section">
         <div class="section-header">
-          <span class="section-title">🔥 热门商品</span>
+          <span class="section-title"><AppIcon name="flame" :size="16" /> 热门商品</span>
           <span class="section-more" @click="goToAllProducts">查看更多 ></span>
         </div>
         <div class="product-grid">
@@ -125,14 +125,14 @@
             @click="goToProductDetail(product)"
           >
             <div class="product-cover" :style="{ background: product.bgColor }">
-              <span class="product-emoji">{{ product.emoji }}</span>
+              <AppIcon class="product-emoji" :name="emojiToIcon(product.emoji)" :size="32" />
               <div class="product-badge" v-if="product.isHot">热门</div>
             </div>
             <div class="product-info">
               <span class="product-name">{{ product.name }}</span>
               <div class="product-shop-line">
                 <span class="shop-tag">{{ product.shopName }}</span>
-                <span class="shop-distance">📍 {{ product.distance }}m</span>
+                <span class="shop-distance"><AppIcon name="map-pin" :size="14" /> {{ product.distance }}m</span>
               </div>
               <div class="product-footer">
                 <span class="product-price">¥{{ product.price }}</span>
@@ -146,7 +146,7 @@
       <!-- 附近小店 -->
       <div class="section">
         <div class="section-header">
-          <span class="section-title">🏪 附近小店</span>
+          <span class="section-title"><AppIcon name="home" :size="16" /> 附近小店</span>
         </div>
         <div class="shop-list">
           <div
@@ -156,7 +156,7 @@
             @click="visitShop(shopItem)"
           >
             <div class="shop-avatar" :style="{ background: shopItem.bgColor }">
-              <span class="shop-emoji-icon">{{ shopItem.emoji }}</span>
+              <AppIcon class="shop-emoji-icon" :name="emojiToIcon(shopItem.emoji)" :size="28" />
             </div>
             <div class="shop-detail">
               <span class="shop-name-text">{{ shopItem.name }}</span>
@@ -164,7 +164,7 @@
               <div class="shop-meta">
                 <span>⭐ {{ shopItem.rating }}</span>
                 <span>月销 {{ shopItem.monthlySales }}</span>
-                <span>📍 {{ shopItem.distance }}m</span>
+                <span><AppIcon name="map-pin" :size="14" /> {{ shopItem.distance }}m</span>
               </div>
             </div>
           </div>
@@ -174,7 +174,7 @@
       <!-- 最新订单 -->
       <div class="section">
         <div class="section-header">
-          <span class="section-title">📋 最新订单</span>
+          <span class="section-title"><AppIcon name="bookmark" :size="16" /> 最新订单</span>
           <span class="section-more" @click="goToOrders">查看全部 ></span>
         </div>
         <div class="order-list">
@@ -196,7 +196,7 @@
       <!-- 创业故事 -->
       <div class="section">
         <div class="section-header">
-          <span class="section-title">📖 创业故事</span>
+          <span class="section-title"><AppIcon name="book-open" :size="16" /> 创业故事</span>
         </div>
         <div class="story-list">
           <div
@@ -234,6 +234,7 @@ import { showModal } from '../../utils/ui'
 import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
 import { INITIAL_ORDERS, DEFAULT_SHOP, type ShopOrder } from '../../constants/businessData'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { getCurrentPhone } = useAuth()
 const bizPhone = computed(() => getCurrentPhone() || undefined)
@@ -244,6 +245,16 @@ const selectedCategory = ref('all')
 
 // 店铺信息本地持久化（编辑小店页可修改）
 const shop = ref(localStore.getObject('business_shop', { ...DEFAULT_SHOP }, bizPhone.value))
+
+const EMOJI_TO_ICON: Record<string, string> = {
+  '🍰': 'star', '🍖': 'star', '👜': 'star', '🍹': 'star', '🍬': 'star',
+  '🍗': 'star', '🧶': 'star', '🐱': 'star', '🍳': 'star', '🥟': 'star',
+  '🎨': 'settings', '🐾': 'users', '🌿': 'star'
+}
+
+function emojiToIcon(emoji: string): string {
+  return EMOJI_TO_ICON[emoji] || 'star'
+}
 
 const hotProducts = ref([
   {

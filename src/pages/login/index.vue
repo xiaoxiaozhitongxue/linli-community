@@ -14,7 +14,7 @@
         <div class="logo-section">
           <div class="logo-wrapper">
             <div class="logo">
-              <span class="logo-emoji">🏘️</span>
+              <AppIcon name="home" class="logo-emoji" />
             </div>
           </div>
           <h1 class="app-title">邻里社区</h1>
@@ -28,7 +28,7 @@
             :class="{ active: currentTab === 'login' }"
             @click="switchTab('login')"
           >
-            <span class="tab-icon">🔐</span>
+            <AppIcon name="lock" class="tab-icon" />
             <span class="tab-text">登录</span>
           </div>
           <div 
@@ -36,7 +36,7 @@
             :class="{ active: currentTab === 'register' }"
             @click="switchTab('register')"
           >
-            <span class="tab-icon">📝</span>
+            <AppIcon name="edit" class="tab-icon" />
             <span class="tab-text">注册</span>
           </div>
         </div>
@@ -49,7 +49,7 @@
               <!-- 手机号输入 -->
               <div class="input-group" :class="{ error: loginForm.phoneError }">
                 <label class="input-label">
-                  <span class="label-icon">📱</span>
+                  <AppIcon name="message-circle" class="label-icon" />
                   手机号
                 </label>
                 <div class="input-wrapper" :class="{ focused: loginForm.phoneFocused }">
@@ -71,7 +71,7 @@
               <!-- 密码输入 -->
               <div class="input-group" :class="{ error: loginForm.passwordError }">
                 <label class="input-label">
-                  <span class="label-icon">🔑</span>
+                  <AppIcon name="lock" class="label-icon" />
                   密码
                 </label>
                 <div class="input-wrapper" :class="{ focused: loginForm.passwordFocused }">
@@ -89,7 +89,7 @@
                     class="toggle-password" 
                     @click="loginForm.showPassword = !loginForm.showPassword"
                   >
-                    {{ loginForm.showPassword ? '🙈' : '👁️' }}
+                  <AppIcon :name="loginForm.showPassword ? 'close' : 'close'" class="toggle-password" />
                   </span>
                 </div>
                 <span v-if="loginForm.passwordError" class="error-hint">{{ loginForm.passwordError }}</span>
@@ -121,7 +121,7 @@
               <!-- 手机号输入 -->
               <div class="input-group" :class="{ error: registerForm.phoneError }">
                 <label class="input-label">
-                  <span class="label-icon">📱</span>
+                  <AppIcon name="message-circle" class="label-icon" />
                   手机号
                 </label>
                 <div class="input-wrapper" :class="{ focused: registerForm.phoneFocused }">
@@ -143,7 +143,7 @@
               <!-- 密码输入 -->
               <div class="input-group" :class="{ error: registerForm.passwordError }">
                 <label class="input-label">
-                  <span class="label-icon">🔑</span>
+                  <AppIcon name="lock" class="label-icon" />
                   密码
                 </label>
                 <div class="input-wrapper" :class="{ focused: registerForm.passwordFocused }">
@@ -161,7 +161,7 @@
                     class="toggle-password" 
                     @click="registerForm.showPassword = !registerForm.showPassword"
                   >
-                    {{ registerForm.showPassword ? '🙈' : '👁️' }}
+                  <AppIcon :name="registerForm.showPassword ? 'close' : 'close'" class="toggle-password" />
                   </span>
                 </div>
                 <span v-if="registerForm.passwordError" class="error-hint">{{ registerForm.passwordError }}</span>
@@ -170,7 +170,7 @@
               <!-- 昵称输入 -->
               <div class="input-group" :class="{ error: registerForm.nicknameError }">
                 <label class="input-label">
-                  <span class="label-icon">👤</span>
+                  <AppIcon name="user" class="label-icon" />
                   昵称
                 </label>
                 <div class="input-wrapper" :class="{ focused: registerForm.nicknameFocused }">
@@ -192,7 +192,7 @@
               <!-- 社区选择 -->
               <div class="input-group" :class="{ error: registerForm.communityError }">
                 <label class="input-label">
-                  <span class="label-icon">🏠</span>
+                  <AppIcon name="home" class="label-icon" />
                   所在社区
                 </label>
                 <div class="input-wrapper select-wrapper" :class="{ focused: registerForm.communityFocused }">
@@ -278,6 +278,7 @@ import { authService } from '../../services/authService'
 import { getAndClearLoginRedirect } from '../../utils/auth'
 // B11：社区列表统一引用单一数据源，避免与注册页下拉项不一致
 import { COMMUNITY_NAMES } from '../../constants/communities'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { setUser } = useAuth()
 

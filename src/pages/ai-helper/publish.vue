@@ -53,7 +53,7 @@
             :class="{ active: form.category === cat.value }"
             @click="form.category = cat.value"
           >
-            <span class="category-icon">{{ cat.icon }}</span>
+            <AppIcon class="category-icon" :name="cat.icon" :size="24" />
             <span class="category-text">{{ cat.label }}</span>
           </div>
         </div>
@@ -67,7 +67,7 @@
             v-model="form.location" 
             placeholder="请输入详细地址"
           />
-          <span class="location-icon">📍</span>
+          <AppIcon class="location-icon" name="map-pin" :size="18" />
         </div>
       </div>
 
@@ -86,7 +86,7 @@
 
       <div class="ai-match-section">
         <div class="ai-header">
-          <span class="ai-icon">🤖</span>
+          <AppIcon class="ai-icon" name="settings" :size="20" />
           <span class="ai-title">AI智能推荐</span>
         </div>
         <div class="ai-desc">开启AI推荐，系统将为您匹配合适的帮助者</div>
@@ -132,19 +132,20 @@ import { toastSuccess, toastInfo } from '../../utils/toast'
 import { taskService } from '../../services/taskService'
 import { useAuth } from '../../store'
 import { setLoginRedirect } from '../../utils/auth'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { isLoggedIn, user } = useAuth()
 
 const statusBarHeight = ref(20)
 
 const categories = [
-  { value: 'delivery', label: '快递取送', icon: '📦' },
-  { value: 'shopping', label: '代购', icon: '🛒' },
-  { value: 'help', label: '帮忙', icon: '🤝' },
-  { value: 'companionship', label: '陪护', icon: '👥' },
-  { value: 'pet', label: '宠物', icon: '🐕' },
-  { value: 'child', label: '儿童', icon: '👶' },
-  { value: 'other', label: '其他', icon: '📝' }
+  { value: 'delivery', label: '快递取送', icon: 'bookmark' },
+  { value: 'shopping', label: '代购', icon: 'activity' },
+  { value: 'help', label: '帮忙', icon: 'handshake' },
+  { value: 'companionship', label: '陪护', icon: 'users' },
+  { value: 'pet', label: '宠物', icon: 'users' },
+  { value: 'child', label: '儿童', icon: 'user' },
+  { value: 'other', label: '其他', icon: 'edit' }
 ]
 
 const form = ref({

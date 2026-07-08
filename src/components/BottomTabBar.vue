@@ -140,10 +140,10 @@ const handleTouchEnd = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   transition: all var(--transition-bounce);
 }
 
@@ -152,8 +152,12 @@ const handleTouchEnd = () => {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.02);
+  background: transparent;
   transition: all var(--transition-normal);
+}
+
+.tab-item:hover .tab-icon-bg {
+  background: rgba(255, 140, 66, 0.08);
 }
 
 .tab-item.active .tab-icon-wrap {
@@ -161,7 +165,8 @@ const handleTouchEnd = () => {
 }
 
 .tab-item.active .tab-icon-bg {
-  background: linear-gradient(135deg, rgba(255, 140, 66, 0.15) 0%, rgba(255, 107, 53, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.18) 0%, rgba(255, 140, 66, 0.12) 100%);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.12);
 }
 
 .tab-icon {
@@ -231,14 +236,14 @@ const handleTouchEnd = () => {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 70px;
-  height: 70px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 140, 66, 0.35) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.25) 0%, transparent 70%);
   transform: translate(-50%, -50%) scale(0);
-  animation: rippleExpand 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: rippleExpand 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   pointer-events: none;
-  z-index: 10;
+  z-index: 0;
 }
 
 @keyframes rippleExpand {

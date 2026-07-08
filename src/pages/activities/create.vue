@@ -35,7 +35,7 @@
               :class="{ active: form.category === cat.value }"
               @click="selectCategory(cat.value)"
             >
-              <span class="category-emoji">{{ cat.emoji }}</span>
+              <AppIcon class="category-emoji" :name="cat.icon" :size="28" />
               <span class="category-name">{{ cat.label }}</span>
             </div>
           </div>
@@ -223,6 +223,7 @@ import { ref, computed, onMounted } from 'vue'
 import { activityService } from '../../services/activityService'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
+import AppIcon from '../../components/AppIcon.vue'
 
 const form = ref({
   title: '',
@@ -254,11 +255,11 @@ const showLocationModal = ref(false)
 const tempLocation = ref('')
 
 const categories = [
-  { value: 'sports', label: '运动健身', emoji: '🏃' },
-  { value: 'culture', label: '文化艺术', emoji: '🎨' },
-  { value: 'charity', label: '公益活动', emoji: '💝' },
-  { value: 'party', label: '聚会派对', emoji: '🎉' },
-  { value: 'other', label: '其他', emoji: '📌' }
+  { value: 'sports', label: '运动健身', icon: 'activity' },
+  { value: 'culture', label: '文化艺术', icon: 'book-open' },
+  { value: 'charity', label: '公益活动', icon: 'heart' },
+  { value: 'party', label: '聚会派对', icon: 'star' },
+  { value: 'other', label: '其他', icon: 'megaphone' }
 ]
 
 const canSubmit = computed(() => {

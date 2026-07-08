@@ -10,7 +10,7 @@
     <div class="content">
       <div class="about-card">
         <div class="app-logo">
-          <span class="logo-icon">🏘️</span>
+          <AppIcon name="home" class="logo-icon" />
         </div>
         <div class="app-name">邻里社区</div>
         <div class="app-version">版本 1.0.0</div>
@@ -23,28 +23,28 @@
         <div class="section-title">主要功能</div>
         <div class="feature-list">
           <div class="feature-item">
-            <span class="feature-icon">🤖</span>
+            <AppIcon name="activity" class="feature-icon" />
             <div class="feature-text">
               <span class="feature-name">AI智能匹配</span>
               <span class="feature-desc">基于AI算法为您匹配最合适的互助对象</span>
             </div>
           </div>
           <div class="feature-item">
-            <span class="feature-icon">🤝</span>
+            <AppIcon name="handshake" class="feature-icon" />
             <div class="feature-text">
               <span class="feature-name">互助任务</span>
               <span class="feature-desc">发布任务、接受任务，轻松互助</span>
             </div>
           </div>
           <div class="feature-item">
-            <span class="feature-icon">👴</span>
+            <AppIcon name="user" class="feature-icon" />
             <div class="feature-text">
               <span class="feature-name">老人关怀</span>
               <span class="feature-desc">为老年人提供便捷的关怀服务</span>
             </div>
           </div>
           <div class="feature-item">
-            <span class="feature-icon">🛡️</span>
+            <AppIcon name="lock" class="feature-icon" />
             <div class="feature-text">
               <span class="feature-name">信用体系</span>
               <span class="feature-desc">完善的信用评分系统，保障互助安全</span>
@@ -57,15 +57,15 @@
         <div class="section-title">联系方式</div>
         <div class="contact-list">
           <div class="contact-item">
-            <span class="contact-icon">📧</span>
+            <AppIcon name="message-circle" class="contact-icon" />
             <span class="contact-text">renrenrenzm@163.com</span>
           </div>
           <div class="contact-item">
-            <span class="contact-icon">📞</span>
+            <AppIcon name="message-circle" class="contact-icon" />
             <span class="contact-text">xxxxxxxxxx</span>
           </div>
           <div class="contact-item">
-            <span class="contact-icon">🌐</span>
+            <AppIcon name="share" class="contact-icon" />
             <span class="contact-text">https://yunzhui.pages.dev/</span>
           </div>
         </div>
@@ -81,6 +81,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { navigateBackSmart } from '../../utils/router'
+import AppIcon from '../../components/AppIcon.vue'
 
 const statusBarHeight = ref(20)
 

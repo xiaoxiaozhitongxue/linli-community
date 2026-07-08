@@ -35,14 +35,14 @@
       <ErrorBoundary v-else-if="error" message="加载失败，请稍后重试" @retry="retry" />
 
       <!-- 空状态 -->
-      <EmptyState v-else-if="!loading && activities.length === 0" icon="📅" title="暂无活动" description="还没有人发起活动" actionText="发起第一个活动" @action="goToCreate" />
+      <EmptyState v-else-if="!loading && activities.length === 0" icon="calendar" title="暂无活动" description="还没有人发起活动" actionText="发起第一个活动" @action="goToCreate" />
 
       <!-- 活动列表 -->
       <div v-else class="activity-list">
         <!-- 热门活动区域 -->
         <div v-if="hotActivities.length > 0 && currentFilter === 'all'" class="section">
           <div class="section-header">
-            <span class="section-title">🔥 热门活动</span>
+            <span class="section-title"><AppIcon name="flame" :size="18" />热门活动</span>
           </div>
           <div class="hot-activity-scroll">
             <div 
@@ -52,7 +52,7 @@
               @click="goToDetail(activity.id)"
             >
               <div class="hot-activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
-                <span class="hot-activity-emoji">{{ getActivityEmoji(activity.category) }}</span>
+                <span class="hot-activity-emoji"><AppIcon :name="getActivityEmoji(activity.category)" :size="44" /></span>
               </div>
               <div class="hot-activity-info">
                 <span class="hot-activity-name">{{ activity.title }}</span>
@@ -68,7 +68,7 @@
         <!-- 近期活动列表 -->
         <div class="section">
           <div class="section-header">
-            <span class="section-title">🎯 近期活动</span>
+            <span class="section-title"><AppIcon name="target" :size="18" />近期活动</span>
             <span class="section-count">{{ filteredActivities.length }}个活动</span>
           </div>
           
@@ -80,7 +80,7 @@
               @click="goToDetail(activity.id)"
             >
               <div class="recent-activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
-                <span class="recent-activity-icon">{{ getActivityEmoji(activity.category) }}</span>
+                <span class="recent-activity-icon"><AppIcon :name="getActivityEmoji(activity.category)" :size="56" /></span>
                 <div class="recent-activity-badge" :class="'status-' + activity.status">
                   {{ getStatusText(activity.status) }}
                 </div>
@@ -95,22 +95,22 @@
                 
                 <div class="recent-activity-info">
                   <div class="info-item">
-                    <span class="info-icon">📅</span>
+                    <span class="info-icon"><AppIcon name="calendar" :size="14" /></span>
                     <span class="info-text">{{ formatFullDate(activity.start_time) }}</span>
                   </div>
                   <div class="info-item">
-                    <span class="info-icon">📍</span>
+                    <span class="info-icon"><AppIcon name="map-pin" :size="14" /></span>
                     <span class="info-text">{{ activity.location }}</span>
                   </div>
                   <div class="info-item">
-                    <span class="info-icon">👥</span>
+                    <span class="info-icon"><AppIcon name="users" :size="14" /></span>
                     <span class="info-text">{{ activity.current_participants }}人已报名{{ activity.max_participants ? ' / 限' + activity.max_participants + '人' : '' }}</span>
                   </div>
                 </div>
                 
                 <div class="recent-activity-footer">
                   <div class="recent-activity-participants">
-                    <span class="participant-icon">👤</span>
+                    <span class="participant-icon"><AppIcon name="user" :size="14" /></span>
                     <span class="participant-text">{{ activity.user?.nickname || '邻居' }}</span>
                   </div>
                   <div 
@@ -155,6 +155,7 @@ import type { Activity } from '../../types/models'
 import { navigateTo, navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
+import AppIcon from '../../components/AppIcon.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import ErrorBoundary from '../../components/ErrorBoundary.vue'
 import { getActivityStatusLabel } from '../../constants/status'
@@ -191,13 +192,13 @@ const filteredActivities = computed(() => {
 
 const getActivityEmoji = (category: string) => {
   const map: Record<string, string> = {
-    sports: '⚽',
-    culture: '🎨',
-    charity: '💝',
-    party: '🎉',
-    other: '📌'
+    sports: 'activity',
+    culture: 'book-open',
+    charity: 'heart',
+    party: 'star',
+    other: 'bookmark'
   }
-  return map[category] || '📌'
+  return map[category] || 'bookmark'
 }
 
 const getActivityCoverBg = (category: string) => {

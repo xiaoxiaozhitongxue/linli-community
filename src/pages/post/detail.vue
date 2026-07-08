@@ -19,10 +19,21 @@
         </div>
       </div>
 
-      <!-- 正文 -->
+      <!-- 操作按钮：仅作者可见 -->
+      <div class="post-actions" v-if="isOwner">
+        <span class="action-btn edit-btn" @click="startEdit"><AppIcon name="edit" :size="16" /> 编辑</span>
+        <span class="action-btn delete-btn" @click="confirmDelete"><AppIcon name="trash" :size="16" /> 删除</span>
+      </div>
+
+      <!-- 正文 / 编辑模式 -->
       <div class="post-body">
-        <p class="post-text">{{ post.content }}</p>
-        <div v-if="post.images && post.images.length" class="post-images" :class="'images-' + post.images.length">
+        <textarea v-if="editing" v-model="editContent" class="edit-textarea" rows="5"></textarea>
+        <p v-else class="post-text">{{ post.content }}</p>
+        <div class="edit-actions" v-if="editing">
+          <span class="cancel-btn" @click="cancelEdit">取消</span>
+          <span class="save-btn" @click="saveEdit">保存</span>
+        </div>
+        <div v-if="!editing && post.images && post.images.length" class="post-images" :class="'images-' + post.images.length">
           <img
             v-for="(img, i) in post.images"
             :key="i"
@@ -37,7 +48,7 @@
       <!-- 互动数据 -->
       <div class="post-stats">
         <span>❤️ {{ post.like_count || 0 }}</span>
-        <span>💬 {{ post.comment_count || 0 }} 条评论</span>
+        <span><AppIcon name="message-circle" /> {{ post.comment_count || 0 }} 条评论</span>
       </div>
 
       <!-- 评论区 -->
@@ -76,15 +87,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
 import { postService } from '../../services/postService'
 import { useAuth } from '../../store'
+import AppIcon from '../../components/AppIcon.vue'
 
 interface Post {
   id: string
+  user_id?: string
   content?: string
   images?: string[]
   location?: string
@@ -101,12 +114,17 @@ interface Comment {
 }
 
 const route = useRoute()
-const { isLoggedIn } = useAuth()
+const router = useRouter()
+const { isLoggedIn, user } = useAuth()
 
 const post = ref<Post | null>(null)
 const comments = ref<Comment[]>([])
 const commentText = ref('')
 const loading = ref(true)
+const editing = ref(false)
+const editContent = ref('')
+
+const isOwner = computed(() => post.value?.user_id && user.value?.id && post.value.user_id === user.value.id)
 
 const goBack = () => navigateBackSmart('/pages/index/index')
 
@@ -138,6 +156,41 @@ const loadPost = async () => {
     toastError('加载失败，请重试')
   } finally {
     loading.value = false
+  }
+}
+
+const startEdit = () => {
+  editContent.value = post.value?.content || ''
+  editing.value = true
+}
+
+const cancelEdit = () => {
+  editing.value = false
+  editContent.value = ''
+}
+
+const saveEdit = async () => {
+  const text = editContent.value.trim()
+  if (!text || !post.value) return
+  try {
+    await postService.updatePost(post.value.id, { content: text })
+    post.value.content = text
+    editing.value = false
+    toastSuccess('编辑成功')
+  } catch (err) {
+    toastError('编辑失败，请重试')
+  }
+}
+
+const confirmDelete = async () => {
+  if (!post.value) return
+  if (!confirm('确定删除这条动态吗？')) return
+  try {
+    await postService.deletePost(post.value.id)
+    toastSuccess('删除成功')
+    goBack()
+  } catch (err) {
+    toastError('删除失败，请重试')
   }
 }
 
@@ -190,5 +243,13 @@ onMounted(loadPost)
 .comment-bar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 8px; padding: 10px var(--spacing-lg); background: var(--color-bg-secondary); border-top: 1px solid var(--color-border-light); }
 .comment-input { flex: 1; border: 1px solid var(--color-border-light); border-radius: 20px; padding: 8px 14px; font-size: 14px; outline: none; background: var(--color-bg-primary); color: var(--color-text-primary); }
 .send-btn { color: #fff; background: var(--color-primary); border-radius: 20px; padding: 0 18px; display: flex; align-items: center; font-size: 14px; cursor: pointer; }
+.post-actions { display: flex; gap: 12px; padding: var(--spacing-sm) 0; margin-bottom: var(--spacing-sm); }
+.action-btn { font-size: 13px; padding: 4px 12px; border-radius: 12px; cursor: pointer; }
+.edit-btn { background: var(--color-primary-soft, rgba(255,107,53,0.1)); color: var(--color-primary, #FF6B35); }
+.delete-btn { background: rgba(255,77,79,0.1); color: #ff4d4f; }
+.edit-textarea { width: 100%; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 10px; font-size: 14px; line-height: 1.7; resize: vertical; background: var(--color-bg-primary); color: var(--color-text-primary); }
+.edit-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.cancel-btn { font-size: 13px; color: var(--color-text-muted); cursor: pointer; padding: 4px 12px; }
+.save-btn { font-size: 13px; color: #fff; background: var(--color-primary); border-radius: 12px; padding: 4px 12px; cursor: pointer; }
 .safe-area-bottom { height: var(--spacing-lg); }
 </style>

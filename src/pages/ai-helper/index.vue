@@ -5,7 +5,7 @@
       <div class="header-content">
         <div class="header-main">
           <div class="header-icon-wrap">
-            <span class="header-icon">🤝</span>
+            <AppIcon class="header-icon" name="handshake" :size="28" />
           </div>
           <div class="header-text">
             <span class="header-title">互助</span>
@@ -38,7 +38,7 @@
                 :class="{ active: selectedCategory === 'all' }"
                 @click="selectCategory('all')"
               >
-                <span class="category-icon">📋</span>
+                <AppIcon class="category-icon" name="bookmark" :size="18" />
                 <span class="category-name">全部</span>
               </div>
               <div
@@ -46,7 +46,7 @@
                 :class="{ active: selectedCategory === 'delivery' }"
                 @click="selectCategory('delivery')"
               >
-                <span class="category-icon">📦</span>
+                <AppIcon class="category-icon" name="bookmark" :size="18" />
                 <span class="category-name">取快递</span>
               </div>
               <div
@@ -54,7 +54,7 @@
                 :class="{ active: selectedCategory === 'shopping' }"
                 @click="selectCategory('shopping')"
               >
-                <span class="category-icon">🛒</span>
+                <AppIcon class="category-icon" name="activity" :size="18" />
                 <span class="category-name">买菜</span>
               </div>
               <div
@@ -62,7 +62,7 @@
                 :class="{ active: selectedCategory === 'pet' }"
                 @click="selectCategory('pet')"
               >
-                <span class="category-icon">🐕</span>
+                <AppIcon class="category-icon" name="users" :size="18" />
                 <span class="category-name">遛狗</span>
               </div>
               <div
@@ -70,7 +70,7 @@
                 :class="{ active: selectedCategory === 'child' }"
                 @click="selectCategory('child')"
               >
-                <span class="category-icon">👶</span>
+                <AppIcon class="category-icon" name="user" :size="18" />
                 <span class="category-name">接孩子</span>
               </div>
               <div
@@ -78,7 +78,7 @@
                 :class="{ active: selectedCategory === 'other' }"
                 @click="selectCategory('other')"
               >
-                <span class="category-icon">📝</span>
+                <AppIcon class="category-icon" name="edit" :size="18" />
                 <span class="category-name">其他</span>
               </div>
             </div>
@@ -155,7 +155,7 @@
                 <p class="task-desc">{{ task.description }}</p>
 
                 <div class="task-location">
-                  <span class="location-icon">📍</span>
+                  <AppIcon class="location-icon" name="map-pin" :size="14" />
                   <span class="location-text">{{ task.location }}</span>
                 </div>
               </div>
@@ -168,11 +168,10 @@
                 </div>
                 <div class="task-meta">
                   <span class="meta-item">
-                    <span class="meta-icon">📍</span>
-                    {{ task.distance }}m
+                    <AppIcon class="meta-icon" name="map-pin" :size="14" />
                   </span>
                   <span class="meta-item">
-                    <span class="meta-icon">👥</span>
+                    <AppIcon class="meta-icon" name="users" :size="14" />
                     {{ task.responses }}人响应
                   </span>
                 </div>
@@ -180,8 +179,7 @@
 
               <div class="task-action-bar" v-if="task.status === 'pending'">
                 <div class="respond-btn" @click.stop="respondToTask(task, $event)">
-                  <span class="btn-icon">🤝</span>
-                  <span>我来帮忙</span>
+                  <AppIcon class="btn-icon" name="handshake" :size="16" />
                 </div>
               </div>
               <div class="task-action-bar disabled" v-else-if="task.status === 'in_progress'">
@@ -192,8 +190,7 @@
               </div>
               <div class="task-action-bar completed" v-else-if="task.status === 'pending_confirm'">
                 <div class="respond-btn pending">
-                  <span class="btn-icon">🎯</span>
-                  <span>待确认</span>
+                  <AppIcon class="btn-icon" name="target" :size="16" />
                 </div>
               </div>
               <div class="task-action-bar completed" v-else>
@@ -206,7 +203,7 @@
           </div>
 
           <!-- 空状态 -->
-          <EmptyState v-else icon="🔍" :title="'暂无' + getCategoryName(selectedCategory) + '任务'" description="试试其他分类或切换到全部任务" />
+          <EmptyState v-else icon="search" :title="'暂无' + getCategoryName(selectedCategory) + '任务'" description="试试其他分类或切换到全部任务" />
 
           <div class="safe-area-bottom"></div>
         </div>
@@ -225,6 +222,7 @@ import type { Task } from '../../types/models'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import ErrorBoundary from '../../components/ErrorBoundary.vue'
+import AppIcon from '../../components/AppIcon.vue'
 import {
   getTaskStatusLabel,
   normalizeTaskStatus

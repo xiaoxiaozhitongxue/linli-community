@@ -47,7 +47,7 @@
                   <span class="meta-text">{{ item.target.like_count }}</span>
                 </div>
                 <div class="meta-item">
-                  <span class="meta-icon">💬</span>
+                  <AppIcon name="message-circle" class="meta-icon" />
                   <span class="meta-text">{{ item.target.comment_count }}</span>
                 </div>
               </div>
@@ -63,7 +63,7 @@
                   alt="活动封面"
                 />
                 <div v-else class="cover-placeholder">
-                  <span>{{ getCategoryIcon(item.target.category) }}</span>
+                  <AppIcon :name="getCategoryIcon(item.target.category)" />
                 </div>
               </div>
               <div class="preview-info">
@@ -95,6 +95,7 @@ import { navigateBackSmart } from '../../utils/router'
 import { request } from '../../utils/request'
 import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
+import AppIcon from '../../components/AppIcon.vue'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
@@ -180,13 +181,13 @@ const getTypeText = (type: string) => {
 
 const getCategoryIcon = (category: string) => {
   const map: Record<string, string> = {
-    sports: '⚽',
-    culture: '🎨',
-    charity: '❤️',
-    party: '🎉',
-    other: '📌'
+    sports: 'target',
+    culture: 'settings',
+    charity: 'heart',
+    party: 'star',
+    other: 'bookmark'
   }
-  return map[category] || '📌'
+  return map[category] || 'bookmark'
 }
 </script>
 

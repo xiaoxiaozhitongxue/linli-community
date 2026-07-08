@@ -27,6 +27,8 @@ const DETAIL_PAGES = [
   '/pages/activities/detail',
   '/pages/ai-helper/detail',
   '/pages/post/detail',
+  '/pages/messages/chat',
+  '/pages/messages/group',
   '/pages/profile/edit',
   '/pages/profile/my-posts',
   '/pages/profile/my-activities',
@@ -79,6 +81,9 @@ export function getListPagePath(detailPath: string): string {
   }
   if (detailPath.startsWith('/pages/post/detail')) {
     return '/pages/index/index'
+  }
+  if (detailPath.startsWith('/pages/messages/chat') || detailPath.startsWith('/pages/messages/group')) {
+    return '/pages/messages/index'
   }
   if (detailPath.startsWith('/pages/profile/')) {
     return '/pages/profile/index'
@@ -287,6 +292,7 @@ const PUBLIC_PAGES = [
   '/pages/health/index',
   '/pages/ai-helper/index',
   '/pages/elderly/index',
+  '/pages/messages/index',
   '/pages/messages/chat',
   '/pages/messages/group'
 ]

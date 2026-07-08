@@ -15,7 +15,7 @@
         <div class="shop-meta">
           <span>⭐ {{ shop.rating }}</span>
           <span>月销 {{ shop.monthlySales }}</span>
-          <span>📍 {{ shop.distance }}m</span>
+          <span><AppIcon name="map-pin" :size="14" /> {{ shop.distance }}m</span>
         </div>
       </div>
 
@@ -43,6 +43,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { navigateBackSmart, navigateTo } from '../../utils/router'
 import { NEARBY_SHOPS, HOT_PRODUCTS } from '../../constants/businessData'
+import AppIcon from '../../components/AppIcon.vue'
 
 const route = useRoute()
 const shop = computed(() => NEARBY_SHOPS.find((s) => s.id === route.query.id) || null)

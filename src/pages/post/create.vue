@@ -75,7 +75,7 @@
               :key="category.id"
               @click="selectCategory(category)"
             >
-              <span class="category-icon">{{ category.icon }}</span>
+              <AppIcon :name="category.icon" class="category-icon" />
               <span class="category-name">{{ category.name }}</span>
             </div>
           </div>
@@ -86,7 +86,7 @@
             <span class="label-text">位置</span>
           </div>
           <div class="location-input" @click="openLocationInput">
-            <span class="location-icon">📍</span>
+            <AppIcon name="map-pin" class="location-icon" />
             <span class="location-text" :class="{ placeholder: !location }">
               {{ location || '添加位置让更多邻居看到' }}
             </span>
@@ -101,11 +101,11 @@
     <div class="bottom-bar">
       <div class="bottom-actions">
         <div class="bottom-action" @click="chooseImage">
-          <span class="action-icon">📷</span>
+          <AppIcon name="camera" class="action-icon" />
           <span class="action-label">图片</span>
         </div>
         <div class="bottom-action" @click="openLocationInput">
-          <span class="action-icon">📍</span>
+          <AppIcon name="map-pin" class="action-icon" />
           <span class="action-label">位置</span>
         </div>
       </div>
@@ -165,6 +165,7 @@ import { useAuth } from '../../store'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
 import { setLoginRedirect } from '../../utils/auth'
+import AppIcon from '../../components/AppIcon.vue'
 
 const router = useRouter()
 const { user, isLoggedIn, initAuth } = useAuth()
@@ -179,12 +180,12 @@ const showLocationModal = ref(false)
 const tempLocation = ref('')
 
 const categories = [
-  { id: 'daily', name: '日常', icon: '🏠' },
-  { id: 'help', name: '求助', icon: '🆘' },
-  { id: 'activity', name: '活动', icon: '🎉' },
-  { id: 'recommend', name: '推荐', icon: '👍' },
-  { id: 'notice', name: '公告', icon: '📢' },
-  { id: 'other', name: '其他', icon: '📦' }
+  { id: 'daily', name: '日常', icon: 'home' },
+  { id: 'help', name: '求助', icon: 'help-circle' },
+  { id: 'activity', name: '活动', icon: 'star' },
+  { id: 'recommend', name: '推荐', icon: 'heart' },
+  { id: 'notice', name: '公告', icon: 'megaphone' },
+  { id: 'other', name: '其他', icon: 'bookmark' }
 ]
 
 const canPublish = computed(() => {

@@ -12,7 +12,7 @@
       <SkeletonLoader v-if="loading" type="card" :count="1" />
 
       <template v-else>
-        <EmptyState v-if="!isLoggedIn" icon="💪" title="登录后可打卡" description="登录即可记录每日健康打卡" />
+        <EmptyState v-if="!isLoggedIn" icon="activity" title="登录后可打卡" description="登录即可记录每日健康打卡" />
 
         <template v-else>
           <div class="stats-card">
@@ -57,6 +57,7 @@ import type { HealthRecord } from '../../types/models'
 import { useAuth } from '../../store'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { isLoggedIn } = useAuth()
 

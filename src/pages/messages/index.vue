@@ -16,7 +16,7 @@
         :class="{ active: activeTab === 'tasks' }"
         @click="switchTab('tasks')"
       >
-        <span class="tab-icon">📋</span>
+        <AppIcon class="tab-icon" name="bookmark" :size="14" />
         <span class="tab-text">任务通知</span>
         <span class="unread-dot" v-if="taskUnread > 0"></span>
       </div>
@@ -25,7 +25,7 @@
         :class="{ active: activeTab === 'private' }"
         @click="switchTab('private')"
       >
-        <span class="tab-icon">💬</span>
+        <AppIcon class="tab-icon" name="message-circle" :size="14" />
         <span class="tab-text">私信</span>
         <span class="unread-badge" v-if="privateUnread > 0">{{ privateUnread > 99 ? '99+' : privateUnread }}</span>
       </div>
@@ -34,7 +34,7 @@
         :class="{ active: activeTab === 'group' }"
         @click="switchTab('group')"
       >
-        <span class="tab-icon">👥</span>
+        <AppIcon class="tab-icon" name="users" :size="14" />
         <span class="tab-text">群聊</span>
         <span class="unread-badge" v-if="groupUnread > 0">{{ groupUnread > 99 ? '99+' : groupUnread }}</span>
       </div>
@@ -45,7 +45,7 @@
     <!-- 未登录提示 -->
     <div class="not-logged-in-container" v-else-if="!isLoggedIn">
       <div class="not-logged-in">
-        <div class="not-logged-in-icon">🔒</div>
+        <AppIcon class="not-logged-in-icon" name="lock" :size="64" />
         <div class="not-logged-in-title">请先登录</div>
         <div class="not-logged-in-desc">登录后可查看消息通知和聊天记录</div>
         <div class="login-btn" @click="goToLogin">
@@ -77,18 +77,24 @@
           </div>
           <div class="message-preview">{{ item.content }}</div>
           <div class="task-meta" v-if="item.taskId">
-            <span class="meta-tag reward-tag">💰 {{ item.reward }}元</span>
-            <span class="meta-tag location-tag">📍 {{ item.location }}</span>
+            <span class="meta-tag reward-tag"><AppIcon name="activity" :size="14" /> {{ item.reward }}元</span>
+            <span class="meta-tag location-tag"><AppIcon name="map-pin" :size="14" /> {{ item.location }}</span>
           </div>
         </div>
         <div class="unread-bar" v-if="item.unread"></div>
       </div>
 
-      <EmptyState v-if="taskNotifications.length === 0 && !loading" icon="🔔" title="暂无任务通知" description="任务相关的通知会在这里显示" />
+      <EmptyState v-if="taskNotifications.length === 0 && !loading" icon="bell" title="暂无任务通知" description="任务相关的通知会在这里显示" />
     </div>
 
     <!-- 私信列表 -->
     <div class="message-list" v-show="activeTab === 'private' && !loading && isLoggedIn">
+      <!-- 发起新私聊 -->
+      <div class="new-conversation-bar" @click="startNewPrivateChat">
+        <AppIcon name="message-circle" :size="18" />
+        <span>发起新私聊</span>
+      </div>
+
       <div 
         class="message-item" 
         :class="{ 'is-unread': item.unread > 0 }"
@@ -111,11 +117,17 @@
         <div class="unread-bar" v-if="item.unread > 0"></div>
       </div>
 
-      <EmptyState v-if="privateMessages.length === 0 && !loading && isLoggedIn" icon="💬" title="暂无私信消息" description="和其他邻居开始对话吧" />
+      <EmptyState v-if="privateMessages.length === 0 && !loading && isLoggedIn" icon="message-circle" title="暂无私信消息" description="和其他邻居开始对话吧" />
     </div>
 
     <!-- 群聊列表 -->
     <div class="message-list" v-show="activeTab === 'group' && !loading && isLoggedIn">
+      <!-- 创建新群聊 -->
+      <div class="new-conversation-bar" @click="startNewGroup">
+        <AppIcon name="users" :size="18" />
+        <span>创建新群聊</span>
+      </div>
+
       <div 
         class="message-item" 
         :class="{ 'is-unread': item.unread > 0 }"
@@ -135,14 +147,49 @@
           </div>
           <div class="message-preview">{{ item.lastMessage }}</div>
           <div class="group-members">
-            <span class="member-icon">👥</span>
+            <AppIcon class="member-icon" name="users" :size="14" />
             <span class="member-count">{{ item.memberCount }}人</span>
           </div>
         </div>
         <div class="unread-bar" v-if="item.unread > 0"></div>
       </div>
 
-      <EmptyState v-if="groupChats.length === 0 && !loading && isLoggedIn" icon="👥" title="暂无群聊消息" description="加入社区群组，和邻居聊天吧" />
+      <EmptyState v-if="groupChats.length === 0 && !loading && isLoggedIn" icon="users" title="暂无群聊消息" description="加入社区群组，和邻居聊天吧" />
+    </div>
+
+    <!-- 发起私聊弹窗 -->
+    <div class="dialog-overlay" v-if="showNewPrivateDialog" @click="showNewPrivateDialog = false">
+      <div class="dialog-panel" @click.stop>
+        <div class="dialog-header">
+          <span class="dialog-title">发起私聊</span>
+          <span class="dialog-close" @click="showNewPrivateDialog = false">×</span>
+        </div>
+        <div class="dialog-body">
+          <input v-model="newChatPhone" class="dialog-input" placeholder="输入对方手机号或用户ID" @keyup.enter="createPrivateChat" />
+        </div>
+        <div class="dialog-footer">
+          <span class="dialog-btn cancel" @click="showNewPrivateDialog = false">取消</span>
+          <span class="dialog-btn confirm" @click="createPrivateChat" :class="{ disabled: !newChatPhone.trim() }">开始聊天</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 创建群聊弹窗 -->
+    <div class="dialog-overlay" v-if="showNewGroupDialog" @click="showNewGroupDialog = false">
+      <div class="dialog-panel" @click.stop>
+        <div class="dialog-header">
+          <span class="dialog-title">创建群聊</span>
+          <span class="dialog-close" @click="showNewGroupDialog = false">×</span>
+        </div>
+        <div class="dialog-body">
+          <input v-model="newGroupName" class="dialog-input" placeholder="群聊名称（可选）" />
+          <textarea v-model="newGroupMembers" class="dialog-textarea" placeholder="输入成员手机号或用户ID，每行一个" rows="4"></textarea>
+        </div>
+        <div class="dialog-footer">
+          <span class="dialog-btn cancel" @click="showNewGroupDialog = false">取消</span>
+          <span class="dialog-btn confirm" @click="createGroup">创建群聊</span>
+        </div>
+      </div>
     </div>
 
     <div class="safe-area-bottom"></div>
@@ -153,10 +200,13 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { navigateBack, navigateTo } from '../../utils/router'
 import { useAuth } from '../../store'
-import { toastInfo } from '../../utils/toast'
+import { toastInfo, toastSuccess, toastError } from '../../utils/toast'
 import { localStore } from '../../services/localStore'
+import { messageService } from '../../services/messageService'
+import type { Conversation } from '../../services/messageService'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import AppIcon from '../../components/AppIcon.vue'
 
 interface Message {
   id: string
@@ -192,13 +242,23 @@ const groupChats = ref<Message[]>([])
 
 const { isLoggedIn, getCurrentPhone } = useAuth()
 
+// 私聊弹窗
+const showNewPrivateDialog = ref(false)
+const newChatPhone = ref('')
+
+// 群聊弹窗
+const showNewGroupDialog = ref(false)
+const newGroupName = ref('')
+const newGroupMembers = ref('')
+
 const taskUnread = computed(() => taskNotifications.value.filter(n => n.unread).length)
 const privateUnread = computed(() => privateMessages.value.reduce((sum, m) => sum + m.unread, 0))
 const groupUnread = computed(() => groupChats.value.reduce((sum, m) => sum + m.unread, 0))
 
-const formatTime = (timeStr: string) => {
+const formatTime = (timeStr: string | number) => {
+  if (!timeStr) return ''
   const now = new Date()
-  const time = new Date(timeStr)
+  const time = new Date(typeof timeStr === 'number' ? timeStr * 1000 : timeStr)
   const diff = now.getTime() - time.getTime()
   const minutes = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)
@@ -239,7 +299,7 @@ const goToLogin = () => {
   navigateTo('/pages/login/index')
 }
 
-const loadMessages = () => {
+const loadMessages = async () => {
   loading.value = true
 
   // 未登录：直接展示空态
@@ -251,13 +311,63 @@ const loadMessages = () => {
   const phone = getCurrentPhone() || undefined
   taskNotifications.value = localStore.getArray<TaskNotification>('task_notifications', [], phone)
 
-  const msgData = localStore.getObject<{ private: Message[]; group: Message[] }>(
-    'messages',
-    { private: [], group: [] },
-    phone
-  )
-  privateMessages.value = msgData.private || []
-  groupChats.value = msgData.group || []
+  // 从后端加载会话列表
+  try {
+    const conversations = await messageService.getConversations()
+    const privateConvs: Message[] = []
+    const groupConvs: Message[] = []
+
+    for (const conv of conversations) {
+      const msg: Message = {
+        id: conv.id,
+        name: conv.name || (conv.type === 'private' ? '邻居' : '群聊'),
+        avatar: conv.avatar || '',
+        lastMessage: conv.lastMessage || '',
+        lastTime: conv.lastMessageAt ? String(conv.lastMessageAt) : String(conv.created_at),
+        unread: 0,
+        type: conv.type as 'private' | 'group',
+        memberCount: conv.memberCount || 0
+      }
+      if (conv.type === 'private') {
+        privateConvs.push(msg)
+      } else {
+        groupConvs.push(msg)
+      }
+    }
+
+    if (privateConvs.length > 0) {
+      privateMessages.value = privateConvs
+    } else {
+      // 回退到本地存储
+      const msgData = localStore.getObject<{ private: Message[]; group: Message[] }>(
+        'messages',
+        { private: [], group: [] },
+        phone
+      )
+      privateMessages.value = msgData.private || []
+    }
+
+    if (groupConvs.length > 0) {
+      groupChats.value = groupConvs
+    } else {
+      const msgData = localStore.getObject<{ private: Message[]; group: Message[] }>(
+        'messages',
+        { private: [], group: [] },
+        phone
+      )
+      groupChats.value = msgData.group || []
+    }
+  } catch (e) {
+    // API 失败，回退到本地存储
+    const msgData = localStore.getObject<{ private: Message[]; group: Message[] }>(
+      'messages',
+      { private: [], group: [] },
+      phone
+    )
+    privateMessages.value = msgData.private || []
+    groupChats.value = msgData.group || []
+  }
+
   loading.value = false
 }
 
@@ -318,6 +428,78 @@ const goToGroup = (item: Message) => {
   item.unread = 0
   saveMessages()
   navigateTo(`/pages/messages/group?id=${item.id}&name=${encodeURIComponent(item.name)}&avatar=${encodeURIComponent(item.avatar)}&members=${item.memberCount}`)
+}
+
+/** 发起私聊 */
+const startNewPrivateChat = () => {
+  if (!isLoggedIn.value) {
+    toastInfo('请先登录')
+    goToLogin()
+    return
+  }
+  showNewPrivateDialog.value = true
+  newChatPhone.value = ''
+}
+
+/** 创建私聊 */
+const createPrivateChat = async () => {
+  const identifier = newChatPhone.value.trim()
+  if (!identifier) {
+    toastError('请输入对方手机号或用户ID')
+    return
+  }
+  try {
+    const result = await messageService.createConversation({
+      type: 'private',
+      member_ids: [identifier]
+    })
+    showNewPrivateDialog.value = false
+    toastSuccess('会话已创建')
+    // 获取对方信息
+    const convDetail = await messageService.getConversation(result.id)
+    const otherUser = convDetail.members.find(m => m.id !== result.created_by)
+    const otherName = otherUser?.nickname || '邻居'
+    const otherAvatar = otherUser?.avatar || ''
+    navigateTo(`/pages/messages/chat?id=${result.id}&name=${encodeURIComponent(otherName)}&avatar=${encodeURIComponent(otherAvatar)}`)
+  } catch (e: any) {
+    toastError(e?.message || '创建会话失败')
+  }
+}
+
+/** 发起创建群聊 */
+const startNewGroup = () => {
+  if (!isLoggedIn.value) {
+    toastInfo('请先登录')
+    goToLogin()
+    return
+  }
+  showNewGroupDialog.value = true
+  newGroupName.value = ''
+  newGroupMembers.value = ''
+}
+
+/** 创建群聊 */
+const createGroup = async () => {
+  const members = newGroupMembers.value
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean)
+  if (members.length === 0) {
+    toastError('请至少添加一个成员')
+    return
+  }
+  try {
+    const result = await messageService.createConversation({
+      type: 'group',
+      name: newGroupName.value.trim() || undefined,
+      member_ids: members
+    })
+    showNewGroupDialog.value = false
+    toastSuccess('群聊已创建')
+    navigateTo(`/pages/messages/group?id=${result.id}&name=${encodeURIComponent(newGroupName.value.trim() || '群聊')}&members=${members.length + 1}`)
+  } catch (e: any) {
+    toastError(e?.message || '创建群聊失败')
+  }
 }
 
 onMounted(() => {
@@ -492,6 +674,32 @@ watch(isLoggedIn, (newVal, oldVal) => {
 /* 消息列表 */
 .message-list {
   padding: var(--spacing-md) var(--spacing-lg);
+}
+
+/* 新建会话栏 */
+.new-conversation-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-md);
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  border: 1px dashed var(--color-primary-soft);
+  transition: all var(--transition-fast);
+}
+
+.new-conversation-bar:hover {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.new-conversation-bar:active {
+  transform: scale(0.98);
 }
 
 /* 消息卡片 */
@@ -839,6 +1047,137 @@ watch(isLoggedIn, (newVal, oldVal) => {
 
 .not-logged-in .login-btn:active {
   transform: translateY(0);
+}
+
+/* 弹窗 */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-bg-overlay, rgba(0,0,0,0.4));
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.dialog-panel {
+  width: 100%;
+  max-width: 380px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.dialog-close {
+  font-size: 28px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+}
+
+.dialog-close:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.dialog-body {
+  padding: 16px 20px;
+}
+
+.dialog-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast);
+}
+
+.dialog-input:focus {
+  border-color: var(--color-primary);
+}
+
+.dialog-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  line-height: 1.5;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  outline: none;
+  resize: vertical;
+  margin-top: 12px;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast);
+}
+
+.dialog-textarea:focus {
+  border-color: var(--color-primary);
+}
+
+.dialog-footer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 20px 20px;
+  justify-content: flex-end;
+}
+
+.dialog-btn {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dialog-btn.cancel {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+}
+
+.dialog-btn.confirm {
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.dialog-btn.confirm.disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.dialog-btn:active:not(.disabled) {
+  transform: scale(0.96);
 }
 
 .safe-area-bottom {

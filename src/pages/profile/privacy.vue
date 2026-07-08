@@ -13,7 +13,7 @@
         <div class="setting-list">
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">👤</span>
+              <AppIcon name="user" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">个人资料可见</span>
                 <span class="setting-desc">允许其他用户查看您的个人资料</span>
@@ -25,7 +25,7 @@
           </div>
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">📍</span>
+              <AppIcon name="map-pin" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">位置信息</span>
                 <span class="setting-desc">允许查看您的社区位置</span>
@@ -37,7 +37,7 @@
           </div>
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">📊</span>
+              <AppIcon name="activity" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">任务记录</span>
                 <span class="setting-desc">允许其他用户查看您的任务完成记录</span>
@@ -55,7 +55,7 @@
         <div class="setting-list">
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">💬</span>
+              <AppIcon name="message-circle" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">允许被联系</span>
                 <span class="setting-desc">允许其他用户向您发送消息</span>
@@ -67,7 +67,7 @@
           </div>
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">🤝</span>
+              <AppIcon name="handshake" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">接受任务邀请</span>
                 <span class="setting-desc">允许接收其他用户发布的任务邀请</span>
@@ -85,7 +85,7 @@
         <div class="setting-list">
           <div class="setting-item clickable" @click="clearCache">
             <div class="setting-info">
-              <span class="setting-icon">🗑️</span>
+              <AppIcon name="trash" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">清除缓存</span>
                 <span class="setting-desc">清除本地缓存数据</span>
@@ -95,7 +95,7 @@
           </div>
           <div class="setting-item clickable" @click="goToAccountSecurity">
             <div class="setting-info">
-              <span class="setting-icon">🔐</span>
+              <AppIcon name="lock" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">账号安全</span>
                 <span class="setting-desc">修改密码、绑定手机等</span>
@@ -117,6 +117,7 @@
 import { ref } from 'vue'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { navigateBackSmart } from '../../utils/router'
+import AppIcon from '../../components/AppIcon.vue'
 
 const statusBarHeight = ref(20)
 

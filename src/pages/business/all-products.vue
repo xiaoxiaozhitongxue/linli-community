@@ -36,7 +36,7 @@
             <span class="name">{{ p.name }}</span>
             <div class="line">
               <span class="shop">{{ p.shopName }}</span>
-              <span class="distance">📍 {{ p.distance }}m</span>
+              <span class="distance"><AppIcon name="map-pin" :size="14" /> {{ p.distance }}m</span>
             </div>
             <div class="footer">
               <span class="price">¥{{ p.price }}</span>
@@ -57,6 +57,7 @@ import { navigateBackSmart, navigateTo } from '../../utils/router'
 import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
 import { HOT_PRODUCTS, CATEGORIES } from '../../constants/businessData'
+import AppIcon from '../../components/AppIcon.vue'
 
 const route = useRoute()
 const { getCurrentPhone } = useAuth()

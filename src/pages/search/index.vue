@@ -5,7 +5,7 @@
         <span>‹</span>
       </div>
       <div class="search-input-wrapper">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><AppIcon name="search" :size="14" /></span>
         <input
           class="search-input"
           v-model="searchText"
@@ -20,7 +20,7 @@
 
     <div class="search-content">
       <div v-if="!hasSearched && hotSearches.length > 0" class="hot-search-section">
-        <div class="section-title">🔥 热门搜索</div>
+        <div class="section-title"><AppIcon name="flame" :size="18" />热门搜索</div>
         <div class="hot-search-tags">
           <span
             class="hot-search-tag"
@@ -35,7 +35,7 @@
 
       <div v-if="!hasSearched && searchHistory.length > 0" class="history-section">
         <div class="section-title-row">
-          <span class="section-title">🕘 最近搜索</span>
+          <span class="section-title"><AppIcon name="activity" :size="18" />最近搜索</span>
           <span class="history-clear" @click="clearHistory">清空</span>
         </div>
         <div class="hot-search-tags">
@@ -52,11 +52,11 @@
 
       <SkeletonLoader v-if="searching" type="list" :count="5" />
 
-      <EmptyState v-else-if="hasSearched && !searching && resultActivities.length === 0 && resultTasks.length === 0 && resultPosts.length === 0" icon="🔍" title="没有找到相关内容" />
+      <EmptyState v-else-if="hasSearched && !searching && resultActivities.length === 0 && resultTasks.length === 0 && resultPosts.length === 0" icon="search" title="没有找到相关内容" />
 
       <div v-else-if="hasSearched && !searching" class="search-results">
         <div v-if="resultActivities.length > 0" class="result-section">
-          <div class="result-section-title">📋 活动</div>
+          <div class="result-section-title"><AppIcon name="bookmark" :size="16" /> 活动</div>
           <div
             class="result-card"
             v-for="activity in resultActivities"
@@ -64,7 +64,7 @@
             @click="goToActivity(activity.id)"
           >
             <div class="result-icon" :style="{ background: getActivityCoverBg(activity.category) }">
-              {{ getActivityEmoji(activity.category) }}
+              <AppIcon :name="getActivityEmoji(activity.category)" :size="24" />
             </div>
             <div class="result-content">
               <div class="result-title">{{ activity.title }}</div>
@@ -74,14 +74,14 @@
         </div>
 
         <div v-if="resultTasks.length > 0" class="result-section">
-          <div class="result-section-title">🤝 互助</div>
+          <div class="result-section-title"><AppIcon name="handshake" :size="16" /> 互助</div>
           <div
             class="result-card"
             v-for="task in resultTasks"
             :key="task.id"
             @click="goToTask(task.id)"
           >
-            <div class="result-icon" :style="{ background: '#E8F5E9' }">🤝</div>
+            <div class="result-icon" :style="{ background: '#E8F5E9' }"><AppIcon name="handshake" :size="24" /></div>
             <div class="result-content">
               <div class="result-title">{{ task.title }}</div>
               <div class="result-desc">{{ task.category }} · {{ task.reward }}积分</div>
@@ -90,7 +90,7 @@
         </div>
 
         <div v-if="resultPosts.length > 0" class="result-section">
-          <div class="result-section-title">📖 动态</div>
+          <div class="result-section-title"><AppIcon name="book-open" :size="16" /> 动态</div>
           <div
             class="result-card"
             v-for="post in resultPosts"
@@ -117,6 +117,7 @@ import { ref, onMounted } from 'vue'
 import { navigateTo } from '../../utils/router'
 import { toastInfo } from '../../utils/toast'
 import { request } from '../../utils/request'
+import AppIcon from '../../components/AppIcon.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 
@@ -237,13 +238,13 @@ function formatShortTime(timestamp: number) {
 
 function getActivityEmoji(category: string) {
   const map: Record<string, string> = {
-    sports: '⚽',
-    culture: '🎨',
-    charity: '💝',
-    party: '🎉',
-    other: '📌'
+    sports: 'activity',
+    culture: 'book-open',
+    charity: 'heart',
+    party: 'star',
+    other: 'bookmark'
   }
-  return map[category] || '📌'
+  return map[category] || 'bookmark'
 }
 
 function getActivityCoverBg(category: string) {

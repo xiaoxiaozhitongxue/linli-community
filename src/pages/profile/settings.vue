@@ -18,21 +18,21 @@
         <div class="menu-list">
           <div class="menu-item" @click="goEditProfile">
             <div class="menu-item-left">
-              <span class="menu-item-icon">👤</span>
+              <AppIcon name="user" class="menu-item-icon" />
               <span class="menu-item-text">编辑资料</span>
             </div>
             <span class="menu-item-arrow">›</span>
           </div>
           <div class="menu-item" @click="showPrivacy">
             <div class="menu-item-left">
-              <span class="menu-item-icon">🔒</span>
-              <span class="menu-item-text">隐私设置</span>
+              <AppIcon name="lock" class="menu-item-icon" />
+              <span class="menu-item-text">隐私政策</span>
             </div>
             <span class="menu-item-arrow">›</span>
           </div>
           <div class="menu-item" @click="showSecurity">
             <div class="menu-item-left">
-              <span class="menu-item-icon">🛡️</span>
+              <AppIcon name="lock" class="menu-item-icon" />
               <span class="menu-item-text">安全设置</span>
             </div>
             <span class="menu-item-arrow">›</span>
@@ -46,7 +46,7 @@
         <div class="menu-list">
           <div class="menu-item">
             <div class="menu-item-left">
-              <span class="menu-item-icon">🔔</span>
+              <AppIcon name="bell" class="menu-item-icon" />
               <span class="menu-item-text">推送通知</span>
             </div>
             <div class="toggle-switch" :class="{ active: notifications.push }" @click="togglePush">
@@ -55,7 +55,7 @@
           </div>
           <div class="menu-item">
             <div class="menu-item-left">
-              <span class="menu-item-icon">💬</span>
+              <AppIcon name="message-circle" class="menu-item-icon" />
               <span class="menu-item-text">消息通知</span>
             </div>
             <div class="toggle-switch" :class="{ active: notifications.message }" @click="toggleMessage">
@@ -64,7 +64,7 @@
           </div>
           <div class="menu-item">
             <div class="menu-item-left">
-              <span class="menu-item-icon">❤️</span>
+              <AppIcon name="heart" class="menu-item-icon" :size="20" />
               <span class="menu-item-text">互动通知</span>
             </div>
             <div class="toggle-switch" :class="{ active: notifications.interaction }" @click="toggleInteraction">
@@ -80,7 +80,7 @@
         <div class="menu-list">
           <div class="menu-item" @click="showThemeSelector">
             <div class="menu-item-left">
-              <span class="menu-item-icon">🎨</span>
+              <AppIcon name="settings" class="menu-item-icon" />
               <span class="menu-item-text">主题设置</span>
             </div>
             <div class="menu-item-right">
@@ -90,7 +90,7 @@
           </div>
           <div class="menu-item" @click="clearCache">
             <div class="menu-item-left">
-              <span class="menu-item-icon">🗑️</span>
+              <AppIcon name="trash" class="menu-item-icon" />
               <span class="menu-item-text">清除缓存</span>
             </div>
             <div class="menu-item-right">
@@ -107,21 +107,21 @@
         <div class="menu-list">
           <div class="menu-item" @click="showAbout">
             <div class="menu-item-left">
-              <span class="menu-item-icon">ℹ️</span>
+              <AppIcon name="info" class="menu-item-icon" />
               <span class="menu-item-text">关于我们</span>
             </div>
             <span class="menu-item-arrow">›</span>
           </div>
           <div class="menu-item" @click="showFeedback">
             <div class="menu-item-left">
-              <span class="menu-item-icon">💡</span>
+              <AppIcon name="info" class="menu-item-icon" />
               <span class="menu-item-text">意见反馈</span>
             </div>
             <span class="menu-item-arrow">›</span>
           </div>
           <div class="menu-item">
             <div class="menu-item-left">
-              <span class="menu-item-icon">📱</span>
+              <AppIcon name="message-circle" class="menu-item-icon" />
               <span class="menu-item-text">版本信息</span>
             </div>
             <span class="menu-item-value">v1.0.0</span>
@@ -162,6 +162,7 @@ import { navigateBackSmart } from '../../utils/router'
 import { navigateTo } from '../../utils/router'
 import { toastInfo, toastSuccess } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { user, logout: authLogout, isLoggedIn } = useAuth()
 const statusBarHeight = ref(20)

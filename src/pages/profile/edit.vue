@@ -22,7 +22,7 @@
           </div>
           <div v-else class="avatar avatar-placeholder">{{ (user?.nickname || '邻').charAt(0) }}</div>
           <div class="avatar-overlay">
-            <span class="camera-icon">📷</span>
+            <AppIcon name="camera" class="camera-icon" />
           </div>
         </div>
         <span class="avatar-tip">点击更换头像</span>
@@ -75,7 +75,7 @@
           <span class="form-label">身份角色</span>
           <div class="role-picker">
             <div class="role-option" :class="{ active: form.role === 'resident' }" @click="selectRole('resident')">
-              <span class="role-icon">🏠</span>
+              <AppIcon name="home" class="role-icon" />
               <span>居民</span>
             </div>
             <div class="role-option" :class="{ active: form.role === 'volunteer' }" @click="selectRole('volunteer')">
@@ -83,11 +83,11 @@
               <span>志愿者</span>
             </div>
             <div class="role-option" :class="{ active: form.role === 'merchant' }" @click="selectRole('merchant')">
-              <span class="role-icon">🏪</span>
+              <AppIcon name="activity" class="role-icon" />
               <span>商家</span>
             </div>
             <div class="role-option" :class="{ active: form.role === 'elderly' }" @click="selectRole('elderly')">
-              <span class="role-icon">👴</span>
+              <AppIcon name="user" class="role-icon" />
               <span>老人</span>
             </div>
           </div>
@@ -106,6 +106,7 @@ import { userService } from '../../services/userService'
 import type { User } from '../../types/models'
 import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { user, updateUser } = useAuth()
 const statusBarHeight = ref(20)

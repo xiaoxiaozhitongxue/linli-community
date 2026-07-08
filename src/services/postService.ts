@@ -1,4 +1,4 @@
-import { get, post, del } from '../utils/request'
+import { get, post, put, del } from '../utils/request'
 import type { Post, Comment, PaginatedResponse, LikeResponse } from '../types/models'
 import type {
   GetPostsParams,
@@ -27,6 +27,9 @@ export const postService = {
 
   deletePost: (postId: string) =>
     del<DeletePostResponse>(`/api/posts/${postId}`, {}, { showError: true }).then((r) => r.data),
+
+  updatePost: (postId: string, data: { content?: string; images?: string[]; location?: string; visibility?: string }) =>
+    put<Post>(`/api/posts/${postId}`, data, { showError: true }).then((r) => r.data),
 
   getComments: (postId: string, params?: GetCommentsParams) =>
     get<PaginatedResponse<Comment>>(`/api/posts/${postId}/comments`, params).then((r) => r.data),

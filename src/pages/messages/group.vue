@@ -14,25 +14,26 @@
 
     <!-- 消息列表 -->
     <div class="chat-list" ref="chatListRef">
+      <div class="load-more" v-if="hasMore" @click="loadMoreMessages">加载更多…</div>
       <div 
         class="message-item"
         :class="{ 'message-self': msg.isSelf, 'message-other': !msg.isSelf, 'message-system': msg.isSystem }"
         v-for="(msg, index) in messages" 
-        :key="index"
+        :key="msg.id || index"
       >
         <template v-if="msg.isSystem">
           <div class="system-message">{{ msg.content }}</div>
         </template>
         <template v-else>
-          <div class="avatar-wrap" v-if="msg.isSelf ? myAvatar : msg.avatar">
-            <img class="chat-avatar" :src="msg.isSelf ? myAvatar : msg.avatar" />
+          <div class="avatar-wrap" v-if="msg.isSelf ? myAvatar : (msg.avatar || chatUserAvatar(msg))">
+            <img class="chat-avatar" :src="msg.isSelf ? myAvatar : (msg.avatar || '')" />
           </div>
           <div v-else class="chat-avatar avatar-placeholder">{{ (msg.isSelf ? '我' : msg.senderName || '邻').charAt(0) }}</div>
           <div class="message-body">
             <div class="message-sender" v-if="!msg.isSelf">{{ msg.senderName }}</div>
             <div class="message-bubble" :class="{ 'bubble-self': msg.isSelf, 'bubble-other': !msg.isSelf }">
               <div class="bubble-content">{{ msg.content }}</div>
-              <div class="bubble-time">{{ formatTime(msg.time) }}</div>
+              <div class="bubble-time">{{ formatTime(msg.time || msg.createdAt) }}</div>
             </div>
           </div>
         </template>
@@ -48,7 +49,7 @@
           placeholder="输入群消息..."
           @keyup.enter="sendMessage"
         />
-        <button class="send-btn" @click="sendMessage" :disabled="!inputText.trim()">
+        <button class="send-btn" @click="sendMessage" :disabled="!inputText.trim() || sending">
           发送
         </button>
       </div>
@@ -84,7 +85,10 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { navigateBack } from '../../utils/router'
 import { useRoute } from 'vue-router'
+import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
+import { messageService } from '../../services/messageService'
+import type { MessageItem } from '../../services/messageService'
 
 interface GroupMessage {
   id: string
@@ -92,7 +96,8 @@ interface GroupMessage {
   senderName: string
   avatar: string
   content: string
-  time: string
+  time: string | number
+  createdAt?: number
   isSelf: boolean
   isSystem?: boolean
 }
@@ -105,6 +110,7 @@ interface GroupMember {
 }
 
 const route = useRoute()
+const { user } = useAuth()
 const statusBarHeight = ref(20)
 const chatListRef = ref<HTMLElement | null>(null)
 const showMembers = ref(false)
@@ -120,11 +126,14 @@ const myAvatar = ref('')
 const myName = ref('我')
 const inputText = ref('')
 const messages = ref<GroupMessage[]>([])
-
 const members = ref<GroupMember[]>([])
+const sending = ref(false)
+const currentPage = ref(1)
+const hasMore = ref(false)
 
-const formatTime = (timeStr: string) => {
-  const time = new Date(timeStr)
+const formatTime = (timeStr: string | number) => {
+  if (!timeStr) return ''
+  const time = new Date(typeof timeStr === 'number' ? timeStr * 1000 : timeStr)
   return time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
@@ -139,7 +148,11 @@ const scrollToBottom = () => {
 const groupId = ref('')
 const getGroupKey = () => `group_${groupId.value}`
 
-const loadGroupChat = () => {
+const chatUserAvatar = (msg: GroupMessage) => {
+  return msg.avatar || ''
+}
+
+const loadGroupChat = async () => {
   groupId.value = (route.query.id as string) || ''
   groupInfo.value = {
     id: groupId.value,
@@ -149,26 +162,71 @@ const loadGroupChat = () => {
   }
 
   // 加载我的信息
-  const storedUser = localStore.getObject<{ avatar?: string; nickname?: string }>('user', {})
-  if (storedUser) {
-    if (storedUser.avatar) myAvatar.value = storedUser.avatar
-    if (storedUser.nickname) myName.value = storedUser.nickname
+  myAvatar.value = user.value?.avatar || ''
+  myName.value = user.value?.nickname || '我'
+
+  // 优先从后端加载群成员和消息
+  if (groupId.value) {
+    try {
+      // 加载成员
+      const convDetail = await messageService.getConversation(groupId.value)
+      groupInfo.value.memberCount = convDetail.members.length
+      members.value = convDetail.members.map((m: any) => ({
+        id: m.id,
+        name: m.nickname || '邻居',
+        avatar: m.avatar || '',
+        role: m.id === convDetail.created_by ? '群主' : undefined
+      }))
+
+      // 加载消息
+      const result = await messageService.getMessages(groupId.value, 1, 50)
+      if (result.items && result.items.length > 0) {
+        messages.value = result.items.map((msg: MessageItem) => ({
+          id: msg.id,
+          senderId: msg.senderId,
+          senderName: msg.senderName,
+          avatar: msg.senderAvatar,
+          content: msg.content,
+          time: msg.createdAt,
+          createdAt: msg.createdAt,
+          isSelf: msg.isSelf,
+          isSystem: false
+        }))
+        hasMore.value = result.total > result.items.length
+        currentPage.value = 1
+        scrollToBottom()
+        return
+      }
+    } catch (e) {
+      // API 失败，回退到本地存储
+    }
   }
 
-  // 加载群成员
-  members.value = [
-    { id: '1', name: '张大爷', avatar: '', role: '群主' },
-    { id: '2', name: '王阿姨', avatar: '' },
-    { id: '3', name: '李姐', avatar: '' },
-    { id: '4', name: '刘叔', avatar: '' },
-    { id: '5', name: '赵妹', avatar: '' }
-  ]
+  // 加载我的信息（localStorage 兜底）
+  if (!myAvatar.value) {
+    const storedUser = localStore.getObject<{ avatar?: string; nickname?: string }>('user', {})
+    if (storedUser) {
+      if (storedUser.avatar) myAvatar.value = storedUser.avatar
+      if (storedUser.nickname) myName.value = storedUser.nickname
+    }
+  }
 
+  // 本地兜底成员
+  if (members.value.length === 0) {
+    members.value = [
+      { id: '1', name: '张大爷', avatar: '', role: '群主' },
+      { id: '2', name: '王阿姨', avatar: '' },
+      { id: '3', name: '李姐', avatar: '' },
+      { id: '4', name: '刘叔', avatar: '' },
+      { id: '5', name: '赵妹', avatar: '' }
+    ]
+  }
+
+  // 本地兜底消息
   const stored = localStore.getArray<GroupMessage>(getGroupKey(), [])
   if (stored.length > 0) {
     messages.value = stored
   } else {
-    // 初始示例消息
     const now = Date.now()
     messages.value = [
       {
@@ -220,30 +278,87 @@ const loadGroupChat = () => {
     ]
     localStore.setArray(getGroupKey(), messages.value)
   }
+  scrollToBottom()
+}
+
+const loadMoreMessages = async () => {
+  if (!groupId.value || !hasMore.value) return
+  try {
+    const nextPage = currentPage.value + 1
+    const result = await messageService.getMessages(groupId.value, nextPage, 50)
+    if (result.items && result.items.length > 0) {
+      const olderMessages = result.items.map((msg: MessageItem) => ({
+        id: msg.id,
+        senderId: msg.senderId,
+        senderName: msg.senderName,
+        avatar: msg.senderAvatar,
+        content: msg.content,
+        time: msg.createdAt,
+        createdAt: msg.createdAt,
+        isSelf: msg.isSelf,
+        isSystem: false
+      }))
+      messages.value = [...olderMessages, ...messages.value]
+      currentPage.value = nextPage
+      hasMore.value = result.total > nextPage * result.limit
+    } else {
+      hasMore.value = false
+    }
+  } catch (e) {
+    // ignore
+  }
 }
 
 const saveMessages = () => {
   localStore.setArray(getGroupKey(), messages.value)
 }
 
-const sendMessage = () => {
+const sendMessage = async () => {
   const text = inputText.value.trim()
-  if (!text) return
+  if (!text || sending.value) return
 
+  sending.value = true
+
+  // 乐观更新
+  const tempId = Date.now().toString()
   const newMsg: GroupMessage = {
-    id: Date.now().toString(),
-    senderId: 'me',
+    id: tempId,
+    senderId: user.value?.id || 'me',
     senderName: myName.value,
     avatar: myAvatar.value,
     content: text,
     time: new Date().toISOString(),
     isSelf: true
   }
-
   messages.value.push(newMsg)
   inputText.value = ''
-  saveMessages()
   scrollToBottom()
+
+  // 尝试发送到后端
+  if (groupId.value) {
+    try {
+      const sent = await messageService.sendMessage(groupId.value, text)
+      const idx = messages.value.findIndex(m => m.id === tempId)
+      if (idx >= 0) {
+        messages.value[idx] = {
+          id: sent.id,
+          senderId: sent.senderId,
+          senderName: sent.senderName,
+          avatar: sent.senderAvatar,
+          content: sent.content,
+          time: sent.createdAt,
+          createdAt: sent.createdAt,
+          isSelf: true
+        }
+      }
+      saveMessages()
+    } catch (e) {
+      saveMessages()
+    }
+  } else {
+    saveMessages()
+  }
+  sending.value = false
 }
 
 const goBack = () => {
@@ -253,7 +368,6 @@ const goBack = () => {
 onMounted(() => {
   statusBarHeight.value = 20
   loadGroupChat()
-  scrollToBottom()
 })
 </script>
 
@@ -331,6 +445,18 @@ onMounted(() => {
   padding: 16px;
   overflow-y: auto;
   min-height: 0;
+}
+
+.load-more {
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+}
+
+.load-more:hover {
+  color: var(--color-primary);
 }
 
 .message-item {

@@ -20,7 +20,7 @@
               class="emoji-opt"
               :class="{ active: form.emoji === e }"
               @click="form.emoji = e"
-            >{{ e }}</span>
+            ><AppIcon :name="emojiIconMap[e]" :size="22" /></span>
           </div>
         </div>
         <div class="field">
@@ -51,11 +51,16 @@ import { toastSuccess, toastError } from '../../utils/toast'
 import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
 import { DEFAULT_SHOP, CATEGORIES } from '../../constants/businessData'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { getCurrentPhone } = useAuth()
 const phone = computed(() => getCurrentPhone() || undefined)
 
 const EMOJI_OPTIONS = ['🧁', '🍰', '🍳', '👜', '🍹', '🍗', '🧶', '🐱', '🌿', '🥟']
+const emojiIconMap: Record<string, string> = {
+  '🧁': 'star', '🍰': 'star', '🍳': 'star', '👜': 'star', '🍹': 'star',
+  '🍗': 'star', '🧶': 'star', '🐱': 'star', '🌿': 'star', '🥟': 'star'
+}
 const CATEGORY_OPTIONS = CATEGORIES.filter((c) => c.key !== 'all')
 
 const form = reactive({

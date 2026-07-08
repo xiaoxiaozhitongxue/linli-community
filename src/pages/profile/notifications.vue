@@ -13,7 +13,7 @@
         <div class="setting-list">
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">💬</span>
+              <AppIcon name="message-circle" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">任务消息</span>
                 <span class="setting-desc">接收任务申请、接单、完成任务等通知</span>
@@ -25,7 +25,7 @@
           </div>
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">🔔</span>
+              <AppIcon name="bell" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">系统通知</span>
                 <span class="setting-desc">接收系统公告、安全提醒等通知</span>
@@ -37,7 +37,7 @@
           </div>
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">📢</span>
+              <AppIcon name="megaphone" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">活动提醒</span>
                 <span class="setting-desc">接收活动开始、结束等提醒通知</span>
@@ -67,7 +67,7 @@
         <div class="setting-list">
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">🔊</span>
+              <AppIcon name="bell" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">声音</span>
                 <span class="setting-desc">收到通知时播放提示音</span>
@@ -79,7 +79,7 @@
           </div>
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-icon">📳</span>
+              <AppIcon name="bell" class="setting-icon" />
               <div class="setting-text">
                 <span class="setting-name">震动</span>
                 <span class="setting-desc">收到通知时震动提醒</span>
@@ -104,6 +104,7 @@ import { ref, onMounted } from 'vue'
 import { toastSuccess } from '../../utils/toast'
 import { navigateBackSmart } from '../../utils/router'
 import { localStore } from '../../services/localStore'
+import AppIcon from '../../components/AppIcon.vue'
 
 const statusBarHeight = ref(20)
 

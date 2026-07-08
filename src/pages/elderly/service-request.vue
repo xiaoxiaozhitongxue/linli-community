@@ -14,7 +14,7 @@
         </div>
       </div>
       <div class="banner empty" v-else>
-        <span class="banner-icon">🤝</span>
+        <span class="banner-icon"><AppIcon name="handshake" :size="24" /></span>
         <div class="banner-text">
           <div class="banner-name">通用志愿服务</div>
           <div class="banner-desc">未指定具体项目，将按备注安排</div>
@@ -50,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import AppIcon from '../../components/AppIcon.vue'
 import { ref, reactive, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { navigateBackSmart } from '../../utils/router'

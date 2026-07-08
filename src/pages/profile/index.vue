@@ -18,7 +18,7 @@
             </div>
             <span class="profile-desc">{{ user?.bio || '快来完善个人资料吧' }}</span>
             <div class="profile-location">
-              <span>📍 {{ user?.community || '未设置' }}</span>
+              <AppIcon name="map-pin" :size="14" /> {{ user?.community || '未设置' }}
             </div>
           </div>
           <span class="edit-icon">✏️</span>
@@ -60,7 +60,7 @@
       <!-- AI互助任务模块 -->
       <div class="menu-section">
         <div class="section-header">
-          <span class="section-icon">🤝</span>
+          <AppIcon name="handshake" class="section-icon" />
           <span class="section-title">互助任务</span>
         </div>
         
@@ -98,7 +98,7 @@
         <div class="task-quick-actions">
           <div class="task-action-card my-tasks" @click="goToMyTasks('all')">
             <div class="action-icon-wrap">
-              <span class="action-icon">📋</span>
+              <AppIcon name="bookmark" class="action-icon" />
             </div>
             <div class="action-content">
               <span class="action-title">我的任务</span>
@@ -108,7 +108,7 @@
           </div>
           <div class="task-action-card publish" @click="goToPublishTask">
             <div class="action-icon-wrap">
-              <span class="action-icon">📝</span>
+              <AppIcon name="edit" class="action-icon" />
             </div>
             <div class="action-content">
               <span class="action-title">发布任务</span>
@@ -118,7 +118,7 @@
           </div>
           <div class="task-action-card browse" @click="goToBrowseTasks">
             <div class="action-icon-wrap">
-              <span class="action-icon">🔍</span>
+              <AppIcon name="search" class="action-icon" />
             </div>
             <div class="action-content">
               <span class="action-title">浏览任务</span>
@@ -132,14 +132,14 @@
       <!-- 个人设置 -->
       <div class="menu-section">
         <div class="section-header">
-          <span class="section-icon">⚙️</span>
+          <AppIcon name="settings" class="section-icon" />
           <span class="section-title">个人设置</span>
         </div>
         <div class="menu-card">
           <div class="menu-list-item" @click="goToMessages">
             <div class="menu-list-left">
               <div class="menu-icon-wrap messages">
-                <span class="menu-list-icon">💬</span>
+                <AppIcon name="message-circle" class="menu-list-icon" />
               </div>
               <div class="menu-list-content">
                 <span class="menu-list-text">消息中心</span>
@@ -155,7 +155,7 @@
           <div class="menu-list-item" @click="goToPrivacy">
             <div class="menu-list-left">
               <div class="menu-icon-wrap privacy">
-                <span class="menu-list-icon">🔒</span>
+                <AppIcon name="lock" class="menu-list-icon" />
               </div>
               <div class="menu-list-content">
                 <span class="menu-list-text">隐私设置</span>
@@ -168,7 +168,7 @@
           <div class="menu-list-item" @click="goToAddress">
             <div class="menu-list-left">
               <div class="menu-icon-wrap address">
-                <span class="menu-list-icon">📍</span>
+                <AppIcon name="map-pin" class="menu-list-icon" />
               </div>
               <div class="menu-list-content">
                 <span class="menu-list-text">收货地址</span>
@@ -181,7 +181,7 @@
           <div class="menu-list-item" @click="goToAbout">
             <div class="menu-list-left">
               <div class="menu-icon-wrap about">
-                <span class="menu-list-icon">ℹ️</span>
+                <AppIcon name="info" class="menu-list-icon" />
               </div>
               <div class="menu-list-content">
                 <span class="menu-list-text">关于我们</span>
@@ -196,14 +196,14 @@
       <!-- 帮助与反馈 -->
       <div class="menu-section">
         <div class="section-header">
-          <span class="section-icon">💁</span>
+          <AppIcon name="help-circle" class="section-icon" />
           <span class="section-title">帮助与支持</span>
         </div>
         <div class="menu-card">
           <div class="menu-list-item" @click="goToHelp">
             <div class="menu-list-left">
               <div class="menu-icon-wrap help">
-                <span class="menu-list-icon">❓</span>
+                <AppIcon name="help-circle" class="menu-list-icon" />
               </div>
               <div class="menu-list-content">
                 <span class="menu-list-text">帮助中心</span>
@@ -216,7 +216,7 @@
           <div class="menu-list-item" @click="goToFeedback">
             <div class="menu-list-left">
               <div class="menu-icon-wrap feedback">
-                <span class="menu-list-icon">💬</span>
+                <AppIcon name="message-circle" class="menu-list-icon" />
               </div>
               <div class="menu-list-content">
                 <span class="menu-list-text">意见反馈</span>
@@ -252,7 +252,7 @@
     <!-- 未登录提示 -->
     <div class="content" v-else>
       <div class="empty-state">
-        <span class="empty-icon">👋</span>
+        <AppIcon name="handshake" class="empty-icon" />
         <span class="empty-text">请先登录</span>
         <div class="btn btn-primary" style="margin-top: 24px;" @click="goToLogin">
           立即登录

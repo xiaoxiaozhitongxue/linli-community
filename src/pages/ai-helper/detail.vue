@@ -10,21 +10,46 @@
 
     <SkeletonLoader v-if="loading" type="card" :count="2" />
 
-    <EmptyState v-else-if="!task" icon="😢" title="未找到该任务" />
+    <EmptyState v-else-if="!task" icon="help-circle" title="未找到该任务" />
 
     <div v-else class="content">
       <div class="task-card">
         <div class="task-top">
           <span class="task-type-tag" :class="'type-' + task.type">{{ getTypeName(task.type) }}</span>
           <span class="task-status-badge" :class="'status-' + task.status">{{ getStatusName(task.status) }}</span>
+          <!-- 操作按钮：仅作者可见 -->
+          <span class="action-btn-area" v-if="isOwner && !editing">
+            <span class="action-btn edit-btn" @click="startEdit"><AppIcon name="edit" :size="14" /> 编辑</span>
+            <span class="action-btn delete-btn" @click="confirmDelete"><AppIcon name="trash" :size="14" /> 删除</span>
+          </span>
         </div>
-        <h1 class="task-title">{{ task.title }}</h1>
-        <p class="task-desc">{{ task.description }}</p>
 
-        <div class="task-reward" v-if="task.reward">
-          <span class="reward-label">悬赏</span>
-          <span class="reward-value">¥{{ task.reward }}</span>
-        </div>
+        <!-- 编辑模式 -->
+        <template v-if="editing">
+          <div class="edit-field">
+            <label class="edit-label">标题</label>
+            <input v-model="editTitle" class="edit-input" placeholder="请输入任务标题" />
+          </div>
+          <div class="edit-field">
+            <label class="edit-label">描述</label>
+            <textarea v-model="editDescription" class="edit-textarea" rows="4" placeholder="请输入任务描述"></textarea>
+          </div>
+          <div class="edit-actions">
+            <span class="cancel-btn" @click="cancelEdit">取消</span>
+            <span class="save-btn" @click="saveEdit">保存</span>
+          </div>
+        </template>
+
+        <!-- 展示模式 -->
+        <template v-else>
+          <h1 class="task-title">{{ task.title }}</h1>
+          <p class="task-desc">{{ task.description }}</p>
+
+          <div class="task-reward" v-if="task.reward">
+            <span class="reward-label">悬赏</span>
+            <span class="reward-value">¥{{ task.reward }}</span>
+          </div>
+        </template>
       </div>
 
       <div class="section">
@@ -50,7 +75,7 @@
         <div class="info-list">
           <div class="info-item" v-if="task.location">
             <span class="info-label">任务地点</span>
-            <span class="info-value">📍 {{ task.location }}</span>
+            <span class="info-value"><AppIcon name="map-pin" :size="14" /> {{ task.location }}</span>
           </div>
           <div class="info-item" v-if="task.distance">
             <span class="info-label">距离您</span>
@@ -93,8 +118,9 @@ import { useAuth } from '../../store'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import AppIcon from '../../components/AppIcon.vue'
 
-const { isLoggedIn } = useAuth()
+const { isLoggedIn, user } = useAuth()
 
 const STORAGE_KEY = 'ai_helper_tasks'
 const MY_CREATED_TASKS_KEY = 'ai_helper_my_created_tasks'
@@ -116,12 +142,24 @@ interface TaskDetail {
   createTime: string | number
   creatorName: string
   creatorAvatar: string
+  creatorId: string
   creatorRating?: number
   creatorTasks?: number
   status: 'open' | 'ongoing' | 'completed' | 'cancelled'
 }
 
 const task = ref<TaskDetail | null>(null)
+
+// 编辑状态
+const editing = ref(false)
+const editTitle = ref('')
+const editDescription = ref('')
+
+/** 当前登录用户是否为任务发布者 */
+const isOwner = computed(() => {
+  if (!user.value || !task.value) return false
+  return task.value.creatorId === user.value.id
+})
 
 const acceptButtonText = computed(() => {
   if (!task.value) return ''
@@ -159,6 +197,7 @@ function mapApiTaskToLocal(apiTask: Task): TaskDetail {
     createTime: apiTask.created_at || Date.now(),
     creatorName: apiTask.creator?.nickname || '邻居',
     creatorAvatar: apiTask.creator?.avatar || '',
+    creatorId: apiTask.creator?.id || apiTask.user_id || '',
     creatorRating: apiTask.creator?.credit_score ? Number((apiTask.creator.credit_score / 20).toFixed(1)) : undefined,
     creatorTasks: undefined,
     status: normalizeStatus(apiTask.status)
@@ -238,6 +277,60 @@ async function handleAccept() {
   }
 }
 
+/** 进入编辑模式 */
+function startEdit() {
+  if (!task.value) return
+  editTitle.value = task.value.title
+  editDescription.value = task.value.description
+  editing.value = true
+}
+
+/** 取消编辑 */
+function cancelEdit() {
+  editing.value = false
+  editTitle.value = ''
+  editDescription.value = ''
+}
+
+/** 保存编辑 */
+async function saveEdit() {
+  if (!task.value) return
+  const title = editTitle.value.trim()
+  const description = editDescription.value.trim()
+  if (!title) {
+    toastError('标题不能为空')
+    return
+  }
+  if (!description) {
+    toastError('描述不能为空')
+    return
+  }
+  try {
+    await taskService.updateTask(task.value.id, { title, description } as any)
+    task.value.title = title
+    task.value.description = description
+    editing.value = false
+    toastSuccess('编辑成功')
+  } catch (e: any) {
+    const msg = e?.message || '编辑失败，请稍后重试'
+    toastError(msg)
+  }
+}
+
+/** 确认删除 */
+async function confirmDelete() {
+  if (!task.value) return
+  if (!confirm('确定删除这个任务吗？')) return
+  try {
+    await taskService.deleteTask(task.value.id)
+    toastSuccess('删除成功')
+    goBack()
+  } catch (e: any) {
+    const msg = e?.message || '删除失败，请稍后重试'
+    toastError(msg)
+  }
+}
+
 function goBack() {
   navigateBackSmart()
 }
@@ -297,6 +390,7 @@ async function fetchTask(id: string) {
         createTime: found.createTime || '',
         creatorName: found.creatorName || '',
         creatorAvatar: found.creatorAvatar || '',
+        creatorId: found.creatorId || found.user_id || '',
         creatorRating: found.creatorRating || 0,
         creatorTasks: found.creatorTasks || 0,
         status: normalizeStatus(found.status)
@@ -320,6 +414,7 @@ async function fetchTask(id: string) {
     createTime: Date.now(),
     creatorName: '邻里社区',
     creatorAvatar: '',
+    creatorId: '',
     creatorRating: 5.0,
     creatorTasks: 0,
     status: 'open'
@@ -507,6 +602,117 @@ watch(
 .status-cancelled {
   background: var(--color-bg-tertiary);
   color: var(--color-text-secondary);
+}
+
+/* 操作按钮 */
+.action-btn-area {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.action-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.edit-btn {
+  background: var(--color-primary-soft, rgba(255,107,53,0.1));
+  color: var(--color-primary, #FF6B35);
+}
+
+.delete-btn {
+  background: rgba(255,77,79,0.1);
+  color: #ff4d4f;
+}
+
+/* 编辑模式 */
+.edit-field {
+  margin-bottom: 14px;
+}
+
+.edit-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.edit-input:focus {
+  border-color: var(--color-primary);
+}
+
+.edit-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  line-height: 1.6;
+  resize: vertical;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.edit-textarea:focus {
+  border-color: var(--color-primary);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.cancel-btn {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.cancel-btn:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.save-btn {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.save-btn:hover {
+  opacity: 0.9;
 }
 
 .task-title {

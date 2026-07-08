@@ -16,7 +16,7 @@
     <div class="scroll-content" ref="scrollRef" @scroll="onScroll">
       <!-- 空状态 -->
       <div v-if="!loading && posts.length === 0" class="empty-state">
-        <span class="empty-icon">📝</span>
+        <AppIcon name="edit" class="empty-icon" />
         <span class="empty-text">暂无动态</span>
         <div class="btn btn-primary" style="margin-top: 24px;" @click="goPublish">
           发布第一条动态
@@ -58,11 +58,11 @@
               <span class="action-text">{{ post.like_count }}</span>
             </div>
             <div class="post-action">
-              <span class="action-icon">💬</span>
+              <AppIcon name="message-circle" class="action-icon" />
               <span class="action-text">{{ post.comment_count }}</span>
             </div>
             <div class="post-action">
-              <span class="action-icon">📅</span>
+              <AppIcon name="calendar" class="action-icon" />
               <span class="action-text">{{ getVisibilityText(post.visibility) }}</span>
             </div>
           </div>
@@ -93,6 +93,7 @@
 import { ref, onMounted } from 'vue'
 import { userService } from '../../services/userService'
 import { navigateBackSmart, navigateTo } from '../../utils/router'
+import AppIcon from '../../components/AppIcon.vue'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)

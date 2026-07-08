@@ -3,7 +3,7 @@
     <!-- 顶部区域 -->
     <div class="header">
       <div class="header-content">
-        <span class="header-title">👴 老人关怀</span>
+        <span class="header-title"><AppIcon name="user" :size="20" />老人关怀</span>
         <span class="header-subtitle">邻里相助，温情常在</span>
       </div>
     </div>
@@ -12,7 +12,7 @@
       <!-- 紧急求助 -->
       <div class="emergency-section">
         <div class="emergency-btn" @click="triggerEmergency">
-          <span class="emergency-icon">🆘</span>
+          <span class="emergency-icon"><AppIcon name="help-circle" :size="48" /></span>
           <span class="emergency-text">紧急求助</span>
         </div>
         <span class="emergency-hint">点击按钮，一键呼叫志愿者</span>
@@ -32,13 +32,13 @@
       <!-- 帮扶记录 -->
       <div class="section">
         <div class="section-header">
-          <span class="section-title">📋 最近帮扶</span>
+          <span class="section-title"><AppIcon name="bookmark" :size="20" />最近帮扶</span>
           <span class="section-more" @click="goToAllRecords">查看全部 ></span>
         </div>
         <div class="record-list">
           <div class="record-item" v-for="record in recentRecords" :key="record.id">
             <div class="record-icon" :style="{ background: record.bgColor }">
-              <span>{{ record.icon }}</span>
+              <AppIcon :name="record.icon" :size="20" />
             </div>
             <div class="record-info">
               <span class="record-type">{{ record.type }}</span>
@@ -83,7 +83,7 @@
       <!-- 定期探访计划 -->
       <div class="section">
         <div class="section-header">
-          <span class="section-title">📅 定期探访</span>
+          <span class="section-title"><AppIcon name="calendar" :size="20" />定期探访</span>
         </div>
         <div class="visit-plan">
           <div class="visit-header">
@@ -116,7 +116,7 @@
       <!-- 关怀技巧 -->
       <div class="section">
         <div class="section-header">
-          <span class="section-title">📚 关怀技巧</span>
+          <span class="section-title"><AppIcon name="book-open" :size="20" />关怀技巧</span>
         </div>
         <div class="tips-list">
           <div class="tip-card" v-for="tip in careTips" :key="tip.id" @click="goToTipDetail(tip)">
@@ -134,7 +134,7 @@
       <!-- 志愿者风采 -->
       <div class="section">
         <div class="section-header">
-          <span class="section-title">🌟 志愿者风采</span>
+          <span class="section-title"><AppIcon name="star" :size="20" />志愿者风采</span>
         </div>
         <div class="volunteer-list">
           <div class="volunteer-card" v-for="v in topVolunteers" :key="v.id">
@@ -155,6 +155,7 @@
 </template>
 
 <script setup lang="ts">
+import AppIcon from '../../components/AppIcon.vue'
 import { ref } from 'vue'
 import { navigateTo } from '../../utils/router'
 import { toastInfo, toastSuccess } from '../../utils/toast'
@@ -238,7 +239,7 @@ const triggerEmergency = () => {
         const newRecord = {
           id: 'e' + Date.now(),
           type: '紧急求助',
-          icon: '🆘',
+          icon: 'help-circle',
           date: '刚刚',
           status: 'pending',
           bgColor: '#FFCDD2'

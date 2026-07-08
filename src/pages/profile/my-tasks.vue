@@ -79,10 +79,10 @@
           <div class="task-desc">{{ task.description }}</div>
           <div class="task-footer">
             <div class="task-location">
-              <span>📍 {{ task.location || '未指定地点' }}</span>
+              <AppIcon name="map-pin" :size="12" /> {{ task.location || '未指定地点' }}
             </div>
             <div class="task-reward" v-if="task.reward">
-              <span class="reward-icon">💰</span>
+              <AppIcon name="activity" class="reward-icon" />
               <span class="reward-text">¥{{ task.reward }}</span>
             </div>
           </div>
@@ -97,7 +97,7 @@
           <!-- 接单人的操作按钮 -->
           <div class="task-actions" v-if="currentTab === 'accepted' && task.status === 'in_progress'">
             <div class="action-btn complete-btn" @click.stop="completeTask(task)">
-              <span>🎯</span> 确认完成
+              <AppIcon name="target" /> 确认完成
             </div>
           </div>
           
@@ -108,7 +108,7 @@
       </div>
 
       <div class="empty-state" v-else>
-        <span class="empty-icon">📋</span>
+        <AppIcon name="bookmark" class="empty-icon" />
         <span class="empty-text">{{ getEmptyText() }}</span>
         <div class="btn btn-primary" @click="goToHelperPage" v-if="currentTab === 'accepted'">
           去任务广场看看
@@ -126,6 +126,7 @@ import { navigateTo, navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { taskService } from '../../services/taskService'
 import { getTaskStatusLabel, normalizeTaskStatus } from '../../constants/status'
+import AppIcon from '../../components/AppIcon.vue'
 
 const statusBarHeight = ref(20)
 const currentTab = ref('published')

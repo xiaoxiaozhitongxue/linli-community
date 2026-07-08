@@ -14,7 +14,7 @@
     <div class="scroll-content" ref="scrollRef" @scroll="onScroll">
       <!-- 空状态 -->
       <div v-if="!loading && activities.length === 0" class="empty-state">
-        <span class="empty-icon">🎯</span>
+        <AppIcon name="target" class="empty-icon" />
         <span class="empty-text">暂无活动</span>
       </div>
 
@@ -29,7 +29,7 @@
               alt="活动封面"
             />
             <div v-else class="cover-placeholder">
-              <span class="cover-icon">{{ getCategoryIcon(activity.category) }}</span>
+              <AppIcon :name="getCategoryIcon(activity.category)" class="cover-icon" />
             </div>
             <div class="activity-status" :class="activity.status">
               {{ getStatusText(activity.status) }}
@@ -43,15 +43,15 @@
 
             <div class="activity-meta">
               <div class="meta-item">
-                <span class="meta-icon">📅</span>
+                <AppIcon name="calendar" class="meta-icon" />
                 <span class="meta-text">{{ formatDate(activity.start_time) }}</span>
               </div>
               <div class="meta-item">
-                <span class="meta-icon">📍</span>
+                <AppIcon name="map-pin" class="meta-icon" />
                 <span class="meta-text">{{ activity.location }}</span>
               </div>
               <div class="meta-item">
-                <span class="meta-icon">👥</span>
+                <AppIcon name="users" class="meta-icon" />
                 <span class="meta-text">{{ activity.current_participants }}/{{ activity.max_participants || '不限' }}</span>
               </div>
             </div>
@@ -95,6 +95,7 @@ import { ref, onMounted } from 'vue'
 import { activityService } from '../../services/activityService'
 import { navigateBackSmart } from '../../utils/router'
 import { getActivityStatusLabel } from '../../constants/status'
+import AppIcon from '../../components/AppIcon.vue'
 
 const statusBarHeight = ref(20)
 const loading = ref(false)
@@ -156,13 +157,13 @@ const formatDate = (timestamp: number) => {
 
 const getCategoryIcon = (category: string) => {
   const map: Record<string, string> = {
-    sports: '⚽',
-    culture: '🎨',
-    charity: '❤️',
-    party: '🎉',
-    other: '📌'
+    sports: 'target',
+    culture: 'settings',
+    charity: 'heart',
+    party: 'star',
+    other: 'bookmark'
   }
-  return map[category] || '📌'
+  return map[category] || 'bookmark'
 }
 
 const getCategoryText = (category: string) => {

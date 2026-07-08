@@ -21,7 +21,7 @@
 
       <div class="block shop-line" @click="goShop">
         <span class="shop-name">{{ product.shopName }}</span>
-        <span class="distance">📍 {{ product.distance }}m ›</span>
+        <span class="distance"><AppIcon name="map-pin" :size="14" /> {{ product.distance }}m ›</span>
       </div>
 
       <div class="block">
@@ -49,6 +49,7 @@ import { toastInfo } from '../../utils/toast'
 import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
 import { HOT_PRODUCTS } from '../../constants/businessData'
+import AppIcon from '../../components/AppIcon.vue'
 
 const route = useRoute()
 const { getCurrentPhone } = useAuth()

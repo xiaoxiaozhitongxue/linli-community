@@ -17,7 +17,7 @@
 
       <ErrorBoundary v-else-if="error" message="加载活动失败" @retry="retry" />
 
-      <EmptyState v-else-if="!loading && !activity" icon="😅" title="活动不存在" />
+      <EmptyState v-else-if="!loading && !activity" icon="info" title="活动不存在" />
 
       <div v-if="activity" class="detail-content">
         <!-- 活动图片轮播 -->
@@ -76,19 +76,19 @@
 
           <div class="activity-info-grid">
             <div class="info-item">
-              <span class="info-icon">📍</span>
+              <span class="info-icon"><AppIcon name="map-pin" :size="14" /></span>
               <span class="info-text">{{ activity.location }}</span>
             </div>
             <div class="info-item">
-              <span class="info-icon">📅</span>
+              <span class="info-icon"><AppIcon name="calendar" :size="14" /></span>
               <span class="info-text">{{ formatFullDate(activity.start_time) }}</span>
             </div>
             <div class="info-item">
-              <span class="info-icon">🕐</span>
+              <span class="info-icon"><AppIcon name="activity" :size="14" /></span>
               <span class="info-text">{{ formatTime(activity.start_time) }} - {{ formatTime(activity.end_time || activity.start_time) }}</span>
             </div>
             <div class="info-item">
-              <span class="info-icon">👥</span>
+              <span class="info-icon"><AppIcon name="users" :size="14" /></span>
               <span class="info-text">{{ activity.current_participants }}人已报名{{ activity.max_participants ? ' / 限' + activity.max_participants + '人' : '' }}</span>
             </div>
           </div>
@@ -136,10 +136,10 @@
     <div v-if="activity" class="bottom-bar">
       <div class="bar-left">
         <div class="bar-btn" @click="toggleFavorite">
-          <span class="bar-icon">{{ isFavorited ? '❤️' : '🤍' }}</span>
+          <span class="bar-icon"><AppIcon name="heart" :size="18" :filled="isFavorited" /></span>
         </div>
         <div class="bar-btn" @click="shareActivity">
-          <span class="bar-icon">🔗</span>
+          <span class="bar-icon"><AppIcon name="share" :size="18" /></span>
         </div>
       </div>
       <div class="bar-right">
@@ -168,6 +168,7 @@ import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, showToast } from '../../utils/toast'
 import { useAuth } from '../../store'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
+import AppIcon from '../../components/AppIcon.vue'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import ErrorBoundary from '../../components/ErrorBoundary.vue'
