@@ -1,5 +1,19 @@
 <template>
   <div class="location-picker">
+    <!-- 自动定位按钮 -->
+    <div class="locate-btn-row">
+      <button
+        class="locate-btn"
+        :disabled="locating"
+        @click="handleLocate"
+      >
+        <span v-if="locating" class="locate-spinner"></span>
+        <AppIcon v-else name="map-pin" :size="16" />
+        <span>{{ locating ? '定位中...' : '自动定位' }}</span>
+      </button>
+      <span v-if="located" class="locate-done">已定位 ✓</span>
+    </div>
+
     <!-- 国家（固定显示） -->
     <div class="field-row">
       <label class="field-label">国家</label>
@@ -59,31 +73,26 @@
     </div>
 
     <!-- 加载状态 / 错误提示 -->
-    <div v-if="loading" class="status-text loading">
-      <span class="status-dot loading-dot"></span>
-      {{ locatingText || '定位中...' }}
-    </div>
-    <div v-else-if="errorText" class="status-text error">
+    <div v-if="errorText && !locating" class="status-text error">
       {{ errorText }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import type { LocationForm } from '../types/location'
 import { useLocationForm } from '../composables/useLocationForm'
+import { getLocation } from '../utils/location'
 
 interface LocationPickerProps {
   modelValue?: LocationForm
-  loading?: boolean
   errorText?: string
   locatingText?: string
 }
 
 const props = withDefaults(defineProps<LocationPickerProps>(), {
   modelValue: undefined,
-  loading: false,
   errorText: '',
   locatingText: '定位中...'
 })
@@ -97,9 +106,13 @@ const emit = defineEmits<Emits>()
 
 // 使用 composable 获取级联数据
 const locationForm = useLocationForm()
-const { provinces, cities, districts } = locationForm
+const { provinces, cities, districts, autoFill } = locationForm
 
-// 内部表单数据（用于级联选择器的本地状态）
+const locating = ref(false)
+const located = ref(false)
+const locateError = ref('')
+
+// 内部表单数据
 const internalForm = ref<LocationForm>({
   country: '中国',
   province: '',
@@ -119,27 +132,10 @@ watch(
   { immediate: true }
 )
 
-// 当内部表单的省变化时同步到 composable（用于更新 cities/districts computed）
-watch(
-  () => internalForm.value.province,
-  (newProv) => {
-    locationForm.form.value.province = newProv
-  }
-)
-
-watch(
-  () => internalForm.value.city,
-  (newCity) => {
-    locationForm.form.value.city = newCity
-  }
-)
-
-watch(
-  () => internalForm.value.district,
-  (newDistrict) => {
-    locationForm.form.value.district = newDistrict
-  }
-)
+// 同步 internalForm → locationForm.composable
+watch(() => internalForm.value.province, (v) => { locationForm.form.value.province = v })
+watch(() => internalForm.value.city, (v) => { locationForm.form.value.city = v })
+watch(() => internalForm.value.district, (v) => { locationForm.form.value.district = v })
 
 /** 省变更时，重置市和区 */
 function onProvinceChange() {
@@ -161,9 +157,38 @@ function onCityChange() {
 
 /** 触发外部 v-model 更新 */
 function emitChange() {
-  const value = { ...internalForm.value }
-  emit('update:modelValue', value)
-  emit('change', value)
+  emit('update:modelValue', { ...internalForm.value })
+  emit('change', { ...internalForm.value })
+}
+
+/** 点击自动定位 */
+async function handleLocate() {
+  if (locating.value) return
+  locating.value = true
+  located.value = false
+  locateError.value = ''
+  try {
+    const result = await getLocation({ forceRefresh: true })
+    if (result) {
+      autoFill(result)
+      // 将 composable 的填充结果同步到 internalForm
+      internalForm.value = {
+        ...internalForm.value,
+        province: locationForm.form.value.province,
+        city: locationForm.form.value.city,
+        district: locationForm.form.value.district,
+        address: locationForm.form.value.address
+      }
+      located.value = true
+      emitChange()
+    } else {
+      locateError.value = '定位失败，请检查定位权限'
+    }
+  } catch (e: any) {
+    locateError.value = e?.message || '定位失败，请重试'
+  } finally {
+    locating.value = false
+  }
 }
 </script>
 
@@ -173,6 +198,62 @@ function emitChange() {
   flex-direction: column;
   gap: 12px;
   width: 100%;
+}
+
+/* 自动定位按钮行 */
+.locate-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.locate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary-light);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.locate-btn:hover {
+  background: rgba(255, 107, 53, 0.18);
+}
+
+.locate-btn:active {
+  transform: scale(0.96);
+}
+
+.locate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.locate-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-primary-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.locate-done {
+  font-size: 13px;
+  color: var(--color-success);
+  font-weight: 500;
 }
 
 .field-row {

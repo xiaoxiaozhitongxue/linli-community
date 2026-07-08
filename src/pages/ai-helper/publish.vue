@@ -57,9 +57,7 @@
         <div class="form-label">服务地点</div>
         <LocationPicker
           v-model="locationForm"
-          :loading="locating"
           :error-text="locationError"
-          locating-text="定位中..."
         />
       </div>
 

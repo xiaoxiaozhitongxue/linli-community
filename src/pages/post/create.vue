@@ -79,9 +79,7 @@
           </div>
           <LocationPicker
             v-model="locationForm"
-            :loading="locating"
             :error-text="locationError"
-            locating-text="定位中..."
           />
         </div>
       </div>
