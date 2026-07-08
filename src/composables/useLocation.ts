@@ -9,12 +9,12 @@ export function useLocation() {
   let lastAutoLocateAt = 0
   let hardResetTimer: ReturnType<typeof setTimeout> | null = null
 
-  async function chooseLocation(opts: { auto?: boolean; registeredCommunity?: string | null } = {}) {
-    if (locating.value) return
+  async function chooseLocation(opts: { auto?: boolean; registeredCommunity?: string | null } = {}): Promise<LocationResult | null> {
+    if (locating.value) return null
 
     const now = Date.now()
     if (opts.auto && now - lastAutoLocateAt < 60 * 1000) {
-      return
+      return locationResult.value
     }
     lastAutoLocateAt = now
 
@@ -35,8 +35,10 @@ export function useLocation() {
       locationResult.value = result
       const display = pickDisplayCommunity(result, opts.registeredCommunity || null)
       communityName.value = display
+      return result
     } catch (err: any) {
       console.warn('[useLocation] 定位失败:', err)
+      return null
     } finally {
       locating.value = false
       if (hardResetTimer) {

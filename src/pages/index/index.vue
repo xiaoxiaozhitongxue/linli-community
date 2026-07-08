@@ -2,7 +2,7 @@
   <div class="page">
     <NavBar type="gradient" :showBack="false">
       <div class="status-content">
-        <div class="location" @click="() => chooseLocation()">
+        <div class="location" @click="openLocationPicker">
           <AppIcon class="location-icon" :name="locating ? 'activity' : 'map-pin'" :size="16" />
           <span class="location-text" :class="{ locating }">{{ locating ? '定位中' : communityName }}</span>
           <span class="location-arrow">▼</span>
@@ -210,6 +210,67 @@
       </div>
     </div>
 
+    <!-- 位置选择器 -->
+    <div v-if="showLocationPicker" class="location-picker-mask" @click="closeLocationPicker">
+      <div class="location-picker-panel" @click.stop>
+        <div class="location-picker-header">
+          <span class="location-picker-title">选择位置</span>
+          <span class="location-picker-close" @click="closeLocationPicker"><AppIcon name="close" :size="20" /></span>
+        </div>
+
+        <div class="location-picker-body">
+          <!-- 手动输入 -->
+          <div class="location-input-group">
+            <label class="location-input-label">手动输入地址</label>
+            <div class="location-input-wrapper">
+              <AppIcon name="map-pin" :size="16" color="var(--color-text-placeholder)" />
+              <input
+                class="location-input"
+                v-model="manualAddress"
+                placeholder="输入地址，如：浦东新区张江镇"
+                @input="onManualInput"
+              />
+              <span v-if="manualAddress" class="location-input-clear" @click="manualAddress = ''">
+                <AppIcon name="close" :size="14" color="var(--color-text-placeholder)" />
+              </span>
+            </div>
+          </div>
+
+          <!-- 分隔线 -->
+          <div class="location-divider">
+            <span class="location-divider-line"></span>
+            <span class="location-divider-text">或者</span>
+            <span class="location-divider-line"></span>
+          </div>
+
+          <!-- 自动定位 -->
+          <div class="location-auto-group">
+            <label class="location-input-label">自动定位</label>
+            <div class="location-auto-card" @click="locateAndSelect">
+              <div class="location-auto-left">
+                <div class="location-auto-icon">
+                  <AppIcon :name="locating ? 'activity' : 'map-pin'" :size="20" color="var(--color-primary)" />
+                </div>
+                <div class="location-auto-info">
+                  <span class="location-auto-status">{{ locating ? '正在定位...' : (autoLocatedAddress || '点击获取当前位置') }}</span>
+                  <span v-if="autoLocatedAddress && !locating" class="location-auto-sub">{{ autoLocatedDetail }}</span>
+                </div>
+              </div>
+              <div v-if="locating" class="location-auto-loading">
+                <div class="loading-spinner small"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 确认按钮 -->
+        <div class="location-picker-footer">
+          <div class="location-picker-btn location-picker-btn-cancel" @click="closeLocationPicker">取消</div>
+          <div class="location-picker-btn location-picker-btn-confirm" :class="{ disabled: !selectedAddress }" @click="confirmLocation">确认</div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showImagePreview" class="image-preview-mask" @click="closeImagePreview">
       <div class="image-preview-container" @click.stop>
         <div class="image-preview-close" @click="closeImagePreview"><AppIcon name="close" :size="20" /></div>
@@ -238,6 +299,7 @@ import { navigateTo, switchTab } from '../../utils/router'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
 import { usePosts } from '../../composables/usePosts'
 import { useLocation } from '../../composables/useLocation'
+import { getLocation } from '../../utils/location'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import ErrorBoundary from '../../components/ErrorBoundary.vue'
@@ -262,9 +324,61 @@ const {
   communityName,
   locating,
   chooseLocation,
+  locationResult,
   startAutoLocate,
   cleanup: cleanupLocation
 } = useLocation()
+
+const showLocationPicker = ref(false)
+const manualAddress = ref('')
+const autoLocatedAddress = ref('')
+const autoLocatedDetail = ref('')
+
+const selectedAddress = computed(() => manualAddress.value.trim() || autoLocatedAddress.value)
+
+function openLocationPicker() {
+  showLocationPicker.value = true
+  manualAddress.value = ''
+  autoLocatedAddress.value = ''
+  autoLocatedDetail.value = ''
+  // 自动开始定位
+  autoLocateForPicker()
+}
+
+function closeLocationPicker() {
+  showLocationPicker.value = false
+}
+
+async function autoLocateForPicker() {
+  locating.value = true
+  try {
+    const result = await getLocation({ forceRefresh: true })
+    if (result) {
+      autoLocatedAddress.value = result.address || result.community
+      autoLocatedDetail.value = result.city && result.district ? `${result.city} ${result.district}` : ''
+    }
+  } catch (e) {
+    console.warn('[locationPicker] 定位失败:', e)
+    autoLocatedAddress.value = '定位失败，请重试'
+  } finally {
+    locating.value = false
+  }
+}
+
+function onManualInput() {
+  // 用户手动输入时，清除自动定位选择
+  if (manualAddress.value.trim()) {
+    // 不做额外操作，selectedAddress会自动切换到手动输入的地址
+  }
+}
+
+function confirmLocation() {
+  const addr = selectedAddress.value
+  if (!addr) return
+  communityName.value = addr
+  showLocationPicker.value = false
+  toastSuccess(`已定位到 ${addr}`)
+}
 
 const statusBarHeight = ref(20)
 let pageHiddenAt = 0
@@ -2261,6 +2375,251 @@ onUnmounted(() => {
 
   .feed-card {
     padding: var(--spacing-2xl);
+  }
+}
+
+/* ========== 位置选择器 ========== */
+.location-picker-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.2s ease;
+}
+
+.location-picker-panel {
+  width: 100%;
+  max-height: 70vh;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.25s var(--transition-spring);
+  overflow: hidden;
+}
+
+.location-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.location-picker-title {
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.location-picker-close {
+  position: absolute;
+  right: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+}
+
+.location-picker-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.location-input-group,
+.location-auto-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.location-input-label {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.location-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  transition: border-color 0.2s;
+}
+
+.location-input-wrapper:focus-within {
+  border-color: var(--color-primary);
+}
+
+.location-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+.location-input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.location-input-clear {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.location-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xs) 0;
+}
+
+.location-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.location-divider-text {
+  font-size: 12px;
+  color: var(--color-text-placeholder);
+  flex-shrink: 0;
+}
+
+.location-auto-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.location-auto-card:active {
+  background: var(--color-bg-tertiary);
+}
+
+.location-auto-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+  min-width: 0;
+}
+
+.location-auto-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--color-primary-bg, rgba(37, 99, 201, 0.1));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.location-auto-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.location-auto-status {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-auto-sub {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-auto-loading {
+  flex-shrink: 0;
+}
+
+.location-picker-footer {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.location-picker-btn {
+  flex: 1;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  font-size: 15px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.location-picker-btn-cancel {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.location-picker-btn-confirm {
+  background: var(--color-primary);
+  color: var(--color-text-white);
+}
+
+.location-picker-btn-confirm.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 </style>
