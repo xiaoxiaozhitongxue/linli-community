@@ -19,7 +19,7 @@
         </template>
         <div class="message-bubble" :class="{ 'bubble-self': msg.isSelf, 'bubble-other': !msg.isSelf }" v-if="!msg.isSystem">
           <div class="bubble-content">{{ msg.content }}</div>
-          <div class="bubble-time">{{ formatTime(msg.time || msg.createdAt) }}</div>
+          <div class="bubble-time">{{ formatTime(msg.time || msg.createdAt || 0) }}</div>
         </div>
         <div class="system-message" v-else>
           {{ msg.content }}

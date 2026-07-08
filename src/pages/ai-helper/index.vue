@@ -127,76 +127,40 @@
               class="task-card"
               v-for="task in displayTasks"
               :key="task.id"
+              :class="{ 'status-open': task.status === 'pending' }"
               @click="goToTaskDetail(task)"
             >
-              <div class="task-top-bar">
-                <div class="task-status-badge" :class="'status-' + task.status">
-                  <span class="status-dot"></span>
-                  {{ getStatusName(task.status) }}
+              <div class="task-card-row">
+                <!-- 左侧类型图标 -->
+                <div class="task-type-icon" :class="'type-icon-' + task.type">
+                  <AppIcon :name="getTypeIcon(task.type)" :size="22" />
                 </div>
-                <div class="task-type-tag" :class="'type-' + task.type">
-                  {{ getTypeName(task.type) }}
-                </div>
-              </div>
 
-              <div class="task-body">
-                <div class="task-creator">
-                  <img class="task-creator-avatar" :src="task.creatorAvatar" />
-                  <div class="task-creator-info">
-                    <span class="task-creator-name">{{ task.creatorName }}</span>
-                    <div class="task-creator-meta">
-                      <span class="creator-rating">⭐ {{ task.creatorRating }}</span>
-                      <span class="creator-tasks">已帮助 {{ task.creatorTasks }} 次</span>
-                    </div>
+                <!-- 中间文字信息 -->
+                <div class="task-card-body">
+                  <div class="task-card-top">
+                    <span class="task-card-title">{{ task.title }}</span>
+                    <span class="task-type-tag" :class="'type-' + task.type">{{ getTypeName(task.type) }}</span>
+                  </div>
+                  <div class="task-card-meta">
+                    <span class="task-meta-item" v-if="task.location">
+                      <AppIcon name="map-pin" :size="12" />
+                      {{ task.location }}
+                    </span>
+                    <span class="task-meta-divider" v-if="task.location && task.reward">·</span>
+                    <span class="task-meta-item task-reward" v-if="task.reward">
+                      ¥{{ task.reward }}
+                    </span>
+                    <span class="task-meta-divider" v-if="task.reward">·</span>
+                    <span class="task-meta-item task-status-badge" :class="'status-' + task.status">
+                      {{ getStatusName(task.status) }}
+                    </span>
                   </div>
                 </div>
 
-                <h3 class="task-title">{{ task.title }}</h3>
-                <p class="task-desc">{{ task.description }}</p>
-
-                <div class="task-location">
-                  <AppIcon class="location-icon" name="map-pin" :size="14" />
-                  <span class="location-text">{{ task.location }}</span>
-                </div>
-              </div>
-
-              <div class="task-footer">
-                <div class="task-reward-block">
-                  <span class="reward-label">悬赏</span>
-                  <span class="reward-value">{{ task.reward }}</span>
-                  <span class="reward-unit">元</span>
-                </div>
-                <div class="task-meta">
-                  <span class="meta-item">
-                    <AppIcon class="meta-icon" name="map-pin" :size="14" />
-                  </span>
-                  <span class="meta-item">
-                    <AppIcon class="meta-icon" name="users" :size="14" />
-                    {{ task.responses }}人响应
-                  </span>
-                </div>
-              </div>
-
-              <div class="task-action-bar" v-if="task.status === 'pending'">
-                <div class="respond-btn" @click.stop="respondToTask(task, $event)">
-                  <AppIcon class="btn-icon" name="handshake" :size="16" />
-                </div>
-              </div>
-              <div class="task-action-bar disabled" v-else-if="task.status === 'in_progress'">
-                <div class="respond-btn ongoing">
-                  <span class="btn-icon">⏳</span>
-                  <span>进行中</span>
-                </div>
-              </div>
-              <div class="task-action-bar completed" v-else-if="task.status === 'pending_confirm'">
-                <div class="respond-btn pending">
-                  <AppIcon class="btn-icon" name="target" :size="16" />
-                </div>
-              </div>
-              <div class="task-action-bar completed" v-else>
-                <div class="respond-btn done">
-                  <span class="btn-icon">✅</span>
-                  <span>已完成</span>
+                <!-- 右侧响应按钮（待接单） -->
+                <div class="task-card-action" v-if="task.status === 'pending'" @click.stop="respondToTask(task, $event)">
+                  <div class="respond-compact-btn">接单</div>
                 </div>
               </div>
             </div>
@@ -347,6 +311,17 @@ const getTypeName = (type: string) => {
     other: '其他'
   }
   return map[type] || type
+}
+
+const getTypeIcon = (type: string) => {
+  const map: Record<string, string> = {
+    delivery: 'package',
+    shopping: 'activity',
+    pet: 'users',
+    child: 'user',
+    other: 'bookmark'
+  }
+  return map[type] || 'bookmark'
 }
 
 const getStatusName = (status: string): string => getTaskStatusLabel(status)
@@ -616,290 +591,145 @@ onMounted(async () => {
   }
 }
 
-/* 任务卡片 */
+/* 任务卡片 - 紧凑版 */
 .task-card {
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: all var(--transition-smooth);
+  transition: all var(--transition-fast);
   border: 1px solid var(--color-border-light);
+  overflow: hidden;
 }
 
 .task-card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
-}
-
-.task-top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: var(--color-bg-tertiary);
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.task-status-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-}
-
-.task-status-badge .status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.status-pending {
-  background: var(--color-info-soft);
-  color: var(--color-info);
-}
-
-.status-pending .status-dot {
-  background: var(--color-info);
-  animation: blink 1.5s infinite;
-}
-
-.status-in_progress {
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
-}
-
-.status-in_progress .status-dot {
-  background: var(--color-warning);
-}
-
-.status-cancelled {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-muted);
-}
-
-.status-cancelled .status-dot {
-  background: var(--color-text-muted);
-}
-
-.status-pending_confirm {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
-.status-pending_confirm .status-dot {
-  background: var(--color-primary);
-}
-
-.status-completed {
-  background: var(--color-success-soft);
-  color: var(--color-success);
-}
-
-.status-completed .status-dot {
-  background: var(--color-success);
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-.task-type-tag {
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-}
-
-.type-delivery {
-  background: var(--color-info-soft);
-  color: var(--color-info);
-}
-
-.type-shopping {
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
-}
-
-.type-pet {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
-.type-child {
-  background: var(--color-error-soft);
-  color: var(--color-error);
-}
-
-.type-other {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-tertiary);
-}
-
-.task-body {
-  padding: var(--spacing-lg);
-}
-
-.task-creator {
-  display: flex;
-  align-items: center;
-  margin-bottom: var(--spacing-md);
-}
-
-.task-creator-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: var(--spacing-sm);
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 2px solid var(--color-primary-soft);
-}
-
-.task-creator-info {
-  flex: 1;
-}
-
-.task-creator-name {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  display: block;
-  margin-bottom: 2px;
-}
-
-.task-creator-meta {
-  display: flex;
-  gap: var(--spacing-sm);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.task-title {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-xs);
-  line-height: 1.4;
-}
-
-.task-desc {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-md);
-  line-height: 1.5;
-}
-
-.task-location {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  background: var(--color-bg-tertiary);
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  width: fit-content;
-}
-
-.task-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: var(--color-bg-tertiary);
-  border-top: 1px solid var(--color-border-light);
-}
-
-.task-reward-block {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.task-reward-block .reward-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  margin-right: 4px;
-}
-
-.task-reward-block .reward-value {
-  font-size: 22px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
-}
-
-.task-reward-block .reward-unit {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-.task-meta {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.meta-icon {
-  font-size: var(--font-size-xs);
-}
-
-.task-action-bar {
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--color-border-light);
-}
-
-.respond-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  width: 100%;
-  background: var(--color-primary-gradient);
-  color: var(--color-text-white);
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: var(--shadow-sm);
-}
-
-.respond-btn:hover {
-  box-shadow: var(--shadow-hover);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
-.respond-btn:active {
-  transform: scale(0.98);
+.task-card.status-open {
+  border-color: var(--color-primary-soft);
 }
 
-.respond-btn.ongoing {
-  background: linear-gradient(135deg, var(--color-warning), #F57C00);
+.task-card-row {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  gap: var(--spacing-md);
+  min-height: 60px;
 }
 
-.respond-btn.pending {
-  background: linear-gradient(135deg, var(--color-primary), #E55A2B);
+/* 左侧类型图标 */
+.task-type-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.respond-btn.done {
-  background: linear-gradient(135deg, var(--color-success), #22c55e);
+.type-icon-delivery { background: var(--color-info-soft); color: var(--color-info); }
+.type-icon-shopping { background: var(--color-warning-soft); color: var(--color-warning); }
+.type-icon-pet { background: var(--color-primary-soft); color: var(--color-primary); }
+.type-icon-child { background: var(--color-error-soft); color: var(--color-error); }
+.type-icon-other { background: var(--color-bg-tertiary); color: var(--color-text-tertiary); }
+
+/* 中间文字 */
+.task-card-body {
+  flex: 1;
+  min-width: 0;
 }
 
-.respond-btn .btn-icon {
-  font-size: 16px;
+.task-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.task-card-title {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-type-tag {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.type-delivery { background: var(--color-info-soft); color: var(--color-info); }
+.type-shopping { background: var(--color-warning-soft); color: var(--color-warning); }
+.type-pet { background: var(--color-primary-soft); color: var(--color-primary); }
+.type-child { background: var(--color-error-soft); color: var(--color-error); }
+.type-other { background: var(--color-bg-tertiary); color: var(--color-text-tertiary); }
+
+.task-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  flex-wrap: wrap;
+}
+
+.task-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.task-meta-divider {
+  color: var(--color-border-light);
+}
+
+.task-reward {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.task-status-badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+.status-pending { background: var(--color-info-soft); color: var(--color-info); }
+.status-in_progress { background: var(--color-warning-soft); color: var(--color-warning); }
+.status-completed { background: var(--color-success-soft); color: var(--color-success); }
+.status-pending_confirm { background: var(--color-primary-soft); color: var(--color-primary); }
+.status-cancelled { background: var(--color-bg-tertiary); color: var(--color-text-muted); }
+
+/* 右侧接单按钮 */
+.task-card-action {
+  flex-shrink: 0;
+}
+
+.respond-compact-btn {
+  padding: 6px 14px;
+  background: var(--color-primary-gradient);
+  color: var(--color-text-white);
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+
+.respond-compact-btn:active {
+  transform: scale(0.95);
+  box-shadow: none;
 }
 
 /* 空状态 */

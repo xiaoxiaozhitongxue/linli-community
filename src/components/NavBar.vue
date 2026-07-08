@@ -7,7 +7,13 @@
     ]"
     :style="headerStyle"
   >
-    <div class="navbar-inner">
+    <!-- 默认 slot 模式：自定义全宽内容 -->
+    <div v-if="$slots.default" class="navbar-inner navbar-inner--custom">
+      <slot />
+    </div>
+
+    <!-- 标准三栏布局 -->
+    <div v-else class="navbar-inner">
       <!-- 左侧：返回按钮 -->
       <div class="navbar-side navbar-side-left">
         <div
@@ -129,6 +135,12 @@ function handleBack() {
   justify-content: space-between;
   height: 52px;
   padding: 0 var(--spacing-lg, 16px);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.navbar-inner--custom {
+  height: auto;
+  min-height: 52px;
   padding-top: env(safe-area-inset-top, 0px);
 }
 

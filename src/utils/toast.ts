@@ -1,3 +1,7 @@
+/** 双弹窗去重缓存 */
+let lastToastMsg = ''
+let lastToastTime = 0
+
 function ensureToast() {
   const toast = (window as any).$toast
   if (!toast) {
@@ -8,6 +12,14 @@ function ensureToast() {
 }
 
 export function showToast(message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 2000) {
+  // 去重：1 秒内相同 message 跳过
+  const now = Date.now()
+  if (message === lastToastMsg && now - lastToastTime < 1000) {
+    return
+  }
+  lastToastMsg = message
+  lastToastTime = now
+
   const t = ensureToast()
   if (t) {
     t.show(message, type, duration)

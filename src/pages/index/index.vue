@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <div class="status-bar" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%);">
+    <NavBar type="gradient" :showBack="false">
       <div class="status-content">
         <div class="location" @click="() => chooseLocation()">
           <AppIcon class="location-icon" :name="locating ? 'activity' : 'map-pin'" :size="16" />
@@ -12,7 +12,7 @@
           <span class="search-placeholder">搜索邻里、活动...</span>
         </div>
       </div>
-    </div>
+    </NavBar>
 
     <div v-if="showRefreshIndicator" class="refresh-indicator">
       <div class="refresh-content">
@@ -58,109 +58,102 @@
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-header">
-            <span class="section-title"><AppIcon class="section-title-icon" name="flame" :size="18" />热门活动</span>
-            <span class="section-more" @click="goToActivities">查看更多 ›</span>
-          </div>
-          <div class="activity-scroll">
-            <div class="activity-card" v-for="activity in hotActivities" :key="activity.id" @click="goToActivityDetail(activity.id)">
-              <div class="activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
-                <AppIcon class="activity-emoji" :name="getActivityIcon(activity.category)" :size="40" :color="getActivityIconColor(activity.category)" />
-              </div>
-              <div class="activity-info">
-                <span class="activity-name">{{ activity.title }}</span>
-                <div class="activity-meta">
-                  <span class="activity-time">{{ formatShortTime(activity.start_time) }}</span>
-                  <span class="activity-join">{{ activity.current_participants }}人参与</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <!-- 统一 feed 筛选栏 -->
+        <div class="feed-filter-bar">
+          <div
+            class="feed-filter-btn"
+            :class="{ active: feedFilter === 'all' }"
+            @click="feedFilter = 'all'"
+          >全部</div>
+          <div
+            class="feed-filter-btn"
+            :class="{ active: feedFilter === 'activity' }"
+            @click="feedFilter = 'activity'"
+          >活动</div>
+          <div
+            class="feed-filter-btn"
+            :class="{ active: feedFilter === 'post' }"
+            @click="feedFilter = 'post'"
+          >动态</div>
         </div>
 
+        <!-- 统一 feed 列表 -->
         <div class="section">
-          <div class="section-header">
-            <span class="section-title"><AppIcon class="section-title-icon" name="target" :size="18" />近期活动</span>
-            <span class="section-more" @click="goToActivities">查看更多 ›</span>
-          </div>
-          <div class="recent-activity-scroll">
-            <div class="recent-activity-card" v-for="activity in recentActivities" :key="activity.id" @click="goToActivityDetail(activity.id)">
-              <div class="recent-activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
-                <AppIcon class="recent-activity-icon" :name="getActivityIcon(activity.category)" :size="48" :color="getActivityIconColor(activity.category)" />
-                <div class="recent-activity-badge">即将开始</div>
-              </div>
-              <div class="recent-activity-content">
-                <span class="recent-activity-name">{{ activity.title }}</span>
-              <div class="recent-activity-info">
-                <div class="recent-activity-info-item">
-                  <AppIcon class="info-icon" name="calendar" :size="12" />
-                  <span class="info-text">{{ formatFullDate(activity.start_time) }}</span>
-                </div>
-              </div>
-              <div class="recent-activity-info">
-                <div class="recent-activity-info-item">
-                  <AppIcon class="info-icon" name="map-pin" :size="12" />
-                  <span class="info-text">{{ activity.location }}</span>
-                </div>
-              </div>
-              <div class="recent-activity-footer">
-                <div class="recent-activity-participants">
-                  <AppIcon class="participant-icon" name="users" :size="14" />
-                  <span class="participant-count">{{ activity.current_participants }}人已报名</span>
-                </div>
-                  <div class="recent-activity-join-btn">立即报名</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          <SkeletonLoader v-if="loading && unifiedFeed.length === 0" type="list" :count="3" />
 
-        <div class="section">
-          <div class="section-header">
-            <span class="section-title"><AppIcon class="section-title-icon" name="book-open" :size="18" />邻里动态</span>
-          </div>
-
-          <SkeletonLoader v-if="loading && posts.length === 0" type="list" :count="3" />
-
-          <ErrorBoundary v-else-if="error && posts.length === 0" :message="error" @retry="handleRefresh" />
+          <ErrorBoundary v-else-if="error && unifiedFeed.length === 0" :message="error" @retry="handleRefresh" />
 
           <div v-else class="feed-list">
-            <div class="feed-card animate-fadeIn" v-for="(post, index) in posts" :key="post.id" :style="{ animationDelay: (index * 0.1) + 's' }" @click="goToPostDetail(post)">
-              <div class="feed-header">
-                <img v-if="post.user?.avatar" class="feed-avatar" :src="post.user.avatar" @error="onAvatarError" />
-                <div v-else class="feed-avatar feed-avatar-placeholder">{{ getInitial(post.user?.nickname) }}</div>
-                <div class="feed-user-info">
-                  <span class="feed-username">{{ post.user?.nickname || '邻居' }}</span>
-                  <div class="feed-meta">
-                    <span class="feed-time">{{ formatTime(post.created_at) }}</span>
-                    <span v-if="post.location" class="feed-location">• {{ post.location }}</span>
+            <template v-for="(item, index) in unifiedFeed" :key="item.id + '-' + item._type">
+              <!-- 活动卡片（紧凑） -->
+              <div
+                v-if="item._type === 'activity'"
+                class="feed-card activity-feed-card animate-fadeIn"
+                :style="{ animationDelay: (index * 0.05) + 's' }"
+                @click="goToActivityDetail(item._raw.id)"
+              >
+                <div class="activity-feed-row">
+                  <div class="activity-feed-icon" :style="{ background: getActivityCoverBg(item._raw.category) }">
+                    <AppIcon :name="getActivityIcon(item._raw.category)" :size="24" :color="getActivityIconColor(item._raw.category)" />
+                  </div>
+                  <div class="activity-feed-body">
+                    <div class="activity-feed-top">
+                      <span class="feed-type-badge type-activity">活动</span>
+                      <span class="activity-feed-title">{{ item.title }}</span>
+                    </div>
+                    <div class="activity-feed-meta">
+                      <span>{{ formatShortTime(item._raw.start_time) }}</span>
+                      <span class="meta-dot">·</span>
+                      <span>{{ item._raw.current_participants }}人参与</span>
+                      <span v-if="item._raw.location" class="meta-dot">·</span>
+                      <span v-if="item._raw.location">{{ item._raw.location }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div class="feed-content">
-                <span class="feed-text">{{ post.content }}</span>
-                <div v-if="post.images && post.images.length > 0" class="feed-images" :class="'images-' + post.images.length">
-                  <img class="feed-image" v-for="(img, imgIndex) in post.images" :key="imgIndex" :src="img" @click.stop="previewImage(post.images, imgIndex)" />
+              <!-- 动态卡片 -->
+              <div
+                v-else
+                class="feed-card animate-fadeIn"
+                :style="{ animationDelay: (index * 0.05) + 's' }"
+                @click="goToPostDetail(item._raw)"
+              >
+                <div class="feed-header">
+                  <img v-if="item._raw.user?.avatar" class="feed-avatar" :src="item._raw.user.avatar" @error="onAvatarError" />
+                  <div v-else class="feed-avatar feed-avatar-placeholder">{{ getInitial(item._raw.user?.nickname) }}</div>
+                  <div class="feed-user-info">
+                    <span class="feed-username">{{ item._raw.user?.nickname || '邻居' }}</span>
+                    <div class="feed-meta">
+                      <span class="feed-time">{{ formatTime(item._raw.created_at) }}</span>
+                      <span v-if="item._raw.location" class="feed-location">• {{ item._raw.location }}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div class="feed-actions">
-                <div class="feed-action" :class="{ liked: post.is_liked }" @click.stop="handleLikePost(post)">
-                  <AppIcon class="action-icon" :class="{ 'heart-beat': post.is_liked }" name="heart" :size="20" :filled="post.is_liked" />
-                  <span class="action-count">{{ post.like_count || 0 }}</span>
+                <div class="feed-content">
+                  <span class="feed-text">{{ item._raw.content }}</span>
+                  <div v-if="item._raw.images && item._raw.images.length > 0" class="feed-images" :class="'images-' + item._raw.images.length">
+                    <img class="feed-image" v-for="(img, imgIndex) in item._raw.images" :key="imgIndex" :src="img" @click.stop="previewImage(item._raw.images, imgIndex)" />
+                  </div>
                 </div>
-                <div class="feed-action" @click.stop="showComments(post)">
-                  <AppIcon class="action-icon" name="comment" :size="20" />
-                  <span class="action-count">{{ post.comment_count || 0 }}</span>
-                </div>
-                <div class="feed-action" @click.stop="sharePost(post)">
-                  <AppIcon class="action-icon" name="share" :size="20" />
-                  <span class="action-count">分享</span>
+
+                <div class="feed-actions">
+                  <div class="feed-action" :class="{ liked: item._raw.is_liked }" @click.stop="handleLikePost(item._raw)">
+                    <AppIcon class="action-icon" :class="{ 'heart-beat': item._raw.is_liked }" name="heart" :size="20" :filled="item._raw.is_liked" />
+                    <span class="action-count">{{ item._raw.like_count || 0 }}</span>
+                  </div>
+                  <div class="feed-action" @click.stop="showComments(item._raw)">
+                    <AppIcon class="action-icon" name="comment" :size="20" />
+                    <span class="action-count">{{ item._raw.comment_count || 0 }}</span>
+                  </div>
+                  <div class="feed-action" @click.stop="sharePost(item._raw)">
+                    <AppIcon class="action-icon" name="share" :size="20" />
+                    <span class="action-count">分享</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
           </div>
 
           <div v-if="hasMore && posts.length > 0" class="load-more">
@@ -171,7 +164,7 @@
             </div>
           </div>
 
-          <div v-if="!hasMore && posts.length > 0" class="no-more">
+          <div v-if="!hasMore && posts.length > 0 && feedFilter !== 'activity'" class="no-more">
             <span>— 没有更多了 —</span>
           </div>
 
@@ -229,7 +222,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Post, Comment, Activity } from '../../types/models'
 import { activityService } from '../../services/activityService'
 import { taskService } from '../../services/taskService'
@@ -244,6 +237,7 @@ import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import ErrorBoundary from '../../components/ErrorBoundary.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import NavBar from '../../components/NavBar.vue'
 
 const { initAuth, isLoggedIn, user } = useAuth()
 const {
@@ -331,9 +325,52 @@ async function loadQuickBadges() {
   }
 }
 
+const feedFilter = ref<'all' | 'activity' | 'post'>('all')
+
 const activities = ref<Activity[]>([])
 const hotActivities = ref<Activity[]>([])
 const recentActivities = ref<Activity[]>([])
+
+/** 合并活动 + 动态的统一 feed */
+const unifiedFeed = computed(() => {
+  const items: Array<{
+    id: string
+    _type: 'activity' | 'post'
+    _raw: any
+    title: string
+    sortTime: number
+  }> = []
+
+  // 添加活动项（用 hotActivities 作为活动数据源）
+  if (feedFilter.value === 'all' || feedFilter.value === 'activity') {
+    for (const act of hotActivities.value) {
+      items.push({
+        id: 'act-' + act.id,
+        _type: 'activity',
+        _raw: act,
+        title: act.title,
+        sortTime: -(act.current_participants * 100000 + (act.start_time || 0))
+      })
+    }
+  }
+
+  // 添加动态项
+  if (feedFilter.value === 'all' || feedFilter.value === 'post') {
+    for (const post of posts.value) {
+      items.push({
+        id: 'post-' + post.id,
+        _type: 'post',
+        _raw: post,
+        title: post.content || '',
+        sortTime: -(post.created_at || 0)
+      })
+    }
+  }
+
+  // 按时间倒序（活动按参与热度+时间综合排序）
+  items.sort((a, b) => b.sortTime - a.sortTime)
+  return items
+})
 
 async function fetchActivities() {
   try {
@@ -720,27 +757,12 @@ onUnmounted(() => {
   background-color: var(--color-bg-primary);
 }
 
-.status-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%);
-  background: var(--color-primary-gradient, linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%));
-  padding-bottom: 12px;
-  padding-top: 20px;
-  min-height: 88px;
-  box-sizing: border-box;
-}
 
 .status-content {
-  padding: 0 var(--spacing-lg);
-  max-width: 100%;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  width: 100%;
 }
 
 .location {
@@ -869,7 +891,7 @@ onUnmounted(() => {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   width: 100%;
-  padding-top: 88px;
+  padding-top: calc(52px + env(safe-area-inset-top));
 }
 
 .page-wrapper {
@@ -1498,6 +1520,108 @@ onUnmounted(() => {
   width: 24px;
   height: 24px;
   border-width: 2px;
+}
+
+/* ---- 统一 feed 筛选栏 ---- */
+.feed-filter-bar {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg) 0;
+}
+
+.feed-filter-btn {
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border-light);
+}
+
+.feed-filter-btn.active {
+  background: var(--color-primary);
+  color: var(--color-text-white);
+  border-color: var(--color-primary);
+}
+
+.feed-filter-btn:active {
+  transform: scale(0.96);
+}
+
+/* ---- 活动紧凑卡片 ---- */
+.activity-feed-card {
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+}
+
+.activity-feed-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.activity-feed-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activity-feed-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-feed-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.feed-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+}
+
+.feed-type-badge.type-activity {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.activity-feed-title {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-feed-meta {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.meta-dot {
+  color: var(--color-border-light);
 }
 
 .load-more,

@@ -33,7 +33,7 @@
             <div class="message-sender" v-if="!msg.isSelf">{{ msg.senderName }}</div>
             <div class="message-bubble" :class="{ 'bubble-self': msg.isSelf, 'bubble-other': !msg.isSelf }">
               <div class="bubble-content">{{ msg.content }}</div>
-              <div class="bubble-time">{{ formatTime(msg.time || msg.createdAt) }}</div>
+              <div class="bubble-time">{{ formatTime(msg.time || msg.createdAt || 0) }}</div>
             </div>
           </div>
         </template>
