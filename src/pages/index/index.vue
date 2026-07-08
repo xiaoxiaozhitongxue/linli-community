@@ -1114,14 +1114,14 @@ onUnmounted(() => {
 .quick-card {
   background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
-  width: calc(50% - 6px);
-  padding: var(--spacing-lg);
+  padding: 14px;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   min-height: 72px;
   display: flex;
   align-items: center;
+  overflow: hidden;
 }
 
 .quick-card:active {
@@ -1140,19 +1140,23 @@ onUnmounted(() => {
 .quick-card-inner {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .quick-card-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .quick-icon {
   line-height: 1;
   color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .quick-health .quick-icon {
@@ -1160,29 +1164,39 @@ onUnmounted(() => {
 }
 
 .quick-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .quick-card-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-width: 0;
+  gap: 6px;
 }
 
 .quick-hint {
   font-size: 12px;
   color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .quick-badge {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
   background: var(--color-primary-soft);
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: var(--radius-full);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .section {

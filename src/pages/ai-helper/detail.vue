@@ -224,7 +224,7 @@ function getStatusName(status: string): string {
 
 function formatTime(time: string | number): string {
   if (!time) return ''
-  const date = new Date(Number(time))
+  const date = new Date(Number(time) > 1e12 ? Number(time) : Number(time) * 1000)
   if (isNaN(date.getTime())) return String(time)
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')

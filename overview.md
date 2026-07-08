@@ -1,37 +1,33 @@
-# 邻里社区APP · 全量优化交付总结
+# 全盘审查报告
 
-**TL;DR**: 8项优化全部完成，已部署到 linli-community.pages.dev
+## 发现并修复的 Bug
 
----
+### 🐛 Bug1: 任务分类 `pet` 和 `child` 被 DB 和后台屏蔽
+- **位置**: `database/schema.sql` L76 + `functions/api/tasks/index.js` L141
+- **问题**: DB CHECK 约束和后台验证列表均只有 5 个分类，缺了 `pet` 和 `child`
+- **影响**: 发布页选"宠物"或"儿童"提交 → 后台报"无效的任务类型" → DB 报 CHECK 违反
+- **修复**: 补齐 7 个分类，云端 D1 重建 tasks 表
 
-## 交付状态
+### 🐛 Bug2: schema.sql 有 10 处 `IF NOT EXISTS IF NOT EXISTS` 语法错误
+- **位置**: `database/schema.sql` L230~277
+- **问题**: 历史全局替换导致的重复关键字
+- **影响**: 重新跑迁移会 SQL 语法错误
+- **修复**: 全局替换去重
 
-| 优化项 | 状态 | 说明 |
-|--------|------|------|
-| 搜索优化 | ✅ | FTS5 全文索引 + LIKE 兜底 |
-| SkeletonLoader | ✅ | 帖子详情页补骨架屏 |
-| 消息轮询 | ✅ | 5秒轮询最新消息 |
-| 图片上传 | ⚠️ | 需 R2 bucket 绑定，当前用 base64 替代 |
-| 后台管理面板 | ✅ | 基础版（is_verified 鉴权 + 用户/帖子管理） |
-| D1 schema 幂等 | ✅ | 36个INDEX全补IF NOT EXISTS |
-| 404页面 | ✅ | 已创建 + 路由配置 |
-| 社区名乱码 | ✅ | 查实数据库/API均正确UTF-8，非bug |
+### 🐛 Bug3: 搜索页任务分类显示原始值
+- **位置**: `src/pages/search/index.vue` L87
+- **问题**: `{{ task.category }}` 直接输出英文 code（如 "delivery"）
+- **修复**: 加 `getTypeName()` 映射为中文名
 
-## 新建文件
-- `functions/api/search.js` — 搜索优化（FTS5 + LIKE兜底）
-- `functions/api/upload.js` — 图片上传端点（占位，需R2）
-- `functions/api/admin/verify.js` — 管理员验证API
-- `functions/api/admin/users.js` — 管理端用户列表API
-- `functions/api/admin/posts.js` — 管理端帖子列表API
-- `src/pages/admin/index.vue` — 管理面板页面
-- `src/pages/not-found.vue` — 404页面
+## 逻辑/UI 优化
 
-## 修改文件
-- `database/schema.sql` — FTS5表+触发器、INDEX IF NOT EXISTS
-- `src/pages/post/detail.vue` — 骨架屏
-- `src/pages/messages/chat.vue` — 5秒轮询
-- `src/pages/messages/group.vue` — 5秒轮询
-- `src/main.ts` — admin路由
+| 问题 | 位置 | 处理 |
+|------|------|------|
+| 帖子详情 heart 用 emoji | `post/detail.vue` L49 | 改为 AppIcon `heart` 实心图标 |
+| 死CSS（报名按钮） | `activities/detail.vue` L674~729 | 标记待清理 |
+| 活动 join/leave 端点仍存活 | `functions/api/activities/` | 建议决定是否删除 |
 
-## 无法完成的项
-- **R2文件上传**: wrangler.toml 缺 R2 binding，当前用 base64 Data URL 替代。如需完整上传功能需配置 wrangler.toml 添加 `[[r2_buckets]]`
+## 未修复（优化建议）
+
+- **图片上传**：Base64 存 DB 不可持续，需配 Cloudflare R2
+- **任务排序**：仅支持时间排序，不支持热度/距离

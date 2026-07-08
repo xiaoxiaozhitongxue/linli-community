@@ -251,8 +251,9 @@ const groupUnread = computed(() => groupChats.value.reduce((sum, m) => sum + m.u
 
 const formatTime = (timeStr: string | number) => {
   if (!timeStr) return ''
+  const ts = typeof timeStr === 'number' ? timeStr : Number(timeStr)
+  const time = new Date(ts > 1e12 ? ts : ts * 1000)
   const now = new Date()
-  const time = new Date(typeof timeStr === 'number' ? timeStr * 1000 : timeStr)
   const diff = now.getTime() - time.getTime()
   const minutes = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)

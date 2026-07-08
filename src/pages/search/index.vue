@@ -243,7 +243,7 @@ function getTypeName(type: string): string {
 }
 
 function formatShortTime(timestamp: number) {
-  const date = new Date(timestamp)
+  const date = new Date(timestamp > 1e12 ? timestamp : timestamp * 1000)
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${month}月${day}日`

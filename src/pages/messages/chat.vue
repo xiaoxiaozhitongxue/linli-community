@@ -85,7 +85,8 @@ const hasMore = ref(false)
 
 const formatTime = (timeStr: string | number) => {
   if (!timeStr) return ''
-  const time = new Date(typeof timeStr === 'number' ? timeStr * 1000 : timeStr)
+  const ts = typeof timeStr === 'number' ? timeStr : Number(timeStr)
+  const time = new Date(ts > 1e12 ? ts : ts * 1000)
   return time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
