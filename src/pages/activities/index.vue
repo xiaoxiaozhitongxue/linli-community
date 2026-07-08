@@ -33,77 +33,83 @@
           <div class="section-header">
             <span class="section-title"><AppIcon name="flame" :size="18" />热门活动</span>
           </div>
-          <div class="hot-activity-scroll">
+          <div class="hot-scroll">
             <div 
               v-for="activity in hotActivities" 
               :key="activity.id"
-              class="hot-activity-card"
+              class="hot-card"
               @click="goToDetail(activity.id)"
             >
-              <div class="hot-activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
-                <span class="hot-activity-emoji"><AppIcon :name="getActivityEmoji(activity.category)" :size="44" /></span>
+              <div class="hot-card-cover" :style="{ background: getActivityGradient(activity.category) }">
+                <span class="hot-card-category-badge" :class="'cat-' + activity.category">
+                  {{ getCategoryLabel(activity.category) }}
+                </span>
+                <span class="hot-card-icon"><AppIcon :name="getActivityEmoji(activity.category)" :size="24" /></span>
+                <div class="hot-card-status-badge" :class="'status-' + activity.status">
+                  {{ getStatusText(activity.status) }}
+                </div>
               </div>
-              <div class="hot-activity-info">
-                <span class="hot-activity-name">{{ activity.title }}</span>
-                <div class="hot-activity-meta">
-                  <span class="hot-activity-time">{{ formatShortTime(activity.start_time) }}</span>
-                  <span class="hot-activity-join">{{ activity.current_participants }}人关注</span>
+              <div class="hot-card-body">
+                <h3 class="hot-card-title">{{ activity.title }}</h3>
+                <div class="hot-card-meta">
+                  <span class="hot-card-meta-item">{{ formatShortTime(activity.start_time) }}</span>
+                  <span class="hot-card-meta-item">{{ activity.current_participants }}人关注</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 近期活动列表 -->
+        <!-- 近期活动网格 -->
         <div class="section">
           <div class="section-header">
             <span class="section-title"><AppIcon name="target" :size="18" />近期活动</span>
             <span class="section-count">{{ filteredActivities.length }}个活动</span>
           </div>
-          
-          <div class="recent-activity-list">
+
+          <div class="activity-grid">
             <div 
               v-for="activity in filteredActivities" 
               :key="activity.id"
-              class="recent-activity-card"
+              class="activity-card"
               @click="goToDetail(activity.id)"
             >
-              <div class="recent-activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
-                <span class="recent-activity-icon"><AppIcon :name="getActivityEmoji(activity.category)" :size="56" /></span>
-                <div class="recent-activity-badge" :class="'status-' + activity.status">
+              <!-- 封面区域 -->
+              <div class="card-cover" :style="{ background: getActivityGradient(activity.category) }">
+                <span class="card-category-badge" :class="'cat-' + activity.category">
+                  <AppIcon :name="getActivityEmoji(activity.category)" :size="12" />
+                  {{ getCategoryLabel(activity.category) }}
+                </span>
+                <span class="card-icon">
+                  <AppIcon :name="getActivityEmoji(activity.category)" :size="28" />
+                </span>
+                <div class="card-status-badge" :class="'status-' + activity.status">
                   {{ getStatusText(activity.status) }}
                 </div>
               </div>
-              <div class="recent-activity-content">
-                <div class="recent-activity-top">
-                  <span class="recent-activity-name">{{ activity.title }}</span>
-                  <div class="recent-activity-category" :class="'cat-' + activity.category">
-                    {{ getCategoryLabel(activity.category) }}
+
+              <!-- 信息区域 -->
+              <div class="card-body">
+                <h3 class="card-title">{{ activity.title }}</h3>
+
+                <div class="card-info-list">
+                  <div class="card-info-item">
+                    <AppIcon name="clock" :size="13" />
+                    <span>{{ formatShortTime(activity.start_time) }}</span>
+                  </div>
+                  <div class="card-info-item" v-if="activity.location">
+                    <AppIcon name="map-pin" :size="13" />
+                    <span>{{ activity.location }}</span>
                   </div>
                 </div>
-                
-                <div class="recent-activity-info">
-                  <div class="info-item">
-                    <span class="info-icon"><AppIcon name="calendar" :size="14" /></span>
-                    <span class="info-text">{{ formatFullDate(activity.start_time) }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-icon"><AppIcon name="map-pin" :size="14" /></span>
-                    <span class="info-text">{{ activity.location }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-icon"><AppIcon name="users" :size="14" /></span>
-                    <span class="info-text">{{ activity.current_participants }}人关注</span>
-                  </div>
-                </div>
-                
-                <div class="recent-activity-footer">
-                  <div class="recent-activity-participants">
-                    <span class="participant-icon"><AppIcon name="user" :size="14" /></span>
-                    <span class="participant-text">{{ activity.user?.nickname || '邻居' }}</span>
-                  </div>
-                  <div 
-                    class="recent-activity-join-btn"
+
+                <div class="card-footer">
+                  <span class="card-participants">
+                    <AppIcon name="users" :size="13" />
+                    <span>{{ activity.current_participants }}人关注</span>
+                  </span>
+                  <span 
+                    class="card-join-btn"
                     :class="{ 
                       joined: activity.is_participant,
                       full: activity.max_participants && activity.current_participants >= activity.max_participants,
@@ -111,7 +117,7 @@
                     }"
                   >
                     {{ getButtonText(activity) }}
-                  </div>
+                  </span>
                 </div>
               </div>
             </div>
@@ -189,6 +195,17 @@ const getActivityEmoji = (category: string) => {
     other: 'bookmark'
   }
   return map[category] || 'bookmark'
+}
+
+const getActivityGradient = (category: string): string => {
+  const map: Record<string, string> = {
+    sports: 'linear-gradient(135deg, #43A047, #81C784)',
+    culture: 'linear-gradient(135deg, #7B1FA2, #CE93D8)',
+    charity: 'linear-gradient(135deg, #E53935, #EF9A9A)',
+    party: 'linear-gradient(135deg, #FB8C00, #FFB74D)',
+    other: 'linear-gradient(135deg, #1E88E5, #64B5F6)'
+  }
+  return map[category] || 'linear-gradient(135deg, #1E88E5, #64B5F6)'
 }
 
 const getActivityCoverBg = (category: string) => {
@@ -335,7 +352,9 @@ onMounted(async () => {
   background: var(--color-bg-primary);
 }
 
-/* 筛选标签 */
+/* ========================================
+   筛选标签
+   ======================================== */
 .filter-tabs {
   position: fixed;
   top: 52px;
@@ -381,7 +400,9 @@ onMounted(async () => {
   display: inline-block;
 }
 
-/* 内容区域 */
+/* ========================================
+   内容区域
+   ======================================== */
 .content {
   padding-top: 112px;
   padding-top: calc(112px + var(--safe-area-top));
@@ -422,66 +443,9 @@ onMounted(async () => {
   color: var(--color-text-tertiary);
 }
 
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 120px 20px;
-}
-
-.empty-emoji {
-  font-size: 72px;
-  margin-bottom: var(--spacing-lg);
-  animation: float 3s ease-in-out infinite;
-}
-
-.empty-text {
-  font-size: var(--font-size-md);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-xl);
-}
-
-.empty-btn {
-  padding: 14px 28px;
-  background: var(--color-primary-gradient);
-  color: var(--color-text-white);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-smooth);
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35);
-  position: relative;
-  overflow: hidden;
-}
-
-.empty-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-  transition: left var(--transition-slow);
-}
-
-.empty-btn:hover::before {
-  left: 100%;
-}
-
-.empty-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.45);
-}
-
-.empty-btn:active {
-  transform: translateY(0) scale(0.95);
-}
-
-/* 活动列表 */
+/* ========================================
+   活动列表
+   ======================================== */
 .activity-list {
   padding: 0;
 }
@@ -496,8 +460,8 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: 0 var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  padding: 0 0 var(--spacing-lg) 0;
+  margin-bottom: 0;
 }
 
 .section-title {
@@ -517,328 +481,371 @@ onMounted(async () => {
   border-radius: var(--radius-full);
 }
 
-/* 热门活动横向滚动 */
-.hot-activity-scroll {
+/* ========================================
+   热门活动 - 移动端横向滑动
+   ======================================== */
+.hot-scroll {
   overflow-x: auto;
   white-space: nowrap;
   padding-bottom: var(--spacing-md);
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
-  padding-left: var(--spacing-lg);
-  padding-right: var(--spacing-lg);
+  display: flex;
+  gap: var(--spacing-md);
 }
 
-.hot-activity-scroll::-webkit-scrollbar {
+.hot-scroll::-webkit-scrollbar {
   display: none;
 }
 
-.hot-activity-card {
+.hot-card {
   display: inline-block;
-  width: 170px;
-  margin-right: var(--spacing-lg);
+  width: 180px;
+  flex-shrink: 0;
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   cursor: pointer;
   transition: all var(--transition-fast);
   scroll-snap-align: start;
-  flex-shrink: 0;
-  border: 1px solid rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.hot-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+
+.hot-card:active {
+  transform: scale(0.97);
+}
+
+.hot-card-cover {
   position: relative;
-}
-
-.hot-activity-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-  opacity: 0;
-  transition: opacity var(--transition-normal);
-}
-
-.hot-activity-card:hover::before {
-  opacity: 1;
-}
-
-.hot-activity-card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-4px) scale(1.02);
-}
-
-.hot-activity-card:active {
-  transform: scale(0.99);
-}
-
-.hot-activity-cover {
-  height: 96px;
+  aspect-ratio: 4 / 3;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
-.hot-activity-emoji {
-  font-size: 44px;
+.hot-card-category-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  color: var(--color-text-primary);
+  white-space: nowrap;
 }
 
-.hot-activity-info {
-  padding: var(--spacing-lg);
+.hot-card-category-badge.cat-sports {
+  color: #2E7D32;
 }
 
-.hot-activity-name {
-  font-size: var(--font-size-sm);
+.hot-card-category-badge.cat-culture {
+  color: #7B1FA2;
+}
+
+.hot-card-category-badge.cat-charity {
+  color: #C62828;
+}
+
+.hot-card-category-badge.cat-party {
+  color: #E65100;
+}
+
+.hot-card-category-badge.cat-other {
+  color: #1565C0;
+}
+
+.hot-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+}
+
+.hot-card-status-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  backdrop-filter: blur(6px);
+}
+
+.hot-card-status-badge.status-upcoming {
+  background: rgba(255, 107, 53, 0.9);
+  color: #fff;
+}
+
+.hot-card-status-badge.status-ongoing {
+  background: rgba(16, 185, 129, 0.9);
+  color: #fff;
+}
+
+.hot-card-status-badge.status-completed,
+.hot-card-status-badge.status-cancelled {
+  background: rgba(139, 139, 165, 0.85);
+  color: #fff;
+}
+
+.hot-card-body {
+  padding: 10px 12px 12px;
+}
+
+.hot-card-title {
+  font-size: 13px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  display: block;
-  margin-bottom: 6px;
+  line-height: 1.4;
+  margin: 0 0 6px 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.hot-activity-meta {
+.hot-card-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.hot-activity-time {
+.hot-card-meta-item {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+/* ========================================
+   近期活动 - 响应式网格
+   ======================================== */
+.activity-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.activity-card {
+  background: var(--color-bg-secondary);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+
+.activity-card:active {
+  transform: scale(0.98);
+}
+
+/* --- 卡片封面 --- */
+.card-cover {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.card-category-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.card-category-badge.cat-sports {
+  color: #2E7D32;
+}
+
+.card-category-badge.cat-culture {
+  color: #7B1FA2;
+}
+
+.card-category-badge.cat-charity {
+  color: #C62828;
+}
+
+.card-category-badge.cat-party {
+  color: #E65100;
+}
+
+.card-category-badge.cat-other {
+  color: #1565C0;
+}
+
+.card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  transition: transform var(--transition-smooth);
+}
+
+.activity-card:hover .card-icon {
+  transform: scale(1.12) rotate(-8deg);
+}
+
+.card-status-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  backdrop-filter: blur(6px);
+  z-index: 1;
+}
+
+.card-status-badge.status-upcoming {
+  background: rgba(255, 107, 53, 0.92);
+  color: #fff;
+}
+
+.card-status-badge.status-ongoing {
+  background: rgba(16, 185, 129, 0.92);
+  color: #fff;
+}
+
+.card-status-badge.status-completed,
+.card-status-badge.status-cancelled {
+  background: rgba(139, 139, 165, 0.88);
+  color: #fff;
+}
+
+/* --- 卡片内容 --- */
+.card-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.45;
+  margin: 0 0 10px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+.card-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: auto;
+  padding-bottom: 10px;
+}
+
+.card-info-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  line-height: 1.4;
+}
+
+.card-info-item .app-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* --- 卡片底栏 --- */
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.card-participants {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   color: var(--color-text-tertiary);
 }
 
-.hot-activity-join {
-  font-size: 12px;
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-/* 近期活动纵向列表 */
-.recent-activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 0 var(--spacing-lg);
-}
-
-.recent-activity-card {
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  border: 1px solid rgba(0, 0, 0, 0.02);
-  position: relative;
-}
-
-.recent-activity-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-  opacity: 0;
-  transition: opacity var(--transition-normal);
-}
-
-.recent-activity-card:hover::before {
-  opacity: 1;
-}
-
-.recent-activity-card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-3px);
-}
-
-.recent-activity-card:active {
-  transform: scale(0.99);
-}
-
-.recent-activity-cover {
-  position: relative;
-  height: 130px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.recent-activity-icon {
-  font-size: 56px;
-}
-
-.recent-activity-badge {
-  position: absolute;
-  top: var(--spacing-md);
-  right: var(--spacing-md);
-  padding: 5px 14px;
-  border-radius: var(--radius-full);
-  font-size: 12px;
-  font-weight: var(--font-weight-semibold);
-  backdrop-filter: blur(10px);
-}
-
-.recent-activity-badge.status-upcoming {
-  background: rgba(255, 107, 53, 0.95);
-  color: var(--color-text-white);
-}
-
-.recent-activity-badge.status-ongoing {
-  background: rgba(16, 185, 129, 0.95);
-  color: var(--color-text-white);
-}
-
-.recent-activity-badge.status-completed,
-.recent-activity-badge.status-cancelled {
-  background: rgba(139, 139, 165, 0.95);
-  color: var(--color-text-white);
-}
-
-.recent-activity-content {
-  padding: var(--spacing-lg);
-}
-
-.recent-activity-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-}
-
-.recent-activity-name {
-  flex: 1;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  line-height: 1.4;
-}
-
-.recent-activity-category {
-  padding: 5px 12px;
-  border-radius: var(--radius-full);
-  font-size: 12px;
-  font-weight: var(--font-weight-semibold);
-  flex-shrink: 0;
-}
-
-.recent-activity-category.cat-sports {
-  background: var(--color-info-soft);
-  color: var(--color-info);
-}
-
-.recent-activity-category.cat-culture {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8B5CF6;
-}
-
-.recent-activity-category.cat-charity {
-  background: var(--color-success-soft);
-  color: var(--color-success);
-}
-
-.recent-activity-category.cat-party {
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
-}
-
-.recent-activity-category.cat-other {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-}
-
-.recent-activity-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.info-icon {
-  font-size: 15px;
-  flex-shrink: 0;
-  opacity: 0.8;
-}
-
-.info-text {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-}
-
-.recent-activity-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--color-border-light);
-}
-
-.recent-activity-participants {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.participant-icon {
-  font-size: 15px;
-  opacity: 0.8;
-}
-
-.participant-text {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.recent-activity-join-btn {
-  padding: 8px 18px;
+.card-join-btn {
+  padding: 6px 14px;
   background: var(--color-primary-gradient);
   color: var(--color-text-white);
-  font-size: var(--font-size-sm);
+  font-size: 12px;
   font-weight: var(--font-weight-semibold);
-  border-radius: 12px;
+  border-radius: 10px;
   transition: all var(--transition-smooth);
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.2);
   border: none;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-.recent-activity-join-btn:hover {
+.card-join-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35);
+  box-shadow: 0 4px 10px rgba(255, 107, 53, 0.3);
 }
 
-.recent-activity-join-btn:active {
-  transform: scale(0.95);
+.card-join-btn:active {
+  transform: scale(0.94);
 }
 
-.recent-activity-join-btn.joined {
+.card-join-btn.joined {
   background: var(--color-success-soft);
   color: var(--color-success);
   box-shadow: none;
 }
 
-.recent-activity-join-btn.full {
+.card-join-btn.full {
   background: var(--color-warning-soft);
   color: var(--color-warning);
   box-shadow: none;
 }
 
-.recent-activity-join-btn.ended {
+.card-join-btn.ended {
   background: var(--color-bg-tertiary);
   color: var(--color-text-tertiary);
   box-shadow: none;
@@ -880,9 +887,18 @@ onMounted(async () => {
 }
 
 /* ========================================
-   响应式设计 - 平板及以上设备
+   响应式断点
    ======================================== */
-@media (min-width: 768px) {
+
+/* --- 移动端：1列 --- */
+@media (max-width: 767px) {
+  .activity-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- 平板：2列 --- */
+@media (min-width: 768px) and (max-width: 1023px) {
   .filter-tabs {
     padding: var(--spacing-lg) var(--spacing-xl);
     gap: var(--spacing-lg);
@@ -891,90 +907,98 @@ onMounted(async () => {
     left: 0;
     right: 0;
   }
-  
+
   .filter-tab {
     padding: var(--spacing-sm) 0;
     font-size: var(--font-size-md);
   }
-  
-  .hot-activity-card {
+
+  .activity-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .section {
+    padding: var(--spacing-md) var(--spacing-xl);
+  }
+
+  .hot-card {
     width: 200px;
-  }
-  
-  .hot-activity-cover {
-    height: 110px;
-  }
-  
-  .hot-activity-emoji {
-    font-size: 52px;
-  }
-  
-  .recent-activity-cover {
-    height: 150px;
-  }
-  
-  .recent-activity-icon {
-    font-size: 64px;
-  }
-  
-  .recent-activity-name {
-    font-size: var(--font-size-xl);
   }
 }
 
-/* ========================================
-   响应式设计 - 电脑及以上设备
-   ======================================== */
-@media (min-width: 1024px) {
+/* --- 桌面：3列 --- */
+@media (min-width: 1024px) and (max-width: 1439px) {
   .content {
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
   }
-  
+
   .filter-tabs {
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
     left: 0;
     right: 0;
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   }
-  
+
+  .section {
+    padding: var(--spacing-lg) 0;
+  }
+
+  .activity-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   /* 热门活动 - 网格布局 */
-  .hot-activity-scroll {
+  .hot-scroll {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--spacing-lg);
     overflow-x: visible;
-    padding: 0;
+    white-space: normal;
+    padding-bottom: 0;
   }
-  
-  .hot-activity-card {
-    width: 100%;
-    margin-right: 0;
-  }
-  
-  /* 近期活动 - 保持单列布局 */
-  .recent-activity-list {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .recent-activity-card {
-    width: 100%;
+
+  .hot-card {
+    width: auto;
   }
 }
 
+/* --- 大屏：4列 --- */
 @media (min-width: 1440px) {
   .content {
-    max-width: 1000px;
+    max-width: 1400px;
+    margin: 0 auto;
   }
-  
+
   .filter-tabs {
-    max-width: 1000px;
+    max-width: 1400px;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   }
-  
-  .hot-activity-scroll {
-    grid-template-columns: repeat(3, 1fr);
+
+  .section {
+    padding: var(--spacing-lg) 0;
+  }
+
+  .activity-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* 热门活动 - 网格布局 */
+  .hot-scroll {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-lg);
+    overflow-x: visible;
+    white-space: normal;
+    padding-bottom: 0;
+  }
+
+  .hot-card {
+    width: auto;
   }
 }
 </style>

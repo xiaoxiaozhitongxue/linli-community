@@ -95,7 +95,7 @@
               <div
                 v-if="item._type === 'activity'"
                 class="feed-card activity-feed-card animate-fadeIn"
-                :style="{ animationDelay: (index * 0.05) + 's' }"
+                :style="{ animationDelay: (index * 0.05) + 's', gridColumn: '1 / -1' }"
                 @click="goToActivityDetail(item._raw.id)"
               >
                 <div class="activity-feed-deco" :style="{ background: getActivityGradient(item._raw.category) }"></div>
@@ -118,6 +118,8 @@
                   </div>
                 </div>
               </div>
+              <!-- 活动卡片分隔线 -->
+              <div v-if="item._type === 'activity'" class="activity-feed-divider"></div>
 
               <!-- 动态卡片 · 小红书双列风格 -->
               <div
@@ -135,7 +137,7 @@
                   </span>
                 </div>
                 <div v-else class="post-cover post-cover-placeholder">
-                  <AppIcon name="file-text" :size="32" />
+                  <p class="post-cover-text-preview">{{ item._raw.content }}</p>
                 </div>
 
                 <!-- 文字内容 -->
@@ -1352,14 +1354,24 @@ onUnmounted(() => {
   gap: 10px;
   padding: 0 var(--spacing-lg);
   box-sizing: border-box;
+  align-items: start;
 }
 
-/* 桌面端大屏：3列 */
-@media (min-width: 1024px) {
+/* 桌面端中等屏幕：2列居中 */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .feed-list {
+    max-width: 700px;
+    margin: 0 auto;
+    gap: 14px;
+  }
+}
+
+/* 桌面端大屏幕：3列居中 */
+@media (min-width: 1200px) {
   .feed-list {
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    max-width: 900px;
+    gap: 16px;
+    max-width: 1100px;
     margin: 0 auto;
   }
 }
@@ -1431,14 +1443,26 @@ onUnmounted(() => {
   gap: 3px;
 }
 
-/* 无图占位 */
+/* 无图占位 - 文字预览 */
 .post-cover-placeholder {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-placeholder);
+  align-items: flex-start;
+  padding: 12px;
+  min-height: 80px;
+  color: var(--color-text-secondary);
   background: linear-gradient(135deg, #f8f9fa 0%, #eef0f5 100%);
-  aspect-ratio: 4 / 3;
+}
+
+.post-cover-text-preview {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+  word-break: break-word;
 }
 
 /* 文本区 */
@@ -1727,6 +1751,14 @@ onUnmounted(() => {
 
 .meta-dot {
   color: var(--color-border-light);
+}
+
+/* ---- 活动卡片分隔线 ---- */
+.activity-feed-divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 2px 0;
 }
 
 /* ---- 加载更多 / 没有更多 ---- */

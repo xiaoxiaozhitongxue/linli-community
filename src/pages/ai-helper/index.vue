@@ -434,7 +434,7 @@ onMounted(async () => {
 .content-inner {
   width: 100%;
   max-width: 100%;
-  padding: 0 var(--spacing-lg);
+  padding: 0;
 }
 
 /* 任务广场 */
@@ -560,26 +560,28 @@ onMounted(async () => {
 .task-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: 10px;
 }
 
 @media (min-width: 768px) {
   .task-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-lg);
+    gap: 10px;
   }
 }
 
 @media (min-width: 1024px) {
   .task-list {
     grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
   }
 }
 
 @media (min-width: 1400px) {
   .task-list {
     grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
   }
 }
 
@@ -758,5 +760,25 @@ onMounted(async () => {
 .safe-area-bottom {
   height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
   background: transparent;
+}
+
+/* 平板：和首页Feed一致的宽度约束（2列居中） */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .task-square {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* 桌面：3列居中 */
+@media (min-width: 1200px) {
+  .task-square {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 </style>
