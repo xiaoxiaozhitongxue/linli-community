@@ -1,6 +1,6 @@
 <template>
   <div class="bottom-tab-bar">
-    <div class="tab-bar-bg"></div>
+    <div class="tab-line"></div>
     <div class="tab-bar-inner">
       <div
         v-for="tab in tabs"
@@ -8,34 +8,22 @@
         class="tab-item"
         :class="{ active: isActive(tab.path) }"
         @click="switchTab(tab.path)"
-        @touchstart.passive="handleTouchStart(tab.path)"
-        @touchend="handleTouchEnd"
-        @mousedown="handleTouchStart(tab.path)"
-        @mouseup="handleTouchEnd"
-        @mouseleave="handleTouchEnd"
       >
-        <div class="tab-icon-wrap">
-          <div class="tab-icon-bg"></div>
-          <AppIcon class="tab-icon" :name="tab.icon" :size="26" :filled="isActive(tab.path)" />
-          <div class="ripple-effect" v-if="pressedTab === tab.path"></div>
-          <div class="icon-glow" v-if="isActive(tab.path)"></div>
-        </div>
+        <AppIcon class="tab-icon" :name="tab.icon" :size="24" />
         <span class="tab-label">{{ tab.name }}</span>
-
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { switchTab as switchTabUtil } from '../utils/router'
 import AppIcon from './AppIcon.vue'
 
 const router = useRouter()
 const route = useRoute()
-const pressedTab = ref<string | null>(null)
 
 const currentPath = computed(() => route.path)
 
@@ -67,14 +55,6 @@ const tabs = [
 const switchTab = (path: string) => {
   switchTabUtil(path)
 }
-
-const handleTouchStart = (path: string) => {
-  pressedTab.value = path
-}
-
-const handleTouchEnd = () => {
-  pressedTab.value = null
-}
 </script>
 
 <style scoped>
@@ -84,19 +64,18 @@ const handleTouchEnd = () => {
   left: 0;
   right: 0;
   z-index: var(--z-tabbar);
+  background: #FFFFFF;
   padding-bottom: constant(safe-area-inset-bottom);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.tab-bar-bg {
+.tab-line {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  height: 0.5px;
+  background: #E8E8E8;
 }
 
 .tab-bar-inner {
@@ -104,213 +83,55 @@ const handleTouchEnd = () => {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 56px;
-  padding: 0;
+  height: 50px;
   width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
 }
 
 .tab-item {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 6px 12px;
   cursor: pointer;
-  transition: all var(--transition-bounce);
   flex: 1;
   height: 100%;
-  min-height: var(--touch-large-size);
-  border-radius: 20px;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-.tab-item:hover .tab-icon-bg {
-  background: rgba(255, 140, 66, 0.06);
+  padding: 4px 0;
+  gap: 2px;
 }
 
 .tab-item:active {
-  transform: scale(0.92);
-  transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.tab-icon-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  margin-bottom: 4px;
-  transition: all var(--transition-bounce);
-}
-
-.tab-icon-bg {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: transparent;
-  transition: all var(--transition-normal);
-}
-
-.tab-item:hover .tab-icon-bg {
-  background: rgba(255, 140, 66, 0.08);
-}
-
-.tab-item.active .tab-icon-wrap {
-  transform: translateY(-2px);
-}
-
-.tab-item.active .tab-icon-bg {
-  background: rgba(255, 107, 53, 0.08);
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.08);
+  opacity: 0.7;
 }
 
 .tab-icon {
-  color: var(--color-text-tertiary);
-  transition: color var(--transition-bounce), transform var(--transition-bounce);
-  position: relative;
-  z-index: 2;
+  color: #999999;
+  transition: color var(--transition-fast);
 }
 
 .tab-item.active .tab-icon {
   color: var(--color-primary);
-  transform: scale(1.18);
-  animation: iconPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.icon-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 140, 66, 0.2) 0%, transparent 70%);
-  transform: translate(-50%, -50%);
-  animation: glowPulse 2s ease-in-out infinite;
-  z-index: 1;
-}
-
-@keyframes iconPop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.25); }
-  100% { transform: scale(1.18); }
-}
-
-@keyframes glowPulse {
-  0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
 }
 
 .tab-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  font-weight: var(--font-weight-medium);
-  font-family: var(--font-family);
-  transition: all var(--transition-bounce);
-  letter-spacing: 0.5px;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  color: #999999;
+  font-weight: 400;
+  line-height: 1;
+  transition: color var(--transition-fast);
 }
 
 .tab-item.active .tab-label {
   color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-  text-shadow: 0 1px 3px rgba(255, 140, 66, 0.15);
-  animation: labelPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-weight: 700;
 }
 
-@keyframes labelPop {
-  0% { transform: scale(0.8); opacity: 0.7; }
-  60% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-
-
-.ripple-effect {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 107, 53, 0.25) 0%, transparent 70%);
-  transform: translate(-50%, -50%) scale(0);
-  animation: rippleExpand 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@keyframes rippleExpand {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1.2);
-    opacity: 0;
-  }
-}
-
-/* 平板设备 (768px+) */
 @media (min-width: 768px) {
   .tab-bar-inner {
-    height: 64px;
-    padding: 0 60px;
+    height: 50px;
     max-width: 600px;
-  }
-  
-  .tab-item {
-    padding: 8px 16px;
-    min-height: 64px;
-  }
-  
-  .tab-icon-wrap {
-    width: 52px;
-    height: 52px;
-  }
-  
-  .tab-icon {
-    font-size: 28px;
-  }
-  
-  .tab-label {
-    font-size: var(--font-size-sm);
-  }
-
-  .tab-item.active .tab-label {
-    font-size: var(--font-size-md);
-  }
-}
-
-/* 小屏设备 (≤374px) */
-@media (max-width: 374px) {
-  .tab-item {
-    padding: 4px 8px;
-  }
-  
-  .tab-icon-wrap {
-    width: 42px;
-    height: 42px;
-  }
-  
-  .tab-icon {
-    font-size: 22px;
-  }
-  
-  .tab-label {
-    font-size: 10px;
-  }
-
-  .tab-item.active .tab-label {
-    font-size: 11px;
+    margin: 0 auto;
   }
 }
 </style>

@@ -1,11 +1,7 @@
 <template>
   <div
     class="navbar"
-    :class="[
-      `navbar--${type}`,
-      { 'navbar--fixed': fixed, 'navbar--left': titleAlign === 'left' }
-    ]"
-    :style="headerStyle"
+    :class="{ 'navbar--fixed': fixed }"
   >
     <!-- 默认 slot 模式：自定义全宽内容 -->
     <div v-if="$slots.default" class="navbar-inner navbar-inner--custom">
@@ -19,7 +15,6 @@
         <div
           v-if="showBack"
           class="navbar-back"
-          :class="{ 'navbar-back--light': type === 'gradient' }"
           @click="handleBack"
         >
           <AppIcon name="chevron-left" :size="20" />
@@ -39,7 +34,6 @@
           <div
             v-if="actionText"
             class="navbar-action"
-            :class="{ 'navbar-action--ghost': type === 'gradient' }"
             @click="$emit('action-click')"
           >
             {{ actionText }}
@@ -51,23 +45,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 
 const props = withDefaults(defineProps<{
   title: string
   showBack?: boolean
-  type?: 'white' | 'gradient' | 'transparent'
   fixed?: boolean
-  titleAlign?: 'center' | 'left'
   actionText?: string
   backUrl?: string
 }>(), {
   showBack: true,
-  type: 'white',
-  fixed: false,
-  titleAlign: 'center'
+  fixed: false
 })
 
 const emit = defineEmits<{
@@ -76,18 +65,6 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-
-const headerStyle = computed(() => {
-  const style: Record<string, string> = {}
-  if (props.type === 'gradient') {
-    style['--navbar-bg'] = 'linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%)'
-  } else if (props.type === 'transparent') {
-    style['--navbar-bg'] = 'transparent'
-  } else {
-    style['--navbar-bg'] = 'var(--color-bg-secondary)'
-  }
-  return style
-})
 
 function handleBack() {
   emit('back-click')
@@ -104,7 +81,8 @@ function handleBack() {
 <style scoped>
 .navbar {
   width: 100%;
-  z-index: var(--z-sticky, 100);
+  background: #FFFFFF;
+  border-bottom: 1px solid #F0F0F0;
 }
 
 .navbar--fixed {
@@ -112,42 +90,22 @@ function handleBack() {
   top: 0;
   left: 0;
   right: 0;
-}
-
-.navbar--white {
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border-light);
-  box-shadow: var(--shadow-sm);
-}
-
-.navbar--gradient {
-  background: var(--navbar-bg);
-  color: var(--color-text-white);
-}
-
-.navbar--transparent {
-  background: transparent;
+  z-index: var(--z-sticky, 100);
 }
 
 .navbar-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 52px;
+  height: 44px;
   padding: 0 var(--spacing-lg, 16px);
   padding-top: env(safe-area-inset-top, 0px);
 }
 
 .navbar-inner--custom {
   height: auto;
-  min-height: 52px;
+  min-height: 44px;
   padding: env(safe-area-inset-top, 0px) var(--spacing-lg, 16px) 4px;
-}
-
-.navbar--left .navbar-title {
-  flex: 0 1 auto;
-  text-align: left;
-  padding-left: 4px;
 }
 
 .navbar-side {
@@ -170,38 +128,17 @@ function handleBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
   cursor: pointer;
-  transition: all var(--transition-fast, 150ms);
-  color: var(--color-text-primary);
-  position: relative;
-}
-
-/* 扩展触摸区域至 44px */
-.navbar-back::before {
-  content: '';
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-  border-radius: 50%;
+  color: #111111;
+  transition: opacity var(--transition-fast);
 }
 
 .navbar-back:hover {
-  background: rgba(0, 0, 0, 0.05);
+  opacity: 0.6;
 }
 
 .navbar-back:active {
-  transform: scale(0.9);
-}
-
-.navbar-back--light {
-  color: var(--color-text-white);
-}
-
-.navbar-back--light:hover {
-  background: rgba(255, 255, 255, 0.15);
+  opacity: 0.4;
 }
 
 .navbar-title {
@@ -213,40 +150,23 @@ function handleBack() {
 
 .navbar-title-text {
   font-size: 17px;
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: 700;
+  color: #111111;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
 }
 
-.navbar--gradient .navbar-title-text {
-  color: var(--color-text-white);
-}
-
 .navbar-action {
   font-size: 14px;
-  font-weight: var(--font-weight-medium, 500);
+  font-weight: 500;
   color: var(--color-primary);
   cursor: pointer;
-  padding: 6px 14px;
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-primary-soft, rgba(255, 107, 53, 0.1));
-  transition: all var(--transition-fast, 150ms);
   white-space: nowrap;
 }
 
-.navbar-action:hover {
-  background: var(--color-primary, #FF6B35);
-  color: var(--color-text-white);
-}
-
-.navbar-action--ghost {
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--color-text-white);
-}
-
-.navbar-action--ghost:hover {
-  background: rgba(255, 255, 255, 0.25);
+.navbar-action:active {
+  opacity: 0.6;
 }
 </style>
