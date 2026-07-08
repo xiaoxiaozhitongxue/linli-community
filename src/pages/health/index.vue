@@ -1,12 +1,6 @@
 <template>
   <div class="page">
-    <div class="status-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <div class="status-content">
-        <span class="nav-back" @click="goBack">‹</span>
-        <span class="nav-title">健康打卡</span>
-        <span class="nav-right"></span>
-      </div>
-    </div>
+    <NavBar title="健康打卡" type="gradient" />
 
     <div class="content">
       <SkeletonLoader v-if="loading" type="card" :count="1" />
@@ -58,6 +52,7 @@ import { useAuth } from '../../store'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import NavBar from '../../components/NavBar.vue'
 
 const { isLoggedIn } = useAuth()
 
@@ -155,36 +150,6 @@ onMounted(() => {
 .page {
   min-height: 100vh;
   background-color: var(--color-bg-primary);
-}
-
-.status-bar {
-  background: var(--color-primary-gradient);
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
-}
-
-.status-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-lg);
-}
-
-.nav-back {
-  font-size: 28px;
-  color: var(--color-text-white);
-  cursor: pointer;
-}
-
-.nav-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-white);
-}
-
-.nav-right {
-  width: 28px;
 }
 
 .content {

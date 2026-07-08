@@ -930,6 +930,7 @@ onMounted(async () => {
 }
 
 .safe-area-bottom {
-  height: 100px;
+  height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  background: transparent;
 }
 </style>

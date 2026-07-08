@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { navigateBack } from '../../utils/router'
 import { useRoute } from 'vue-router'
 import { useAuth } from '../../store'
@@ -195,6 +195,7 @@ const loadGroupChat = async () => {
         hasMore.value = result.total > result.items.length
         currentPage.value = 1
         scrollToBottom()
+        startPolling()
         return
       }
     } catch (e) {
@@ -361,6 +362,53 @@ const sendMessage = async () => {
   sending.value = false
 }
 
+// ============ 实时轮询（每5秒拉取最新消息）============
+const POLL_INTERVAL = 5000
+let pollTimer = 0
+
+function startPolling() {
+  stopPolling()
+  pollTimer = window.setInterval(async () => {
+    if (!groupId.value) return
+    try {
+      const latestMsg = messages.value.length > 0 ? messages.value[messages.value.length - 1] : null
+      const before = latestMsg?.createdAt || latestMsg?.time || 0
+      const result = await messageService.getMessages(groupId.value, 1, 10)
+      if (result.items && result.items.length > 0) {
+        const existingIds = new Set(messages.value.map(m => m.id))
+        const newMsgs = result.items
+          .filter(msg => !existingIds.has(msg.id))
+          .map(msg => ({
+            id: msg.id,
+            senderId: msg.senderId,
+            senderName: msg.senderName,
+            avatar: msg.senderAvatar,
+            content: msg.content,
+            time: msg.createdAt,
+            createdAt: msg.createdAt,
+            isSelf: msg.isSelf,
+            isSystem: false
+          }))
+        if (newMsgs.length > 0) {
+          newMsgs.reverse()
+          messages.value.push(...newMsgs)
+          saveMessages()
+          scrollToBottom()
+        }
+      }
+    } catch {
+      // 轮询失败静默忽略
+    }
+  }, POLL_INTERVAL)
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = 0
+  }
+}
+
 const goBack = () => {
   navigateBack()
 }
@@ -368,6 +416,10 @@ const goBack = () => {
 onMounted(() => {
   statusBarHeight.value = 20
   loadGroupChat()
+})
+
+onUnmounted(() => {
+  stopPolling()
 })
 </script>
 

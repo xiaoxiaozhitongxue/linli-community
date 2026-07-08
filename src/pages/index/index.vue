@@ -878,8 +878,7 @@ onUnmounted(() => {
 }
 
 .banner-section {
-  padding: var(--spacing-lg);
-  padding-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
 }
 
 .banner-swiper {
@@ -1040,30 +1039,31 @@ onUnmounted(() => {
 }
 
 .section {
-  padding: var(--spacing-xl) var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-lg);
 }
 
 .section:first-of-type {
-  padding-top: 0;
+  padding-top: var(--spacing-sm);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
 }
 
 .section-title {
   font-size: 17px;
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .section-title-icon {
   color: var(--color-primary);
-  margin-right: 6px;
-  vertical-align: -3px;
 }
 
 .section-more {
@@ -1510,6 +1510,7 @@ onUnmounted(() => {
 
 .safe-area-bottom {
   height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  background: transparent;
 }
 
 .load-more span {

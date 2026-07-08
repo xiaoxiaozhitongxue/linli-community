@@ -1,28 +1,22 @@
 <template>
   <div class="page">
-    <div class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <div class="header-content">
-        <span class="back-btn" @click="goBack">←</span>
-        <span class="header-title">我的任务</span>
-        <span class="placeholder"></span>
+    <NavBar title="我的任务" type="white" />
+    <div class="tab-bar">
+      <div 
+        class="tab-item" 
+        :class="{ active: currentTab === 'published' }"
+        @click="switchTab('published')"
+      >
+        我发布的
+        <span class="tab-count" v-if="publishedTasks.length > 0">{{ publishedTasks.length }}</span>
       </div>
-      <div class="tab-bar">
-        <div 
-          class="tab-item" 
-          :class="{ active: currentTab === 'published' }"
-          @click="switchTab('published')"
-        >
-          我发布的
-          <span class="tab-count" v-if="publishedTasks.length > 0">{{ publishedTasks.length }}</span>
-        </div>
-        <div 
-          class="tab-item" 
-          :class="{ active: currentTab === 'accepted' }"
-          @click="switchTab('accepted')"
-        >
-          我接的单
-          <span class="tab-count" v-if="acceptedTasks.length > 0">{{ acceptedTasks.length }}</span>
-        </div>
+      <div 
+        class="tab-item" 
+        :class="{ active: currentTab === 'accepted' }"
+        @click="switchTab('accepted')"
+      >
+        我接的单
+        <span class="tab-count" v-if="acceptedTasks.length > 0">{{ acceptedTasks.length }}</span>
       </div>
     </div>
 
@@ -126,6 +120,7 @@ import { navigateTo, navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { taskService } from '../../services/taskService'
 import { getTaskStatusLabel, normalizeTaskStatus } from '../../constants/status'
+import NavBar from '../../components/NavBar.vue'
 import AppIcon from '../../components/AppIcon.vue'
 
 const statusBarHeight = ref(20)
@@ -251,54 +246,18 @@ onMounted(async () => {
   background-color: var(--color-bg-primary);
 }
 
-.header {
-  background: var(--color-primary-gradient);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  color: var(--color-text-white);
-}
-
-.back-btn {
-  font-size: 28px;
-  font-weight: 300;
-  cursor: pointer;
-  border-radius: var(--radius-full);
-  transition: background-color var(--transition-fast);
-  padding: 4px;
-}
-
-.back-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.header-title {
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.placeholder {
-  width: 28px;
-}
-
 .tab-bar {
   display: flex;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-light);
   padding: 0 20px;
-  padding-bottom: 12px;
 }
 
 .tab-item {
   flex: 1;
   text-align: center;
-  padding: 8px 0;
-  color: rgba(255, 255, 255, 0.7);
+  padding: 12px 0;
+  color: var(--color-text-tertiary);
   font-size: 15px;
   cursor: pointer;
   position: relative;
@@ -306,7 +265,7 @@ onMounted(async () => {
 }
 
 .tab-item.active {
-  color: var(--color-text-white);
+  color: var(--color-primary);
   font-weight: 500;
 }
 
@@ -318,14 +277,14 @@ onMounted(async () => {
   transform: translateX(-50%);
   width: 40px;
   height: 3px;
-  background: var(--color-text-white);
+  background: var(--color-primary);
   border-radius: var(--radius-sm);
 }
 
 .tab-count {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.3);
-  color: var(--color-text-white);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
   font-size: 11px;
   padding: 2px 8px;
   border-radius: var(--radius-full);

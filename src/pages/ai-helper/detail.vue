@@ -1,12 +1,6 @@
 <template>
   <div class="page">
-    <div class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <div class="header-nav">
-        <span class="back-btn" @click="goBack">←</span>
-        <span class="header-title">任务详情</span>
-        <span class="placeholder"></span>
-      </div>
-    </div>
+    <NavBar title="互助详情" type="white" />
 
     <SkeletonLoader v-if="loading" type="card" :count="2" />
 
@@ -119,6 +113,7 @@ import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import NavBar from '../../components/NavBar.vue'
 
 const { isLoggedIn, user } = useAuth()
 
@@ -436,47 +431,6 @@ watch(
 .page {
   min-height: 100vh;
   background-color: var(--color-bg-primary);
-}
-
-.header {
-  background: var(--color-bg-secondary);
-  padding: 16px 20px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: var(--shadow-sm);
-}
-
-.header-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.back-btn {
-  font-size: 24px;
-  cursor: pointer;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  transition: background-color var(--transition-fast);
-}
-
-.back-btn:active {
-  background-color: var(--color-bg-tertiary);
-}
-
-.header-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.placeholder {
-  width: 40px;
 }
 
 .loading-wrap,

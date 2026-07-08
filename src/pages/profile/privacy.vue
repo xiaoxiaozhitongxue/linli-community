@@ -1,11 +1,6 @@
 <template>
   <div class="page">
-    <div class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <div class="header-content">
-        <span class="back-btn" @click="goBack">‹</span>
-        <span class="header-title">隐私设置</span>
-      </div>
-    </div>
+    <NavBar title="隐私政策" type="gradient" titleAlign="left" />
 
     <div class="content">
       <div class="section">
@@ -118,6 +113,7 @@ import { ref } from 'vue'
 import { toastSuccess, toastInfo } from '../../utils/toast'
 import { navigateBackSmart } from '../../utils/router'
 import AppIcon from '../../components/AppIcon.vue'
+import NavBar from '../../components/NavBar.vue'
 
 const statusBarHeight = ref(20)
 
@@ -184,36 +180,6 @@ const saveSettings = () => {
 
 .toggle-switch.active .toggle-thumb {
   transform: translateX(22px);
-}
-
-.header {
-  background: var(--color-primary-gradient);
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  color: var(--color-text-white);
-}
-
-.back-btn {
-  font-size: 28px;
-  font-weight: 300;
-  margin-right: var(--spacing-md);
-  border-radius: var(--radius-full);
-  transition: background-color var(--transition-fast);
-  padding: 4px;
-  cursor: pointer;
-}
-
-.back-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.header-title {
-  font-size: 18px;
-  font-weight: 500;
 }
 
 .content {

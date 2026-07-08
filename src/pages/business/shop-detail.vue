@@ -1,9 +1,6 @@
 <template>
   <div class="page">
-    <div class="header">
-      <span class="back" @click="goBack">‹</span>
-      <span class="title">店铺详情</span>
-    </div>
+    <NavBar title="店铺详情" type="gradient" titleAlign="left" />
 
     <div class="content" v-if="shop">
       <div class="shop-hero" :style="{ background: shop.bgColor }">
@@ -44,6 +41,7 @@ import { useRoute } from 'vue-router'
 import { navigateBackSmart, navigateTo } from '../../utils/router'
 import { NEARBY_SHOPS, HOT_PRODUCTS } from '../../constants/businessData'
 import AppIcon from '../../components/AppIcon.vue'
+import NavBar from '../../components/NavBar.vue'
 
 const route = useRoute()
 const shop = computed(() => NEARBY_SHOPS.find((s) => s.id === route.query.id) || null)
@@ -55,9 +53,6 @@ const goProduct = (p: any) => navigateTo(`/pages/business/product?id=${p.id}`)
 
 <style scoped>
 .page { min-height: 100vh; background: var(--color-bg-primary); }
-.header { display: flex; align-items: center; gap: 8px; padding: var(--spacing-lg); padding-top: calc(var(--spacing-lg) + 20px); background: var(--color-primary-gradient); color: #fff; }
-.back { font-size: 28px; cursor: pointer; line-height: 1; }
-.title { font-size: 18px; font-weight: 600; }
 .content { padding: var(--spacing-lg); }
 .shop-hero { height: 140px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; }
 .shop-emoji { font-size: 64px; }

@@ -1,16 +1,6 @@
 <template>
   <div class="page">
-    <div class="nav-header">
-      <div class="nav-content">
-        <div class="nav-back" @click="goBack">
-          <span class="nav-back-icon">←</span>
-        </div>
-        <span class="nav-title">发布活动</span>
-        <div class="nav-right" :class="{ disabled: !canSubmit || submitting }" @click="submitActivity">
-          <span class="nav-right-text">{{ submitting ? '发布中...' : '发布' }}</span>
-        </div>
-      </div>
-    </div>
+    <NavBar title="创建活动" type="white" :fixed="true" actionText="发布" @action-click="submitActivity" />
 
     <div class="content">
       <div class="form-section">
@@ -223,6 +213,7 @@ import { ref, computed, onMounted } from 'vue'
 import { activityService } from '../../services/activityService'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
+import NavBar from '../../components/NavBar.vue'
 import AppIcon from '../../components/AppIcon.vue'
 
 const form = ref({
@@ -448,81 +439,6 @@ onMounted(() => {
 .page {
   min-height: 100vh;
   background: var(--color-bg-primary);
-}
-
-.nav-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: var(--color-bg-secondary);
-  z-index: 100;
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  padding-top: max(12px, env(safe-area-inset-top));
-}
-
-.nav-back {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border-radius: var(--radius-full);
-}
-
-.nav-back:hover {
-  background-color: var(--color-bg-tertiary);
-}
-
-.nav-back-icon {
-  font-size: 24px;
-  color: var(--color-text-primary);
-  line-height: 1;
-}
-
-.nav-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.nav-right {
-  padding: 6px 16px;
-  background: var(--color-primary-gradient);
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-right:hover:not(.disabled) {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.nav-right.disabled {
-  background: var(--color-bg-tertiary);
-  cursor: default;
-  box-shadow: none;
-}
-
-.nav-right-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-white);
-}
-
-.nav-right.disabled .nav-right-text {
-  color: var(--color-text-muted);
 }
 
 .content {

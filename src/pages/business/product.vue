@@ -1,9 +1,6 @@
 <template>
   <div class="page">
-    <div class="header">
-      <span class="back" @click="goBack">‹</span>
-      <span class="title">商品详情</span>
-    </div>
+    <NavBar title="商品详情" type="gradient" titleAlign="left" />
 
     <div class="content" v-if="product">
       <div class="cover" :style="{ background: product.bgColor }">
@@ -50,6 +47,7 @@ import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
 import { HOT_PRODUCTS } from '../../constants/businessData'
 import AppIcon from '../../components/AppIcon.vue'
+import NavBar from '../../components/NavBar.vue'
 
 const route = useRoute()
 const { getCurrentPhone } = useAuth()
@@ -76,9 +74,6 @@ onMounted(() => {
 
 <style scoped>
 .page { min-height: 100vh; background: var(--color-bg-primary); }
-.header { display: flex; align-items: center; gap: 8px; padding: var(--spacing-lg); padding-top: calc(var(--spacing-lg) + 20px); background: var(--color-primary-gradient); color: #fff; }
-.back { font-size: 28px; cursor: pointer; line-height: 1; }
-.title { font-size: 18px; font-weight: 600; }
 .content { padding: var(--spacing-lg); }
 .cover { height: 180px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; position: relative; }
 .emoji { font-size: 80px; }

@@ -103,7 +103,7 @@ onUnmounted(() => {
 
 @media (max-width: 1023px) {
   .app-container {
-    padding-bottom: 65px;
+    padding-bottom: calc(56px + var(--safe-area-bottom, 0px) + 8px);
   }
   
   .main-content {

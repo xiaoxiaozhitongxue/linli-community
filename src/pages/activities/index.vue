@@ -1,17 +1,6 @@
 <template>
   <div class="page">
-    <!-- 顶部导航栏 -->
-    <div class="nav-header">
-      <div class="nav-content">
-        <div class="nav-back" @click="goBack">
-          <span class="nav-back-icon">←</span>
-        </div>
-        <span class="nav-title">活动中心</span>
-        <div class="nav-action" @click="goToCreate">
-          <span class="nav-action-text">发起活动</span>
-        </div>
-      </div>
-    </div>
+    <NavBar title="活动中心" type="white" :fixed="true" actionText="发起活动" @action-click="goToCreate" />
 
     <!-- 筛选标签 -->
     <div class="filter-tabs">
@@ -154,6 +143,7 @@ import { activityService } from '../../services/activityService'
 import type { Activity } from '../../types/models'
 import { navigateTo, navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
+import NavBar from '../../components/NavBar.vue'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import AppIcon from '../../components/AppIcon.vue'
 import EmptyState from '../../components/EmptyState.vue'
@@ -345,106 +335,11 @@ onMounted(async () => {
   background: var(--color-bg-primary);
 }
 
-/* 导航栏 */
-.nav-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: var(--color-bg-secondary);
-  z-index: var(--z-fixed);
-  box-shadow: var(--shadow-sm);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.02);
-}
-
-.nav-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  padding-top: max(var(--spacing-md), var(--safe-area-top));
-}
-
-.nav-back {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: var(--radius-full);
-  background: var(--icon-bg-default);
-  transition: all var(--transition-fast);
-}
-
-.nav-back:hover {
-  background: var(--hover-bg-subtle);
-  transform: scale(1.05);
-}
-
-.nav-back:active {
-  background: var(--hover-bg-active);
-  transform: scale(0.95);
-}
-
-.nav-back-icon {
-  font-size: 24px;
-  color: var(--color-text-primary);
-  line-height: 1;
-}
-
-.nav-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.nav-action {
-  padding: 10px 18px;
-  background: var(--color-primary-gradient);
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: all var(--transition-smooth);
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.nav-action::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-  transition: left var(--transition-slow);
-}
-
-.nav-action:hover::before {
-  left: 100%;
-}
-
-.nav-action:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.4);
-}
-
-.nav-action:active {
-  transform: translateY(0) scale(0.95);
-}
-
-.nav-action-text {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-white);
-}
-
 /* 筛选标签 */
 .filter-tabs {
   position: fixed;
-  top: 56px;
-  top: calc(56px + var(--safe-area-top));
+  top: 52px;
+  top: calc(52px + var(--safe-area-top));
   left: 0;
   right: 0;
   display: flex;
@@ -488,8 +383,8 @@ onMounted(async () => {
 
 /* 内容区域 */
 .content {
-  padding-top: 116px;
-  padding-top: calc(116px + var(--safe-area-top));
+  padding-top: 112px;
+  padding-top: calc(112px + var(--safe-area-top));
   min-height: 100vh;
 }
 
@@ -599,6 +494,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-sm);
   padding: 0 var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
 }
@@ -978,7 +874,8 @@ onMounted(async () => {
 }
 
 .safe-area-bottom {
-  height: var(--spacing-xl);
+  height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  background: transparent;
 }
 
 /* ========================================
@@ -1022,18 +919,6 @@ onMounted(async () => {
   .recent-activity-name {
     font-size: var(--font-size-xl);
   }
-  
-  .nav-content {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-  
-  .nav-header {
-    max-width: 600px;
-    margin: 0 auto;
-    left: 0;
-    right: 0;
-  }
 }
 
 /* ========================================
@@ -1051,18 +936,6 @@ onMounted(async () => {
     left: 0;
     right: 0;
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-  }
-  
-  .nav-content {
-    max-width: 900px;
-    margin: 0 auto;
-  }
-  
-  .nav-header {
-    max-width: 900px;
-    margin: 0 auto;
-    left: 0;
-    right: 0;
   }
   
   /* 热门活动 - 网格布局 */
@@ -1096,14 +969,6 @@ onMounted(async () => {
   }
   
   .filter-tabs {
-    max-width: 1000px;
-  }
-  
-  .nav-content {
-    max-width: 1000px;
-  }
-  
-  .nav-header {
     max-width: 1000px;
   }
   

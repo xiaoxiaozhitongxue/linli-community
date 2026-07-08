@@ -1,14 +1,6 @@
 <template>
   <div class="page">
-    <div class="nav-header">
-      <div class="nav-bar">
-        <div class="nav-back" @click="goBack">
-          <span class="nav-back-icon">‹</span>
-        </div>
-        <span class="nav-title">发布动态</span>
-        <div class="nav-dummy"></div>
-      </div>
-    </div>
+    <NavBar title="发布动态" type="white" :fixed="true" />
 
     <div class="content">
       <div class="form-section">
@@ -165,6 +157,7 @@ import { useAuth } from '../../store'
 import { navigateBack } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
 import { setLoginRedirect } from '../../utils/auth'
+import NavBar from '../../components/NavBar.vue'
 import AppIcon from '../../components/AppIcon.vue'
 
 const router = useRouter()
@@ -302,61 +295,9 @@ async function publishPost() {
   background-color: var(--color-bg-primary);
 }
 
-.nav-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border-light);
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 50px;
-  padding: 0 var(--spacing-lg);
-  padding-top: env(safe-area-inset-top);
-}
-
-.nav-back {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  cursor: pointer;
-  border-radius: var(--radius-full);
-  transition: background-color var(--transition-fast);
-}
-
-.nav-back:hover {
-  background-color: var(--color-bg-tertiary);
-}
-
-.nav-back-icon {
-  font-size: 32px;
-  color: var(--color-text-primary);
-  font-weight: 300;
-  line-height: 1;
-}
-
-.nav-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.nav-dummy {
-  width: 40px;
-}
-
 .content {
-  padding-top: 60px;
-  padding-top: calc(60px + env(safe-area-inset-top));
+  padding-top: 56px;
+  padding-top: calc(56px + env(safe-area-inset-top));
   min-height: 100vh;
   padding-bottom: 70px;
 }
@@ -728,7 +669,8 @@ async function publishPost() {
 }
 
 .safe-area-bottom {
-  height: 70px;
+  height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  background: transparent;
 }
 
 /* 弹窗样式 */
@@ -877,10 +819,6 @@ async function publishPost() {
 }
 
 @media (min-width: 1024px) {
-  .nav-header {
-    left: var(--nav-sidebar-width, 220px);
-  }
-
   .bottom-bar {
     left: var(--nav-sidebar-width, 220px);
   }

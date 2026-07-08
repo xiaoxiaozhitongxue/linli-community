@@ -1,9 +1,6 @@
 <template>
   <div class="page">
-    <div class="header">
-      <span class="back" @click="goBack">‹</span>
-      <span class="title">服务申请</span>
-    </div>
+    <NavBar title="服务申请" type="gradient" titleAlign="left" />
 
     <div class="content">
       <div class="banner" v-if="selectedService">
@@ -51,6 +48,7 @@
 
 <script setup lang="ts">
 import AppIcon from '../../components/AppIcon.vue'
+import NavBar from '../../components/NavBar.vue'
 import { ref, reactive, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { navigateBackSmart } from '../../utils/router'
@@ -104,13 +102,6 @@ const submit = () => {
 
 <style scoped>
 .page { min-height: 100vh; background: var(--color-bg-primary); }
-.header {
-  display: flex; align-items: center; gap: 8px;
-  padding: var(--spacing-lg); padding-top: calc(var(--spacing-lg) + 20px);
-  background: linear-gradient(135deg, #E91E63, #F48FB1); color: #fff;
-}
-.back { font-size: 28px; cursor: pointer; line-height: 1; }
-.title { font-size: 18px; font-weight: 600; }
 .content { padding: var(--spacing-lg); }
 .banner { display: flex; align-items: center; gap: 12px; background: var(--color-bg-secondary); padding: var(--spacing-md); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
 .banner-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }

@@ -1,12 +1,6 @@
 <template>
   <div class="page">
-    <div class="header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <div class="header-content">
-        <span class="back-btn" @click="goBack">←</span>
-        <span class="header-title">发布任务</span>
-        <span class="placeholder"></span>
-      </div>
-    </div>
+    <NavBar title="发布互助" type="gradient" />
 
     <div class="content">
       <div class="form-section">
@@ -133,6 +127,7 @@ import { taskService } from '../../services/taskService'
 import { useAuth } from '../../store'
 import { setLoginRedirect } from '../../utils/auth'
 import AppIcon from '../../components/AppIcon.vue'
+import NavBar from '../../components/NavBar.vue'
 
 const { isLoggedIn, user } = useAuth()
 
@@ -212,33 +207,6 @@ onMounted(() => {
 .page {
   min-height: 100vh;
   background-color: var(--color-bg-primary);
-}
-
-.header {
-  background: var(--color-primary-gradient);
-  padding: 16px 20px;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--color-text-white);
-}
-
-.back-btn {
-  font-size: 28px;
-  font-weight: 300;
-  cursor: pointer;
-}
-
-.header-title {
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.placeholder {
-  width: 28px;
 }
 
 .content {

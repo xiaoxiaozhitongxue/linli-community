@@ -746,10 +746,14 @@ const goToStoryDetail = (story: any) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-md);
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary);
@@ -1073,6 +1077,7 @@ const goToStoryDetail = (story: any) => {
 }
 
 .safe-area-bottom {
-  height: calc(var(--spacing-lg) + 20px);
+  height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  background: transparent;
 }
 </style>

@@ -609,6 +609,7 @@ onMounted(() => {
 .section-header {
   display: flex;
   align-items: center;
+  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-lg);
   padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--color-border-light);
@@ -620,6 +621,9 @@ onMounted(() => {
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
@@ -1009,7 +1013,8 @@ onMounted(() => {
 }
 
 .safe-area-bottom {
-  height: 100px;
+  height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  background: transparent;
 }
 
 .avatar-placeholder {

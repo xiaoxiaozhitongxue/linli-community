@@ -1,16 +1,6 @@
 <template>
   <div class="page">
-    <div class="nav-header">
-      <div class="nav-content">
-        <div class="nav-back" @click="goBack">
-          <span class="nav-back-icon">←</span>
-        </div>
-        <span class="nav-title">活动详情</span>
-        <div class="nav-action" @click="shareActivity">
-          <span class="nav-action-icon">⋮</span>
-        </div>
-      </div>
-    </div>
+    <NavBar title="活动详情" type="white" :fixed="true" />
 
     <div class="content">
       <SkeletonLoader v-if="loading && !activity" type="card" :count="1" />
@@ -168,6 +158,7 @@ import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, showToast } from '../../utils/toast'
 import { useAuth } from '../../store'
 import { showLoginGuide, setLoginRedirect } from '../../utils/auth'
+import NavBar from '../../components/NavBar.vue'
 import AppIcon from '../../components/AppIcon.vue'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
@@ -382,63 +373,9 @@ onMounted(() => {
   background: var(--color-bg-primary);
 }
 
-.nav-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgba(255,255,255,0.95);
-  z-index: var(--z-fixed);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-.nav-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  padding-top: max(var(--spacing-md), var(--safe-area-top));
-}
-
-.nav-back, .nav-action {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: var(--radius-full);
-  transition: all var(--transition-fast);
-  background: var(--color-bg-tertiary);
-}
-
-.nav-back:hover, .nav-action:hover {
-  background: var(--hover-bg-subtle);
-  transform: scale(1.05);
-}
-
-.nav-back:active, .nav-action:active {
-  background: var(--hover-bg-active);
-  transform: scale(0.95);
-}
-
-.nav-back-icon, .nav-action-icon {
-  font-size: 24px;
-  color: var(--color-text-primary);
-  line-height: 1;
-}
-
-.nav-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
 .content {
-  padding-top: 60px;
-  padding-top: calc(60px + var(--safe-area-top));
+  padding-top: 56px;
+  padding-top: calc(56px + var(--safe-area-top));
   padding-bottom: 90px;
   min-height: 100vh;
 }
@@ -938,10 +875,6 @@ onMounted(() => {
   
   .detail-content {
     max-width: 1100px;
-  }
-
-  .nav-header {
-    left: var(--nav-sidebar-width, 220px);
   }
 
   .bottom-bar {

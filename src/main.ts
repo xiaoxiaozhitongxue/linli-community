@@ -178,6 +178,12 @@ const router = createRouter({
       component: () => import('./pages/search/index.vue'),
       meta: { title: '搜索', tabBar: false }
     },
+    // ===================== 后台管理 =====================
+    {
+      path: '/pages/admin/index',
+      component: () => import('./pages/admin/index.vue'),
+      meta: { title: '后台管理', tabBar: false }
+    },
     // ===================== 养老服务子页面（B3：修复导航死链）=====================
     {
       path: '/pages/elderly/service-request',
@@ -263,7 +269,9 @@ const router = createRouter({
     },
     {
       path: '/:pathMatch(.*)*',
-      redirect: '/pages/index/index'
+      name: 'not-found',
+      component: () => import('./pages/not-found.vue'),
+      meta: { title: '页面未找到', tabBar: false }
     }
   ],
   // 页面切换的滚动行为

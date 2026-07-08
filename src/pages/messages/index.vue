@@ -1,13 +1,6 @@
 <template>
   <div class="page">
-    <!-- 顶部导航 -->
-    <div class="nav-header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <div class="nav-content">
-        <span class="nav-back" @click="goBack">‹</span>
-        <span class="nav-title">消息</span>
-        <span class="nav-right"></span>
-      </div>
-    </div>
+    <NavBar title="消息" type="white" />
 
     <!-- 标签页 -->
     <div class="tabs">
@@ -206,6 +199,7 @@ import { messageService } from '../../services/messageService'
 import type { Conversation } from '../../services/messageService'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import NavBar from '../../components/NavBar.vue'
 import AppIcon from '../../components/AppIcon.vue'
 
 interface Message {
@@ -518,37 +512,6 @@ watch(isLoggedIn, (newVal, oldVal) => {
 .page {
   min-height: 100vh;
   background-color: var(--color-bg-primary);
-}
-
-.nav-header {
-  background: var(--color-bg-secondary);
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
-}
-
-.nav-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-lg);
-}
-
-.nav-back {
-  font-size: 28px;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: color var(--transition-fast);
-}
-
-.nav-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.nav-right {
-  width: 28px;
 }
 
 /* 标签页 */
@@ -1181,7 +1144,7 @@ watch(isLoggedIn, (newVal, oldVal) => {
 }
 
 .safe-area-bottom {
-  height: var(--safe-area-bottom);
-  padding-bottom: var(--safe-area-bottom);
+  height: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  background: transparent;
 }
 </style>

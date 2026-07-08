@@ -23,9 +23,9 @@ CREATE TABLE IF NOT EXISTS users (
   last_active_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
 
-CREATE INDEX idx_users_community ON users(community);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_created_at ON users(created_at);
+CREATE INDEX IF NOT EXISTS idx_users_community ON users(community);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
 
 -- 动态/帖子表 (posts)
 CREATE TABLE IF NOT EXISTS posts (
@@ -42,10 +42,10 @@ CREATE TABLE IF NOT EXISTS posts (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_posts_user_id ON posts(user_id);
-CREATE INDEX idx_posts_community ON posts(user_id) WHERE 1=1;
-CREATE INDEX idx_posts_created_at ON posts(created_at DESC);
-CREATE INDEX idx_posts_visibility ON posts(visibility);
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_community ON posts(user_id) WHERE 1=1;
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_visibility ON posts(visibility);
 
 -- 评论表 (comments)
 CREATE TABLE IF NOT EXISTS comments (
@@ -61,10 +61,10 @@ CREATE TABLE IF NOT EXISTS comments (
   FOREIGN KEY (parent_comment_id) REFERENCES comments(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_comments_post_id ON comments(post_id);
-CREATE INDEX idx_comments_user_id ON comments(user_id);
-CREATE INDEX idx_comments_parent_id ON comments(parent_comment_id);
-CREATE INDEX idx_comments_created_at ON comments(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_comment_id);
+CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC);
 
 -- 互助任务表 (tasks)
 CREATE TABLE IF NOT EXISTS tasks (
@@ -84,12 +84,12 @@ CREATE TABLE IF NOT EXISTS tasks (
   FOREIGN KEY (helper_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_tasks_user_id ON tasks(user_id);
-CREATE INDEX idx_tasks_helper_id ON tasks(helper_id);
-CREATE INDEX idx_tasks_status ON tasks(status);
-CREATE INDEX idx_tasks_category ON tasks(category);
-CREATE INDEX idx_tasks_created_at ON tasks(created_at DESC);
-CREATE INDEX idx_tasks_deadline ON tasks(deadline);
+CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_helper_id ON tasks(helper_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_category ON tasks(category);
+CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tasks_deadline ON tasks(deadline);
 
 -- 活动表 (activities)
 CREATE TABLE IF NOT EXISTS activities (
@@ -110,11 +110,11 @@ CREATE TABLE IF NOT EXISTS activities (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_activities_user_id ON activities(user_id);
-CREATE INDEX idx_activities_status ON activities(status);
-CREATE INDEX idx_activities_category ON activities(category);
-CREATE INDEX idx_activities_start_time ON activities(start_time);
-CREATE INDEX idx_activities_created_at ON activities(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activities_user_id ON activities(user_id);
+CREATE INDEX IF NOT EXISTS idx_activities_status ON activities(status);
+CREATE INDEX IF NOT EXISTS idx_activities_category ON activities(category);
+CREATE INDEX IF NOT EXISTS idx_activities_start_time ON activities(start_time);
+CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at DESC);
 
 -- 活动参与者表 (activity_participants)
 CREATE TABLE IF NOT EXISTS activity_participants (
@@ -128,8 +128,8 @@ CREATE TABLE IF NOT EXISTS activity_participants (
   UNIQUE(activity_id, user_id)
 );
 
-CREATE INDEX idx_activity_participants_activity_id ON activity_participants(activity_id);
-CREATE INDEX idx_activity_participants_user_id ON activity_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_participants_activity_id ON activity_participants(activity_id);
+CREATE INDEX IF NOT EXISTS idx_activity_participants_user_id ON activity_participants(user_id);
 
 -- 点赞表 (likes)
 CREATE TABLE IF NOT EXISTS likes (
@@ -142,8 +142,8 @@ CREATE TABLE IF NOT EXISTS likes (
   UNIQUE(user_id, target_type, target_id)
 );
 
-CREATE INDEX idx_likes_user_id ON likes(user_id);
-CREATE INDEX idx_likes_target ON likes(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_likes_target ON likes(target_type, target_id);
 
 -- 触发器：更新用户最后活跃时间
 CREATE TRIGGER IF NOT EXISTS update_user_last_active
@@ -227,8 +227,8 @@ CREATE TABLE IF NOT EXISTS health_records (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_health_records_user_date ON health_records(user_id, date);
-CREATE INDEX IF NOT EXISTS idx_health_records_user_id ON health_records(user_id);
-CREATE INDEX IF NOT EXISTS idx_health_records_created_at ON health_records(created_at DESC);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_health_records_user_id ON health_records(user_id);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_health_records_created_at ON health_records(created_at DESC);
 
 -- ==============================
 -- 消息模块（4a: 会话 + 成员 + 消息）
@@ -244,9 +244,9 @@ CREATE TABLE IF NOT EXISTS conversations (
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_conversations_created_by ON conversations(created_by);
-CREATE INDEX IF NOT EXISTS idx_conversations_type ON conversations(type);
-CREATE INDEX IF NOT EXISTS idx_conversations_created_at ON conversations(created_at DESC);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversations_created_by ON conversations(created_by);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversations_type ON conversations(type);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversations_created_at ON conversations(created_at DESC);
 
 -- 会话成员表 (conversation_members)
 CREATE TABLE IF NOT EXISTS conversation_members (
@@ -258,8 +258,8 @@ CREATE TABLE IF NOT EXISTS conversation_members (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_conversation_members_user_id ON conversation_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_conversation_members_conversation_id ON conversation_members(conversation_id);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversation_members_user_id ON conversation_members(user_id);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_conversation_members_conversation_id ON conversation_members(conversation_id);
 
 -- 消息表 (messages)
 CREATE TABLE IF NOT EXISTS messages (
@@ -272,6 +272,46 @@ CREATE TABLE IF NOT EXISTS messages (
   FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
-CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(conversation_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_messages_created_at ON messages(conversation_id, created_at DESC);
+
+-- ==============================
+-- FTS5 全文搜索（帖子）
+-- ==============================
+
+-- FTS5 虚拟表（帖子全文搜索）
+CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts USING fts5(
+  content,
+  location,
+  tokenize='unicode61'
+);
+
+-- 已有数据初始化（确保触发器未覆盖的已存在行也被索引）
+INSERT OR IGNORE INTO posts_fts(rowid, content, location)
+SELECT rowid, content, location FROM posts WHERE visibility = 'public';
+
+-- INSERT 触发器
+CREATE TRIGGER IF NOT EXISTS posts_fts_insert AFTER INSERT ON posts
+WHEN NEW.visibility = 'public'
+BEGIN
+  INSERT INTO posts_fts(rowid, content, location)
+  VALUES (NEW.rowid, NEW.content, NEW.location);
+END;
+
+-- UPDATE 触发器
+CREATE TRIGGER IF NOT EXISTS posts_fts_update AFTER UPDATE ON posts
+WHEN NEW.visibility = 'public'
+BEGIN
+  INSERT INTO posts_fts(posts_fts, rowid, content, location)
+  VALUES ('delete', OLD.rowid, OLD.content, OLD.location);
+  INSERT INTO posts_fts(rowid, content, location)
+  VALUES (NEW.rowid, NEW.content, NEW.location);
+END;
+
+-- DELETE 触发器
+CREATE TRIGGER IF NOT EXISTS posts_fts_delete AFTER DELETE ON posts
+BEGIN
+  INSERT INTO posts_fts(posts_fts, rowid, content, location)
+  VALUES ('delete', OLD.rowid, OLD.content, OLD.location);
+END;

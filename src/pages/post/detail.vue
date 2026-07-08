@@ -1,11 +1,10 @@
 <template>
   <div class="page">
-    <div class="header">
-      <span class="back" @click="goBack">‹</span>
-      <span class="title">帖子详情</span>
-    </div>
+    <NavBar title="帖子详情" type="gradient" />
 
-    <div class="content" v-if="post">
+    <SkeletonLoader v-if="loading" type="card" :count="2" />
+
+    <div class="content" v-if="post" v-show="!loading">
       <!-- 作者信息 -->
       <div class="post-header">
         <img v-if="post.user?.avatar" class="avatar" :src="post.user.avatar" @error="onImgError" />
@@ -93,7 +92,9 @@ import { navigateBackSmart } from '../../utils/router'
 import { toastSuccess, toastError } from '../../utils/toast'
 import { postService } from '../../services/postService'
 import { useAuth } from '../../store'
+import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import NavBar from '../../components/NavBar.vue'
 
 interface Post {
   id: string
@@ -215,9 +216,6 @@ onMounted(loadPost)
 
 <style scoped>
 .page { min-height: 100vh; background: var(--color-bg-primary); padding-bottom: 64px; }
-.header { display: flex; align-items: center; gap: 8px; padding: var(--spacing-lg); padding-top: calc(var(--spacing-lg) + 20px); background: var(--color-primary-gradient); color: #fff; position: sticky; top: 0; z-index: 10; }
-.back { font-size: 28px; cursor: pointer; line-height: 1; }
-.title { font-size: 18px; font-weight: 600; }
 .content { padding: var(--spacing-lg); }
 .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: var(--spacing-md); }
 .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }

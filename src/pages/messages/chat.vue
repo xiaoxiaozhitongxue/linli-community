@@ -1,19 +1,6 @@
 <template>
   <div class="page">
-    <!-- 顶部导航 -->
-    <div class="nav-header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <div class="nav-content">
-        <span class="nav-back" @click="goBack">‹</span>
-        <div class="nav-user">
-          <div class="avatar-wrap" v-if="chatUser.avatar">
-            <img class="nav-avatar" :src="chatUser.avatar" />
-          </div>
-          <div v-else class="nav-avatar avatar-placeholder">{{ (chatUser.name || '邻').charAt(0) }}</div>
-          <span class="nav-name">{{ chatUser.name }}</span>
-        </div>
-        <span class="nav-right"></span>
-      </div>
-    </div>
+    <NavBar title="聊天" type="white" />
 
     <!-- 消息列表 -->
     <div class="chat-list" ref="chatListRef">
@@ -60,13 +47,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { navigateBack } from '../../utils/router'
 import { useRoute } from 'vue-router'
 import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
 import { messageService } from '../../services/messageService'
 import type { MessageItem } from '../../services/messageService'
+import NavBar from '../../components/NavBar.vue'
 
 interface ChatMessage {
   id: string
@@ -139,6 +127,7 @@ const loadMessages = async () => {
         hasMore.value = result.total > result.items.length
         currentPage.value = 1
         scrollToBottom()
+        startPolling()
         return
       }
     } catch (e) {
@@ -250,6 +239,53 @@ const sendMessage = async () => {
   sending.value = false
 }
 
+// ============ 实时轮询（每5秒拉取最新消息）============
+const POLL_INTERVAL = 5000
+let pollTimer = 0
+
+function startPolling() {
+  stopPolling()
+  pollTimer = window.setInterval(async () => {
+    if (!chatId.value) return
+    try {
+      // 取最新消息的时间戳作为 before 参数，避免重复
+      const latestMsg = messages.value.length > 0 ? messages.value[messages.value.length - 1] : null
+      const before = latestMsg?.createdAt || latestMsg?.time || 0
+      const result = await messageService.getMessages(chatId.value, 1, 10)
+      if (result.items && result.items.length > 0) {
+        // 只追加比最新消息更新的消息
+        const existingIds = new Set(messages.value.map(m => m.id))
+        const newMsgs = result.items
+          .filter(msg => !existingIds.has(msg.id))
+          .map(msg => ({
+            id: msg.id,
+            content: msg.content,
+            time: msg.createdAt,
+            createdAt: msg.createdAt,
+            isSelf: msg.isSelf,
+            isSystem: false
+          }))
+        if (newMsgs.length > 0) {
+          // 轮询返回的是最新的在前，需要反转
+          newMsgs.reverse()
+          messages.value.push(...newMsgs)
+          saveMessages()
+          scrollToBottom()
+        }
+      }
+    } catch {
+      // 轮询失败静默忽略
+    }
+  }, POLL_INTERVAL)
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = 0
+  }
+}
+
 const goBack = () => {
   navigateBack()
 }
@@ -257,6 +293,10 @@ const goBack = () => {
 onMounted(() => {
   statusBarHeight.value = 20
   loadMessages()
+})
+
+onUnmounted(() => {
+  stopPolling()
 })
 </script>
 
@@ -266,62 +306,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   background-color: var(--color-bg-primary);
-}
-
-.nav-header {
-  background: var(--color-bg-secondary);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-}
-
-.nav-back {
-  font-size: 28px;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  width: 60px;
-  border-radius: var(--radius-full);
-  transition: background-color var(--transition-fast);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-back:hover {
-  background-color: var(--color-bg-tertiary);
-}
-
-.nav-user {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.nav-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  object-fit: cover;
-}
-
-.nav-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.nav-right {
-  width: 60px;
-  text-align: right;
 }
 
 .chat-list {

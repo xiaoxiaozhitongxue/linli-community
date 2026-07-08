@@ -1,15 +1,6 @@
 <template>
   <div class="page">
-    <!-- 顶部导航 -->
-    <div class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <div class="navbar-content">
-        <div class="back-btn" @click="goBack">
-          <span>←</span>
-        </div>
-        <span class="navbar-title">设置</span>
-        <div class="placeholder"></div>
-      </div>
-    </div>
+    <NavBar title="设置" type="white" />
 
     <div class="scroll-content">
       <!-- 账户设置 -->
@@ -162,6 +153,7 @@ import { navigateBackSmart } from '../../utils/router'
 import { navigateTo } from '../../utils/router'
 import { toastInfo, toastSuccess } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
+import NavBar from '../../components/NavBar.vue'
 import AppIcon from '../../components/AppIcon.vue'
 
 const { user, logout: authLogout, isLoggedIn } = useAuth()
@@ -294,49 +286,6 @@ const logout = () => {
 .page {
   min-height: 100vh;
   background-color: var(--color-bg-primary);
-}
-
-/* 导航栏 */
-.navbar {
-  background: var(--color-bg-secondary);
-  box-shadow: var(--shadow-sm);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.navbar-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  height: 44px;
-}
-
-.back-btn {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  cursor: pointer;
-  border-radius: var(--radius-full);
-  transition: background-color var(--transition-fast);
-}
-
-.back-btn:hover {
-  background-color: var(--color-bg-tertiary);
-}
-
-.navbar-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.placeholder {
-  width: 44px;
 }
 
 .scroll-content {
