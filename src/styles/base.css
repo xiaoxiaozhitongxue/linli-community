@@ -148,6 +148,38 @@
   --card-bg: var(--color-bg-secondary);
   
   /* 向后兼容 - 其他页面引用的变量 */
+  /* ======== 模块主题色系统 ======== */
+  /* 首页：橙色暖调 */
+  --theme-home: #FF6B35;
+  --theme-home-soft: rgba(255, 107, 53, 0.08);
+  --theme-home-gradient: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 100%);
+
+  /* 互助：橙色 */
+  --theme-help: #FF6B35;
+  --theme-help-soft: rgba(255, 107, 53, 0.08);
+  --theme-help-gradient: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%);
+
+  /* 活动：绿色调 */
+  --theme-activity: #10B981;
+  --theme-activity-soft: rgba(16, 185, 129, 0.08);
+  --theme-activity-gradient: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+
+  /* 个人中心：紫色调 */
+  --theme-profile: #8B5CF6;
+  --theme-profile-soft: rgba(139, 92, 246, 0.08);
+  --theme-profile-gradient: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+
+  /* 老年关怀：粉色 */
+  --theme-elderly: #E91E63;
+  --theme-elderly-soft: rgba(233, 30, 99, 0.08);
+  --theme-elderly-gradient: linear-gradient(135deg, #E91E63 0%, #F48FB1 100%);
+
+  /* 消息：蓝色调 */
+  --theme-messages: #3B82F6;
+  --theme-messages-soft: rgba(59, 130, 246, 0.08);
+  --theme-messages-gradient: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+
+  /* 向后兼容 */
   --color-primary-gradient: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 100%);
   --color-primary-gradient-soft: linear-gradient(135deg, rgba(255, 107, 53, 0.08) 0%, rgba(255, 138, 92, 0.10) 100%);
   --shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.05);

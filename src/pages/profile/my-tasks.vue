@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="我的任务" type="white" />
+    <NavBar title="我的任务" />
     <div class="tab-bar">
       <div 
         class="tab-item" 
@@ -529,7 +529,7 @@ onMounted(async () => {
 }
 
 .confirm-btn {
-  background: linear-gradient(135deg, #4CAF50, #45a049);
+  background: var(--theme-activity-gradient);
   color: var(--color-text-white);
   box-shadow: var(--shadow-sm);
 }

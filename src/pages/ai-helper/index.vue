@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <!-- 顶部区域 -->
-    <div class="header" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%);">
+    <div class="header">
       <div class="header-content">
         <div class="header-main">
           <div class="header-icon-wrap">
@@ -332,8 +332,7 @@ onMounted(async () => {
 }
 
 .header {
-  background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%);
-  background: var(--color-primary-gradient, linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%));
+  background: var(--theme-help-gradient);
   padding: var(--spacing-lg);
   padding-bottom: var(--spacing-2xl);
   padding-top: calc(20px + var(--spacing-lg));
@@ -713,7 +712,7 @@ onMounted(async () => {
 
 .respond-compact-btn {
   padding: 6px 14px;
-  background: var(--color-primary-gradient);
+  background: var(--theme-help-gradient);
   color: var(--color-text-white);
   border-radius: 12px;
   font-size: 13px;

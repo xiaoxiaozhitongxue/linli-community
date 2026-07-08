@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="我的发布" type="white" actionText="发布" @action-click="goPublish" />
+    <NavBar title="我的发布" actionText="发布" @action-click="goPublish" />
 
     <div class="scroll-content" ref="scrollRef" @scroll="onScroll">
       <!-- 空状态 -->

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="发布互助" type="gradient" />
+    <NavBar title="发布互助" />
 
     <div class="content">
       <div class="form-section">

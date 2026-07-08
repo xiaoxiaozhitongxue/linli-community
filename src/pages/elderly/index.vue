@@ -284,7 +284,7 @@ const getStatusName = (status: string) => {
 }
 
 .header {
-  background: linear-gradient(135deg, #E91E63, #F48FB1);
+  background: var(--theme-elderly-gradient);
   padding: var(--spacing-lg);
   padding-bottom: var(--spacing-xl);
   padding-top: calc(var(--spacing-lg) + 20px);
@@ -321,7 +321,7 @@ const getStatusName = (status: string) => {
   width: 160px;
   height: 160px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #F44336, #E53935);
+  background: linear-gradient(135deg, var(--color-error), #E53935);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -505,7 +505,7 @@ const getStatusName = (status: string) => {
 /* 志愿者招募 */
 .volunteer-section {
   margin: var(--spacing-lg);
-  background: linear-gradient(135deg, #FF5252, #FF4081);
+  background: var(--theme-elderly-gradient);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
   color: white;

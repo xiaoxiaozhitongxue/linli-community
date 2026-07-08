@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="店铺详情" type="gradient" titleAlign="left" />
+    <NavBar title="店铺详情" />
 
     <div class="content" v-if="shop">
       <div class="shop-hero" :style="{ background: shop.bgColor }">

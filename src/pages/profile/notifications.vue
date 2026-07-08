@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="消息通知" type="gradient" titleAlign="left" />
+    <NavBar title="消息通知" />
 
     <div class="content">
       <div class="section">

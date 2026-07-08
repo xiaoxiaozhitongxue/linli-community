@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="我的活动" type="white" />
+    <NavBar title="我的活动" />
 
     <div class="scroll-content" ref="scrollRef" @scroll="onScroll">
       <!-- 空状态 -->

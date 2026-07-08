@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="编辑资料" type="white" actionText="保存" @action-click="saveProfile" />
+    <NavBar title="编辑资料" actionText="保存" @action-click="saveProfile" />
 
     <div class="scroll-content">
       <!-- 头像区域 -->

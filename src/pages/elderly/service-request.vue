@@ -1,6 +1,8 @@
 <template>
   <div class="page">
-    <NavBar title="服务申请" type="gradient" titleAlign="left" />
+    <div class="elderly-header">
+      <NavBar title="服务申请" :showBack="true" />
+    </div>
 
     <div class="content">
       <div class="banner" v-if="selectedService">
@@ -102,6 +104,17 @@ const submit = () => {
 
 <style scoped>
 .page { min-height: 100vh; background: var(--color-bg-primary); }
+.elderly-header {
+  background: var(--theme-elderly-gradient);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.elderly-header :deep(.navbar) {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+.elderly-header :deep(.navbar-title-text) {
+  color: #fff;
+}
 .content { padding: var(--spacing-lg); }
 .banner { display: flex; align-items: center; gap: 12px; background: var(--color-bg-secondary); padding: var(--spacing-md); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
 .banner-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
@@ -118,7 +131,7 @@ const submit = () => {
 }
 .field input:focus, .field textarea:focus { border-color: var(--color-primary); }
 .submit-btn {
-  margin-top: var(--spacing-xl); background: linear-gradient(135deg, #E91E63, #F48FB1);
+  margin-top: var(--spacing-xl); background: var(--theme-elderly-gradient);
   color: #fff; text-align: center; padding: var(--spacing-md); border-radius: var(--radius-md);
   font-weight: 600; cursor: pointer;
 }

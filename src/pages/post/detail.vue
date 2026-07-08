@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="帖子详情" type="gradient" />
+    <NavBar title="帖子详情" />
 
     <SkeletonLoader v-if="loading" type="card" :count="2" />
 

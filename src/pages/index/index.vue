@@ -1,17 +1,19 @@
 <template>
   <div class="page">
-    <NavBar type="gradient" :showBack="false">
-      <div class="status-content">
-        <div class="location">
-          <AppIcon class="location-icon" :name="locating ? 'activity' : 'map-pin'" :size="16" />
-          <span class="location-text" :class="{ locating }">{{ locating ? '定位中' : cityDistrict }}</span>
+    <div class="home-header">
+      <NavBar :showBack="false">
+        <div class="status-content">
+          <div class="location">
+            <AppIcon class="location-icon" :name="locating ? 'activity' : 'map-pin'" :size="16" />
+            <span class="location-text" :class="{ locating }">{{ locating ? '定位中' : cityDistrict }}</span>
+          </div>
+          <div class="search-bar" @click="goToSearch">
+            <AppIcon class="search-icon" name="search" :size="16" />
+            <span class="search-placeholder">搜索邻里、活动...</span>
+          </div>
         </div>
-        <div class="search-bar" @click="goToSearch">
-          <AppIcon class="search-icon" name="search" :size="16" />
-          <span class="search-placeholder">搜索邻里、活动...</span>
-        </div>
-      </div>
-    </NavBar>
+      </NavBar>
+    </div>
 
     <div v-if="showRefreshIndicator" class="refresh-indicator">
       <div class="refresh-content">
@@ -787,6 +789,22 @@ onUnmounted(() => {
 .page {
   min-height: 100vh;
   background-color: var(--color-bg-primary);
+}
+
+.home-header {
+  background: var(--theme-home-gradient);
+  padding-top: env(safe-area-inset-top, 0px);
+  position: relative;
+  z-index: 1;
+}
+
+.home-header :deep(.navbar) {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+.home-header :deep(.navbar-inner) {
+  padding-top: 0;
 }
 
 .status-content {

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="修改密码" type="white" />
+    <NavBar title="修改密码" />
 
     <div class="content">
       <div class="form-card">

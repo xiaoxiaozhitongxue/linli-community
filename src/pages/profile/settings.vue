@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="设置" type="white" />
+    <NavBar title="设置" />
 
     <div class="scroll-content">
       <!-- 账户设置 -->

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="忘记密码" type="white" />
+    <NavBar title="忘记密码" />
 
     <div class="content">
       <!-- 步骤提示 -->

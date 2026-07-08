@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="活动详情" type="white" :fixed="true" />
+    <NavBar title="活动详情" :fixed="true" />
 
     <div class="content">
       <SkeletonLoader v-if="loading && !activity" type="card" :count="1" />

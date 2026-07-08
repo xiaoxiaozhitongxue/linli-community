@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="隐私政策" type="gradient" titleAlign="left" />
+    <NavBar title="隐私政策" />
 
     <div class="content">
       <div class="section">

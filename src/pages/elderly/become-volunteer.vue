@@ -87,7 +87,7 @@ const submit = () => {
 
 <style scoped>
 .page { min-height: 100vh; background: var(--color-bg-primary); }
-.header { display: flex; align-items: center; gap: 8px; padding: var(--spacing-lg); padding-top: calc(var(--spacing-lg) + 20px); background: linear-gradient(135deg, #FF5252, #FF4081); color: #fff; }
+.header { display: flex; align-items: center; gap: 8px; padding: var(--spacing-lg); padding-top: calc(var(--spacing-lg) + 20px); background: var(--theme-elderly-gradient); color: #fff; }
 .back { font-size: 28px; cursor: pointer; line-height: 1; }
 .title { font-size: 18px; font-weight: 600; }
 .content { padding: var(--spacing-lg); }
@@ -100,6 +100,6 @@ const submit = () => {
 .req { color: var(--color-error); }
 .field input, .field textarea { border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: var(--spacing-md); font-size: 14px; color: var(--color-text-primary); background: var(--color-bg-secondary); outline: none; resize: none; }
 .field input:focus, .field textarea:focus { border-color: var(--color-primary); }
-.submit-btn { margin-top: var(--spacing-xl); background: linear-gradient(135deg, #FF5252, #FF4081); color: #fff; text-align: center; padding: var(--spacing-md); border-radius: var(--radius-md); font-weight: 600; cursor: pointer; }
+.submit-btn { margin-top: var(--spacing-xl); background: var(--theme-elderly-gradient); color: #fff; text-align: center; padding: var(--spacing-md); border-radius: var(--radius-md); font-weight: 600; cursor: pointer; }
 .submit-btn:active { opacity: 0.85; }
 </style>

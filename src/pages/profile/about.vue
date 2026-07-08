@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="关于我们" type="gradient" titleAlign="left" />
+    <NavBar title="关于我们" />
 
     <div class="content">
       <div class="about-card">

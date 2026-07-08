@@ -1,6 +1,8 @@
 <template>
   <div class="page">
-    <NavBar title="健康打卡" type="gradient" />
+    <div class="health-header">
+      <NavBar title="健康打卡" />
+    </div>
 
     <div class="content">
       <SkeletonLoader v-if="loading" type="card" :count="1" />
@@ -150,6 +152,20 @@ onMounted(() => {
 .page {
   min-height: 100vh;
   background-color: var(--color-bg-primary);
+}
+
+.health-header {
+  background: var(--color-primary-gradient);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.health-header :deep(.navbar) {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+.health-header :deep(.navbar-title-text) {
+  color: #fff;
 }
 
 .content {

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="互助详情" type="white" />
+    <NavBar title="互助详情" />
 
     <SkeletonLoader v-if="loading" type="card" :count="2" />
 

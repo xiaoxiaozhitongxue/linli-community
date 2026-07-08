@@ -66,7 +66,7 @@ onMounted(() => {
 
 <style scoped>
 .page { min-height: 100vh; background: var(--color-bg-primary); }
-.header { display: flex; align-items: center; gap: 8px; padding: var(--spacing-lg); padding-top: calc(var(--spacing-lg) + 20px); background: linear-gradient(135deg, #E91E63, #F48FB1); color: #fff; }
+.header { display: flex; align-items: center; gap: 8px; padding: var(--spacing-lg); padding-top: calc(var(--spacing-lg) + 20px); background: var(--theme-elderly-gradient); color: #fff; }
 .back { font-size: 28px; cursor: pointer; line-height: 1; }
 .title { font-size: 18px; font-weight: 600; }
 .content { padding: var(--spacing-lg); }

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="活动中心" type="white" :fixed="true" actionText="发起活动" @action-click="goToCreate" />
+    <NavBar title="活动中心" :fixed="true" actionText="发起活动" @action-click="goToCreate" />
 
     <!-- 筛选标签 -->
     <div class="filter-tabs">

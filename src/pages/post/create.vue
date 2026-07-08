@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="发布动态" type="white" :fixed="true" />
+    <NavBar title="发布动态" :fixed="true" />
 
     <div class="content">
       <div class="form-section">

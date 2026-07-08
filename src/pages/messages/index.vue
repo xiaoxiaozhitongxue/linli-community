@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="消息" type="white" />
+    <NavBar title="消息" />
 
     <!-- 标签页 -->
     <div class="tabs">
@@ -783,7 +783,7 @@ watch(isLoggedIn, (newVal, oldVal) => {
 }
 
 .task-badge-completed {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: var(--theme-profile-gradient);
 }
 
 .task-badge-confirmed {

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="我的收藏" type="white" />
+    <NavBar title="我的收藏" />
 
     <div class="scroll-content" ref="scrollRef" @scroll="onScroll">
       <!-- 空状态 -->

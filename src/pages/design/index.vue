@@ -203,7 +203,7 @@ function goBack() {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 100%);
+  background: var(--color-primary-gradient);
   color: #fff;
   position: sticky;
   top: 0;

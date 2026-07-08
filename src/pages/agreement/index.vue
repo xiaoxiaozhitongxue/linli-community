@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="用户协议" type="white" />
+    <NavBar title="用户协议" />
 
     <div class="content">
       <div class="doc-header">

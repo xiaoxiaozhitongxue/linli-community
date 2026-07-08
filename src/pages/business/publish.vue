@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="发布商品" type="gradient" titleAlign="left" />
+    <NavBar title="发布商品" />
 
     <div class="content">
       <div class="form">

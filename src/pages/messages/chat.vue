@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <NavBar title="聊天" type="white" />
+    <NavBar title="聊天" />
 
     <!-- 消息列表 -->
     <div class="chat-list" ref="chatListRef">
