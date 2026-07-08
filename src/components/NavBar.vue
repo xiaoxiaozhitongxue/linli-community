@@ -93,6 +93,12 @@ function handleBack() {
   z-index: var(--z-sticky, 100);
 }
 
+@media (min-width: 1024px) {
+  .navbar--fixed {
+    left: var(--nav-sidebar-width, 220px);
+  }
+}
+
 .navbar-inner {
   display: flex;
   align-items: center;

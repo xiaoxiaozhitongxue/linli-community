@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <div class="content" style="overflow-y: auto; height: calc(100vh - 120px);">
+    <div class="content" style="overflow-y: auto; min-height: calc(100vh - 120px);">
       <!-- 紧急求助 -->
       <div class="emergency-section">
         <div class="emergency-btn" @click="triggerEmergency">
@@ -309,6 +309,13 @@ const getStatusName = (status: string) => {
 
 .content {
   overflow-y: auto;
+}
+
+/* 桌面端侧边栏存在时，确保内容区高度正确 */
+@media (min-width: 1024px) {
+  .content {
+    min-height: calc(100vh - 120px);
+  }
 }
 
 /* 紧急求助 */

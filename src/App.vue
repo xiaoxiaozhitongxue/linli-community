@@ -96,9 +96,10 @@ onUnmounted(() => {
 }
 
 .main-content.desktop {
+  flex: 0 0 calc(100% - var(--nav-sidebar-width, 220px));
+  width: calc(100% - var(--nav-sidebar-width, 220px));
   margin-left: var(--nav-sidebar-width, 220px);
   padding-bottom: 0;
-  width: calc(100% - var(--nav-sidebar-width, 220px));
 }
 
 @media (max-width: 1023px) {

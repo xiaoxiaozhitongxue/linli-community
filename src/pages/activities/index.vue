@@ -404,6 +404,8 @@ onMounted(async () => {
    内容区域
    ======================================== */
 .content {
+  width: 100%;
+  /* 112px = NavBar 固定高度(约44px) + filter-tabs 固定高度(约52px) + 额外间距(约16px) */
   padding-top: 112px;
   padding-top: calc(112px + var(--safe-area-top));
   min-height: 100vh;
@@ -929,15 +931,15 @@ onMounted(async () => {
 /* --- 桌面：3列 --- */
 @media (min-width: 1024px) and (max-width: 1439px) {
   .content {
-    max-width: 1100px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
   }
 
   .filter-tabs {
-    max-width: 1100px;
-    margin: 0 auto;
-    left: 0;
+    left: var(--nav-sidebar-width, 220px);
     right: 0;
+    max-width: none;
+    margin: 0;
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   }
 
@@ -967,15 +969,15 @@ onMounted(async () => {
 /* --- 大屏：4列 --- */
 @media (min-width: 1440px) {
   .content {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
   }
 
   .filter-tabs {
-    max-width: 1400px;
-    margin: 0 auto;
-    left: 0;
+    left: var(--nav-sidebar-width, 220px);
     right: 0;
+    max-width: none;
+    margin: 0;
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   }
 

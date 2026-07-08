@@ -1389,8 +1389,14 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 0 var(--spacing-lg);
   box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .feed-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* 无图帖子左侧装饰竖条 */
@@ -1608,7 +1614,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px;
+  padding: 12px 16px;
 }
 
 .activity-feed-icon {

@@ -526,6 +526,13 @@ watch(isLoggedIn, (newVal, oldVal) => {
   z-index: var(--z-sticky);
 }
 
+/* 桌面端侧边栏存在时，NavBar 不固定，tabs 基于主内容区计算 */
+@media (min-width: 1024px) {
+  .tabs {
+    top: 0;
+  }
+}
+
 .tab-item {
   flex: 1;
   text-align: center;

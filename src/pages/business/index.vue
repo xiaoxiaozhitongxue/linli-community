@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <div class="content" style="overflow-y: auto; height: calc(100vh - 120px);">
+    <div class="content" style="overflow-y: auto; min-height: calc(100vh - 120px);">
       <!-- 我的小店 -->
       <div class="my-shop" v-if="hasShop">
         <div class="shop-card">
@@ -548,6 +548,13 @@ const goToStoryDetail = (story: any) => {
 
 .content {
   overflow-y: auto;
+}
+
+/* 桌面端侧边栏存在时，确保内容区高度正确 */
+@media (min-width: 1024px) {
+  .content {
+    min-height: calc(100vh - 120px);
+  }
 }
 
 /* 我的小店 */
