@@ -140,18 +140,11 @@
                         <span v-if="item._raw.location" class="feed-location">• {{ item._raw.location }}</span>
                       </div>
                     </div>
-                  </div>
-
-                  <!-- 图片区域（有图时优先展示） -->
-                  <div v-if="item._raw.images && item._raw.images.length > 0" class="post-image-area">
-                    <img
-                      class="post-cover-image"
-                      :src="item._raw.images[0]"
-                      @click.stop="previewImage(item._raw.images, 0)"
-                    />
-                    <span v-if="item._raw.images.length > 1" class="post-image-count">
-                      <AppIcon name="image" :size="12" /> {{ item._raw.images.length }}
-                    </span>
+                    <!-- 图片缩略图（有图时放右上角） -->
+                    <div v-if="item._raw.images && item._raw.images.length > 0" class="post-thumb-wrap" @click.stop="previewImage(item._raw.images, 0)">
+                      <img class="post-thumb" :src="item._raw.images[0]" />
+                      <span v-if="item._raw.images.length > 1" class="post-thumb-count">{{ item._raw.images.length }}</span>
+                    </div>
                   </div>
 
                   <!-- 文字内容（折叠） -->
@@ -1468,43 +1461,41 @@ onUnmounted(() => {
   color: var(--color-text-tertiary);
 }
 
-/* ============ 图片区域（有图优先） ============ */
-.post-image-area {
+/* ============ 缩略图（右上角） ============ */
+.post-thumb-wrap {
   position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 2;
-  border-radius: 12px;
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 10px;
   background: var(--color-bg-tertiary);
+  cursor: pointer;
+  margin-left: 10px;
 }
 
-.post-cover-image {
+.post-thumb {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
-.post-cover-image:hover {
-  transform: scale(1.03);
+.post-thumb-wrap:hover .post-thumb {
+  transform: scale(1.08);
 }
 
-.post-image-count {
+.post-thumb-count {
   position: absolute;
-  right: 8px;
-  top: 8px;
-  background: rgba(0, 0, 0, 0.55);
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.55);
   color: #fff;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  backdrop-filter: blur(4px);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  line-height: 16px;
 }
 
 /* ============ 文字内容（折叠） ============ */
