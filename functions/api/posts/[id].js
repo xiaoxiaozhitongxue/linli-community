@@ -56,7 +56,12 @@ export async function onRequestGet(context) {
 
 export async function onRequestPut(context) {
   try {
-    const { params, user } = context
+    const authError = await requireAuth(context)
+    if (authError) {
+      return authError
+    }
+    const { params } = context
+    const user = context.user
     const db = getDb(context)
 
     const post = await db.get('SELECT * FROM posts WHERE id = ?', [params.id])
@@ -93,7 +98,12 @@ export async function onRequestPut(context) {
 
 export async function onRequestDelete(context) {
   try {
-    const { params, user } = context
+    const authError = await requireAuth(context)
+    if (authError) {
+      return authError
+    }
+    const { params } = context
+    const user = context.user
     const db = getDb(context)
 
     const post = await db.get('SELECT * FROM posts WHERE id = ?', [params.id])

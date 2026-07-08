@@ -26,6 +26,7 @@ const TAB_BAR_PAGES = [
 const DETAIL_PAGES = [
   '/pages/activities/detail',
   '/pages/ai-helper/detail',
+  '/pages/post/detail',
   '/pages/profile/edit',
   '/pages/profile/my-posts',
   '/pages/profile/my-activities',
@@ -75,6 +76,9 @@ export function getListPagePath(detailPath: string): string {
   }
   if (detailPath.startsWith('/pages/ai-helper/detail')) {
     return '/pages/ai-helper/index'
+  }
+  if (detailPath.startsWith('/pages/post/detail')) {
+    return '/pages/index/index'
   }
   if (detailPath.startsWith('/pages/profile/')) {
     return '/pages/profile/index'

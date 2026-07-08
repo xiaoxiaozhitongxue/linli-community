@@ -17,7 +17,7 @@
           :style="{ transitionDelay: `${index * 50}ms`, animationDelay: `${index * 50}ms` }"
           @click.stop="handleMenuItemClick(item)"
         >
-          <span class="menu-icon">{{ item.icon }}</span>
+          <AppIcon class="menu-icon" :name="item.icon" :size="20" />
           <span class="menu-label">{{ item.label }}</span>
         </div>
       </div>
@@ -29,13 +29,14 @@
       :class="{ expanded: isExpanded }"
       @click.stop="toggleMenu"
     >
-      <span class="main-icon" :class="{ rotated: isExpanded }">+</span>
+      <AppIcon class="main-icon" :name="'plus'" :size="28" :class="{ rotated: isExpanded }" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
+import AppIcon from './AppIcon.vue'
 
 const emit = defineEmits<{
   (e: 'publish-post'): void
@@ -48,9 +49,9 @@ const isAnimating = ref(false)
 const isTransitioning = ref(false)
 
 const menuItems = [
-  { id: 'post', label: '发布动态', icon: '📝' },
-  { id: 'activity', label: '发布活动', icon: '🎉' },
-  { id: 'help', label: '发布互助', icon: '🤝' }
+  { id: 'post', label: '发布动态', icon: 'pencil' },
+  { id: 'activity', label: '发布活动', icon: 'calendar' },
+  { id: 'help', label: '发布互助', icon: 'handshake' }
 ]
 
 let toggleTimeout: ReturnType<typeof setTimeout> | null = null
@@ -215,7 +216,7 @@ const handleMenuItemClick = (item: { id: string }) => {
 }
 
 .menu-icon {
-  font-size: 20px;
+  color: var(--color-primary);
 }
 
 .menu-label {
@@ -278,9 +279,7 @@ const handleMenuItemClick = (item: { id: string }) => {
 }
 
 .main-icon {
-  font-size: 28px;
   color: var(--color-text-white);
-  font-weight: 300;
   line-height: 1;
   transition: transform var(--transition-spring);
   will-change: transform;

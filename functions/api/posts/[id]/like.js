@@ -1,11 +1,17 @@
 import { getDb } from '../../../lib/db.js'
 import { createResponse, createErrorResponse } from '../../../lib/response.js'
 import { generateId, now } from '../../../lib/utils.js'
+import { requireAuth } from '../../../lib/auth.js'
 
 
 export async function onRequestPost(context) {
   try {
-    const { params, user } = context
+    const authError = await requireAuth(context)
+    if (authError) {
+      return authError
+    }
+    const { params } = context
+    const user = context.user
     const db = getDb(context)
 
     const post = await db.get('SELECT * FROM posts WHERE id = ?', [params.id])

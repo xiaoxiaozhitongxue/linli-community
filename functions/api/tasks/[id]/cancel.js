@@ -4,7 +4,7 @@ import {
   getDb,
   requireAuth,
   now
-} from '../../../../lib/index.js'
+} from '../../../lib/index.js'
 
 export async function onRequestPost(context) {
   try {

@@ -1,7 +1,7 @@
 <template>
   <nav class="side-nav">
     <div class="nav-brand" @click="switchToTab('/pages/index/index')">
-      <span class="brand-emoji">🏘️</span>
+      <AppIcon class="brand-icon" name="community" :size="28" />
       <span class="brand-name">邻里社区</span>
     </div>
 
@@ -13,7 +13,7 @@
         :class="{ active: isActive(item.path) }"
         @click="switchToTab(item.path)"
       >
-        <span class="nav-item-icon">{{ item.icon }}</span>
+        <AppIcon class="nav-item-icon" :name="item.icon" :size="22" />
         <span class="nav-item-label">{{ item.label }}</span>
       </div>
     </div>
@@ -27,7 +27,7 @@
         <span class="user-name">{{ userName || '用户' }}</span>
       </div>
       <div v-else class="login-entry" @click="goToLogin">
-        <span class="login-icon">🔑</span>
+        <AppIcon class="login-icon" name="lock" :size="18" />
         <span>登录</span>
       </div>
     </div>
@@ -39,6 +39,7 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../store'
 import { navigateTo } from '../utils/router'
+import AppIcon from './AppIcon.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -50,10 +51,10 @@ const userName = computed(() => user.value?.nickname || '')
 const userAvatar = computed(() => user.value?.avatar || '')
 
 const navItems = [
-  { path: '/pages/index/index', icon: '🏠', label: '首页' },
-  { path: '/pages/ai-helper/index', icon: '🤝', label: '互助' },
-  { path: '/pages/messages/index', icon: '💬', label: '消息' },
-  { path: '/pages/profile/index', icon: '👤', label: '我的' }
+  { path: '/pages/index/index', icon: 'home', label: '首页' },
+  { path: '/pages/ai-helper/index', icon: 'handshake', label: '互助' },
+  { path: '/pages/messages/index', icon: 'message', label: '消息' },
+  { path: '/pages/profile/index', icon: 'user', label: '我的' }
 ]
 
 function isActive(path: string): boolean {
@@ -104,8 +105,8 @@ function goToLogin() {
   background: linear-gradient(90deg, var(--color-border-light) 0%, var(--color-primary-soft) 50%, var(--color-border-light) 100%);
 }
 
-.brand-emoji {
-  font-size: 28px;
+.brand-icon {
+  color: var(--color-primary);
 }
 
 .brand-name {
@@ -164,7 +165,7 @@ function goToLogin() {
 }
 
 .nav-item-icon {
-  font-size: 20px;
+  color: var(--color-text-tertiary);
   width: 24px;
   text-align: center;
   flex-shrink: 0;
@@ -174,6 +175,10 @@ function goToLogin() {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
+}
+
+.nav-item.active .nav-item-icon {
+  color: var(--color-primary);
 }
 
 .nav-item.active .nav-item-label {
@@ -255,6 +260,6 @@ function goToLogin() {
 }
 
 .login-icon {
-  font-size: 18px;
+  color: var(--color-primary);
 }
 </style>

@@ -225,6 +225,19 @@
             </div>
             <span class="menu-list-arrow">›</span>
           </div>
+          <div class="menu-list-divider"></div>
+          <div class="menu-list-item" @click="goToDesign">
+            <div class="menu-list-left">
+              <div class="menu-icon-wrap design" style="background: #FFF3ED;">
+                <AppIcon name="star" :size="20" color="#FF6B35" />
+              </div>
+              <div class="menu-list-content">
+                <span class="menu-list-text">设计规范</span>
+                <span class="menu-list-desc">图标集与设计语言展示</span>
+              </div>
+            </div>
+            <span class="menu-list-arrow">›</span>
+          </div>
         </div>
       </div>
 
@@ -257,6 +270,7 @@ import { taskService } from '../../services/taskService'
 import { navigateTo } from '../../utils/router'
 import { toastInfo } from '../../utils/toast'
 import { showModal } from '../../utils/ui'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { user, logout: authLogout, isLoggedIn, initAuth, updateUser } = useAuth()
 const statusBarHeight = ref(20)
@@ -378,6 +392,10 @@ const goToHelp = () => {
 
 const goToFeedback = () => {
   toastInfo('意见反馈即将上线')
+}
+
+const goToDesign = () => {
+  navigateTo('/pages/design/index')
 }
 
 const goToLogin = () => {

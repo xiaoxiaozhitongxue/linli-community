@@ -67,7 +67,12 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   try {
-    const { params, user } = context
+    const authError = await requireAuth(context)
+    if (authError) {
+      return authError
+    }
+    const { params } = context
+    const user = context.user
     const db = getDb(context)
 
     const post = await db.get('SELECT id FROM posts WHERE id = ?', [params.id])

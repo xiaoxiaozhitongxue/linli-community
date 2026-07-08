@@ -1,9 +1,15 @@
 import { getDb } from '../../../../lib/db.js'
 import { createResponse, createErrorResponse } from '../../../../lib/response.js'
+import { requireAuth } from '../../../../lib/auth.js'
 
 export async function onRequestDelete(context) {
   try {
-    const { params, user } = context
+    const authError = await requireAuth(context)
+    if (authError) {
+      return authError
+    }
+    const { params } = context
+    const user = context.user
     const db = getDb(context)
 
     const post = await db.get('SELECT id FROM posts WHERE id = ?', [params.id])

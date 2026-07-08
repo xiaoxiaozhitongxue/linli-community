@@ -16,7 +16,7 @@
       >
         <div class="tab-icon-wrap">
           <div class="tab-icon-bg"></div>
-          <span class="tab-icon">{{ tab.icon }}</span>
+          <AppIcon class="tab-icon" :name="tab.icon" :size="26" />
           <div class="ripple-effect" v-if="pressedTab === tab.path"></div>
           <div class="icon-glow" v-if="currentPath === tab.path || currentPath.startsWith(tab.path + '/')"></div>
         </div>
@@ -31,6 +31,7 @@
 import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { switchTab as switchTabUtil } from '../utils/router'
+import AppIcon from './AppIcon.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -41,22 +42,22 @@ const currentPath = computed(() => route.path)
 const tabs = [
   {
     name: '首页',
-    icon: '🏠',
+    icon: 'home',
     path: '/pages/index/index'
   },
   {
     name: '互助',
-    icon: '🤝',
+    icon: 'handshake',
     path: '/pages/ai-helper/index'
   },
   {
     name: '消息',
-    icon: '💬',
+    icon: 'message',
     path: '/pages/messages/index'
   },
   {
     name: '我的',
-    icon: '👤',
+    icon: 'user',
     path: '/pages/profile/index'
   }
 ]
@@ -164,16 +165,15 @@ const handleTouchEnd = () => {
 }
 
 .tab-icon {
-  font-size: 26px;
-  transition: all var(--transition-bounce);
+  color: var(--color-text-tertiary);
+  transition: color var(--transition-bounce), transform var(--transition-bounce);
   position: relative;
   z-index: 2;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .tab-item.active .tab-icon {
+  color: var(--color-primary);
   transform: scale(1.18);
-  filter: drop-shadow(0 2px 4px rgba(255, 140, 66, 0.3));
   animation: iconPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 

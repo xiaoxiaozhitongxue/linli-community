@@ -6,9 +6,10 @@ export class Database {
   async query(sql, params = []) {
     try {
       const stmt = this.db.prepare(sql)
+      const safeParams = params.map(v => (v === undefined ? null : v))
       let result
-      if (params.length > 0) {
-        result = await stmt.bind(...params).all()
+      if (safeParams.length > 0) {
+        result = await stmt.bind(...safeParams).all()
       } else {
         result = await stmt.all()
       }
@@ -22,8 +23,9 @@ export class Database {
   async get(sql, params = []) {
     try {
       const stmt = this.db.prepare(sql)
-      if (params.length > 0) {
-        return await stmt.bind(...params).first()
+      const safeParams = params.map(v => (v === undefined ? null : v))
+      if (safeParams.length > 0) {
+        return await stmt.bind(...safeParams).first()
       }
       return await stmt.first()
     } catch (error) {
@@ -35,8 +37,9 @@ export class Database {
   async run(sql, params = []) {
     try {
       const stmt = this.db.prepare(sql)
-      if (params.length > 0) {
-        return await stmt.bind(...params).run()
+      const safeParams = params.map(v => (v === undefined ? null : v))
+      if (safeParams.length > 0) {
+        return await stmt.bind(...safeParams).run()
       }
       return await stmt.run()
     } catch (error) {
@@ -60,7 +63,7 @@ export class Database {
 
   async insert(table, data) {
     const keys = Object.keys(data)
-    const values = Object.values(data)
+    const values = Object.values(data).map(v => (v === undefined ? null : v))
     const placeholders = keys.map(() => '?').join(', ')
     const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`
     return await this.run(sql, values)
@@ -69,7 +72,7 @@ export class Database {
   async update(table, data, where, whereParams = []) {
     const setClauses = Object.keys(data).map(key => `${key} = ?`).join(', ')
     const sql = `UPDATE ${table} SET ${setClauses} WHERE ${where}`
-    return await this.run(sql, [...Object.values(data), ...whereParams])
+    return await this.run(sql, [...Object.values(data).map(v => (v === undefined ? null : v)), ...whereParams])
   }
 
   async delete(table, where, params = []) {

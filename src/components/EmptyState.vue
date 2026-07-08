@@ -1,6 +1,9 @@
 <template>
   <div class="empty-state">
-    <div class="empty-icon" v-if="icon">{{ icon }}</div>
+    <div class="empty-icon" v-if="props.icon">
+      <AppIcon v-if="isIconName" :name="props.icon" :size="56" />
+      <span v-else>{{ props.icon }}</span>
+    </div>
     <h3 class="empty-title">{{ title }}</h3>
     <p class="empty-description" v-if="description">{{ description }}</p>
     <button class="btn btn-primary empty-action" v-if="actionText" @click="$emit('action')">
@@ -10,7 +13,10 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+import AppIcon from './AppIcon.vue'
+
+const props = defineProps<{
   icon?: string
   title: string
   description?: string
@@ -20,6 +26,10 @@ defineProps<{
 defineEmits<{
   action: []
 }>()
+
+const APP_ICON_NAMES = ['search', 'heart', 'calendar', 'activity', 'star', 'bell', 'message-circle', 'users', 'book-open', 'edit', 'map-pin', 'handshake', 'close', 'flame', 'target', 'megaphone', 'comment', 'share', 'camera', 'lock', 'settings', 'help-circle', 'info']
+
+const isIconName = computed(() => props.icon ? APP_ICON_NAMES.includes(props.icon) : false)
 </script>
 
 <style scoped>

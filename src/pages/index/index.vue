@@ -3,12 +3,12 @@
     <div class="status-bar" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 50%, #FFA07A 100%);">
       <div class="status-content">
         <div class="location" @click="() => chooseLocation()">
-          <span class="location-icon">{{ locating ? '📡' : '📍' }}</span>
+          <AppIcon class="location-icon" :name="locating ? 'activity' : 'map-pin'" :size="16" />
           <span class="location-text" :class="{ locating }">{{ locating ? '定位中' : communityName }}</span>
           <span class="location-arrow">▼</span>
         </div>
         <div class="search-bar" @click="goToSearch">
-          <span class="search-icon">🔍</span>
+          <AppIcon class="search-icon" name="search" :size="16" />
           <span class="search-placeholder">搜索邻里、活动...</span>
         </div>
       </div>
@@ -47,7 +47,7 @@
           >
             <div class="quick-card-inner">
               <div class="quick-card-head">
-                <span class="quick-icon">{{ action.icon }}</span>
+                <AppIcon class="quick-icon" :name="action.icon" :size="24" />
                 <span class="quick-name">{{ action.name }}</span>
               </div>
               <div class="quick-card-foot">
@@ -60,13 +60,13 @@
 
         <div class="section">
           <div class="section-header">
-            <span class="section-title">🔥 热门活动</span>
+            <span class="section-title"><AppIcon class="section-title-icon" name="flame" :size="18" />热门活动</span>
             <span class="section-more" @click="goToActivities">查看更多 ›</span>
           </div>
           <div class="activity-scroll">
             <div class="activity-card" v-for="activity in hotActivities" :key="activity.id" @click="goToActivityDetail(activity.id)">
               <div class="activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
-                <span class="activity-emoji">{{ getActivityEmoji(activity.category) }}</span>
+                <AppIcon class="activity-emoji" :name="getActivityIcon(activity.category)" :size="40" :color="getActivityIconColor(activity.category)" />
               </div>
               <div class="activity-info">
                 <span class="activity-name">{{ activity.title }}</span>
@@ -81,34 +81,34 @@
 
         <div class="section">
           <div class="section-header">
-            <span class="section-title">🎯 近期活动</span>
+            <span class="section-title"><AppIcon class="section-title-icon" name="target" :size="18" />近期活动</span>
             <span class="section-more" @click="goToActivities">查看更多 ›</span>
           </div>
           <div class="recent-activity-scroll">
             <div class="recent-activity-card" v-for="activity in recentActivities" :key="activity.id" @click="goToActivityDetail(activity.id)">
               <div class="recent-activity-cover" :style="{ background: getActivityCoverBg(activity.category) }">
-                <span class="recent-activity-icon">{{ getActivityEmoji(activity.category) }}</span>
+                <AppIcon class="recent-activity-icon" :name="getActivityIcon(activity.category)" :size="48" :color="getActivityIconColor(activity.category)" />
                 <div class="recent-activity-badge">即将开始</div>
               </div>
               <div class="recent-activity-content">
                 <span class="recent-activity-name">{{ activity.title }}</span>
-                <div class="recent-activity-info">
-                  <div class="recent-activity-info-item">
-                    <span class="info-icon">📅</span>
-                    <span class="info-text">{{ formatFullDate(activity.start_time) }}</span>
-                  </div>
+              <div class="recent-activity-info">
+                <div class="recent-activity-info-item">
+                  <AppIcon class="info-icon" name="calendar" :size="12" />
+                  <span class="info-text">{{ formatFullDate(activity.start_time) }}</span>
                 </div>
-                <div class="recent-activity-info">
-                  <div class="recent-activity-info-item">
-                    <span class="info-icon">📍</span>
-                    <span class="info-text">{{ activity.location }}</span>
-                  </div>
+              </div>
+              <div class="recent-activity-info">
+                <div class="recent-activity-info-item">
+                  <AppIcon class="info-icon" name="map-pin" :size="12" />
+                  <span class="info-text">{{ activity.location }}</span>
                 </div>
-                <div class="recent-activity-footer">
-                  <div class="recent-activity-participants">
-                    <span class="participant-icon">👥</span>
-                    <span class="participant-count">{{ activity.current_participants }}人已报名</span>
-                  </div>
+              </div>
+              <div class="recent-activity-footer">
+                <div class="recent-activity-participants">
+                  <AppIcon class="participant-icon" name="users" :size="14" />
+                  <span class="participant-count">{{ activity.current_participants }}人已报名</span>
+                </div>
                   <div class="recent-activity-join-btn">立即报名</div>
                 </div>
               </div>
@@ -118,7 +118,7 @@
 
         <div class="section">
           <div class="section-header">
-            <span class="section-title">📖 邻里动态</span>
+            <span class="section-title"><AppIcon class="section-title-icon" name="book-open" :size="18" />邻里动态</span>
           </div>
 
           <SkeletonLoader v-if="loading && posts.length === 0" type="list" :count="3" />
@@ -148,15 +148,15 @@
 
               <div class="feed-actions">
                 <div class="feed-action" :class="{ liked: post.is_liked }" @click.stop="handleLikePost(post)">
-                  <span class="action-icon" :class="{ 'heart-beat': post.is_liked }">{{ post.is_liked ? '❤️' : '🤍' }}</span>
+                  <AppIcon class="action-icon" :class="{ 'heart-beat': post.is_liked }" name="heart" :size="20" :filled="post.is_liked" />
                   <span class="action-count">{{ post.like_count || 0 }}</span>
                 </div>
                 <div class="feed-action" @click.stop="showComments(post)">
-                  <span class="action-icon">💬</span>
+                  <AppIcon class="action-icon" name="comment" :size="20" />
                   <span class="action-count">{{ post.comment_count || 0 }}</span>
                 </div>
                 <div class="feed-action" @click.stop="sharePost(post)">
-                  <span class="action-icon">🔗</span>
+                  <AppIcon class="action-icon" name="share" :size="20" />
                   <span class="action-count">分享</span>
                 </div>
               </div>
@@ -184,14 +184,14 @@
       <div class="comment-panel" @click.stop>
         <div class="comment-header">
           <span class="comment-title">评论 ({{ currentPost?.comment_count || 0 }})</span>
-          <span class="comment-close" @click="hideComments">✕</span>
+          <span class="comment-close" @click="hideComments"><AppIcon name="close" :size="20" /></span>
         </div>
 
         <div class="comment-list">
           <div v-if="commentLoading && comments.length === 0" class="comment-loading">
             <div class="loading-spinner small"></div>
           </div>
-          <EmptyState v-else-if="comments.length === 0" icon="💬" title="暂无评论" description="快来抢沙发吧！" />
+          <EmptyState v-else-if="comments.length === 0" icon="message-circle" title="暂无评论" description="快来抢沙发吧！" />
           <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
             <img v-if="comment.user?.avatar" class="comment-avatar" :src="comment.user.avatar" @error="onAvatarError" />
             <div v-else class="comment-avatar comment-avatar-placeholder">{{ getInitial(comment.user?.nickname) }}</div>
@@ -214,7 +214,7 @@
 
     <div v-if="showImagePreview" class="image-preview-mask" @click="closeImagePreview">
       <div class="image-preview-container" @click.stop>
-        <div class="image-preview-close" @click="closeImagePreview">✕</div>
+        <div class="image-preview-close" @click="closeImagePreview"><AppIcon name="close" :size="20" /></div>
         <div class="image-preview-swiper" @touchstart="onImagePreviewTouchStart" @touchmove="onImagePreviewTouchMove" @touchend="onImagePreviewTouchEnd">
           <div class="image-preview-wrapper" :style="{ transform: 'translateX(' + (-currentPreviewIndex * 100) + '%)' }">
             <div v-for="(img, index) in previewImages" :key="index" class="image-preview-item">
@@ -243,6 +243,7 @@ import { useLocation } from '../../composables/useLocation'
 import SkeletonLoader from '../../components/SkeletonLoader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import ErrorBoundary from '../../components/ErrorBoundary.vue'
+import AppIcon from '../../components/AppIcon.vue'
 
 const { initAuth, isLoggedIn, user } = useAuth()
 const {
@@ -295,8 +296,8 @@ const banners = ref([
 ])
 
 const quickActions = ref([
-  { id: 'health', name: '健康打卡', icon: '❤️', path: '/pages/health/index', hint: '记录每日状态', badge: '未打卡' },
-  { id: 'help', name: '邻里互助', icon: '🤝', path: '/pages/ai-helper/index', hint: '发布/接单', badge: '' }
+  { id: 'health', name: '健康打卡', icon: 'heart', path: '/pages/health/index', hint: '记录每日状态', badge: '未打卡' },
+  { id: 'help', name: '邻里互助', icon: 'handshake', path: '/pages/ai-helper/index', hint: '发布/接单', badge: '' }
 ])
 
 const healthBadge = ref('未打卡')
@@ -540,15 +541,26 @@ function formatFullDate(timestamp: number) {
   return `${year}年${month}月${day}日 ${weekday} ${hours}:${minutes}`
 }
 
-function getActivityEmoji(category: string) {
+function getActivityIcon(category: string): string {
   const map: Record<string, string> = {
-    sports: '⚽',
-    culture: '🎨',
-    charity: '💝',
-    party: '🎉',
-    other: '📌'
+    sports: 'activity',
+    culture: 'book-open',
+    charity: 'heart',
+    party: 'star',
+    other: 'megaphone'
   }
-  return map[category] || '📌'
+  return map[category] || 'megaphone'
+}
+
+function getActivityIconColor(category: string): string {
+  const map: Record<string, string> = {
+    sports: '#2E7D32',
+    culture: '#7B1FA2',
+    charity: '#D64545',
+    party: '#E8830C',
+    other: '#2563C9'
+  }
+  return map[category] || '#2563C9'
 }
 
 function getActivityCoverBg(category: string) {
@@ -745,7 +757,7 @@ onUnmounted(() => {
 }
 
 .location-icon {
-  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95);
   margin-right: 4px;
 }
 
@@ -792,7 +804,7 @@ onUnmounted(() => {
 }
 
 .search-icon {
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
   margin-right: 8px;
 }
 
@@ -993,8 +1005,12 @@ onUnmounted(() => {
 }
 
 .quick-icon {
-  font-size: 22px;
   line-height: 1;
+  color: var(--color-primary);
+}
+
+.quick-health .quick-icon {
+  color: var(--color-success);
 }
 
 .quick-name {
@@ -1042,6 +1058,12 @@ onUnmounted(() => {
   font-size: 17px;
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
+}
+
+.section-title-icon {
+  color: var(--color-primary);
+  margin-right: 6px;
+  vertical-align: -3px;
 }
 
 .section-more {
@@ -1104,7 +1126,6 @@ onUnmounted(() => {
 }
 
 .activity-emoji {
-  font-size: 40px;
   transition: transform var(--transition-spring);
 }
 
@@ -1185,7 +1206,6 @@ onUnmounted(() => {
 }
 
 .recent-activity-icon {
-  font-size: 48px;
   transition: transform var(--transition-spring);
 }
 
@@ -1231,7 +1251,7 @@ onUnmounted(() => {
 }
 
 .info-icon {
-  font-size: 12px;
+  color: var(--color-text-tertiary);
 }
 
 .info-text {
@@ -1255,7 +1275,7 @@ onUnmounted(() => {
 }
 
 .participant-icon {
-  font-size: 14px;
+  color: var(--color-text-secondary);
 }
 
 .participant-count {

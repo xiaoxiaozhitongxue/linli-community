@@ -62,6 +62,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { navigateBack } from '../../utils/router'
 import { useRoute } from 'vue-router'
+import { useAuth } from '../../store'
 import { localStore } from '../../services/localStore'
 
 interface ChatMessage {
@@ -73,6 +74,7 @@ interface ChatMessage {
 }
 
 const route = useRoute()
+const { user } = useAuth()
 const statusBarHeight = ref(20)
 const chatListRef = ref<HTMLElement | null>(null)
 
@@ -110,11 +112,8 @@ const loadMessages = () => {
     avatar: decodeURIComponent((route.query.avatar as string) || '')
   }
 
-  // 加载我的头像
-  const storedUser = localStore.getObject<{ avatar?: string }>('user', {})
-  if (storedUser && storedUser.avatar) {
-    myAvatar.value = storedUser.avatar
-  }
+  // 加载我的头像（与登录态一致，从 auth store 读取，避免命中错误的 localStorage key）
+  myAvatar.value = user.value?.avatar || ''
 
   const stored = localStore.getArray<ChatMessage>(getChatKey(), [])
   if (stored.length > 0) {

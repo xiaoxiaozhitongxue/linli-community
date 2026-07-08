@@ -97,9 +97,10 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   try {
-    // 检查用户是否已登录（中间件应该已经设置了 context.user）
-    if (!context.user) {
-      return createErrorResponse(401, '未授权', '请先登录')
+    // 鉴权（与全站约定一致：直接解析 token 并设置 context.user）
+    const authError = await requireAuth(context)
+    if (authError) {
+      return authError
     }
 
     const db = getDb(context)

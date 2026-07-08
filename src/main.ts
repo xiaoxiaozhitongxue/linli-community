@@ -257,6 +257,11 @@ const router = createRouter({
       meta: { title: '帖子详情', tabBar: false }
     },
     {
+      path: '/pages/design/index',
+      component: () => import('./pages/design/index.vue'),
+      meta: { title: '设计规范', tabBar: false }
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/pages/index/index'
     }

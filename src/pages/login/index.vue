@@ -276,18 +276,13 @@ import { showLoading, hideLoading } from '../../utils/ui'
 import { useAuth } from '../../store'
 import { authService } from '../../services/authService'
 import { getAndClearLoginRedirect } from '../../utils/auth'
+// B11：社区列表统一引用单一数据源，避免与注册页下拉项不一致
+import { COMMUNITY_NAMES } from '../../constants/communities'
 
 const { setUser } = useAuth()
 
-// 社区列表
-const communities = [
-  '阳光社区',
-  '幸福社区',
-  '花园社区',
-  '和平社区',
-  '东风社区',
-  '向日葵小镇'
-]
+// 社区列表（单一数据源，见 src/constants/communities.ts）
+const communities = COMMUNITY_NAMES
 
 // 当前标签
 const currentTab = ref<'login' | 'register'>('login')
